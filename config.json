@@ -1,0 +1,17 @@
+{
+    "bot": {
+        "phone_number": "+447743992060",
+        "signal_service": "127.0.0.1:8080",
+        "test_number": "+447730031507",
+        "storage": null,
+        "summonable": true
+    },
+    "llm": {
+        "model": "gpt-3.5-turbo",
+        "debug": true,
+        "temperature": 0.0,
+        "max_tokens": 400,
+        "total_budget": 10.0,
+        "razzler_rate": 0.1
+    }
+}
