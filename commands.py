@@ -211,56 +211,70 @@ class RazzlerMindCommand(Command):
             logger.info("Ignoring message from The Razzler.")
             return
 
+        # TODO
+        # Summoning is currently too abusable - people just fucking love to slam the Razzler
+        # Instead, I think we have either currency, so people get given credits every say, 5 minutes, 
+        # up to a cap. Then, summoning costs a credit. 
+        # Would only need to track the credits.
         if c.bot.summonable:
             mentions = c.message.mentions
             for mention in mentions:
-                logger.critical(
+                logger.info(
                     "Message with mentions:\n\n{}\n\n".format(pformat(c.message))
                 )
-                if mention["name"] == c.bot._phone_number:
-                    logger.critical("This message is for me!")
+                # IF IT AINT FOR ME, I DONT CARE
+                if mention["name"] != c.bot._phone_number:
+                    continue
+            
+                logger.info("This message is for me!")
 
-                    await c.start_typing()
+                await c.start_typing()
 
-                    try:
-                        # Default to the summoner
-                        target_name = c.message.sourceName
+                try:
+                    # Default to the summoner
+                    target_name = c.message.sourceName
 
-                        # Have we been given a target?
-                        if len(c.message.mentions) > 1:
-                            logger.info("There are multiple mentions, so I will select one")
-                            target = c.message.mentions[-1]
-                            target_number = target["number"]
-                            logger.info("Last mention was of {}")
+                    # Have we been given a target?
+                    if len(c.message.mentions) > 1:
+                        logger.info("There are multiple mentions, so I will select the last one")
+                        target = c.message.mentions[-1]
+                        target_number = target["number"]
+                        logger.info("Last mention was of {}")
 
-                            # Convert their phone number to a name
-                            # Fall back to the sender if I don't know it
-                            target_name = c.bot.target_lookup.get(target_number, target_name)
-                        
-                        response = get_razzle(c, target_name=target_name)
-                        await c.send(response)
-                    except Exception as e:
-                        logger.exception("Error getting razzle")
-                        # await c.send(
-                        #     "I'm not just your dancing monkey",
-                        #     base64_attachments=[load_image(kick_sand)],
-                        # )
-                        await c.stop_typing()
-                        raise e
+                        # Convert their phone number to a name
+                        # Fall back to the sender if I don't know it
+                        target_name = c.bot.target_lookup.get(target_number, target_name)
+                    
+                    response = get_razzle(c, target_name=target_name)
+                    await c.send(response)
+                except Exception as e:
+                    logger.exception("Error getting razzle")
+
+                    # This got annoying, so I turned it off
+                    # await c.send(
+                    #     "I'm not just your dancing monkey",
+                    #     base64_attachments=[load_image(kick_sand)],
+                    # )
 
                     await c.stop_typing()
+                    raise e
 
-                    return
+                await c.stop_typing()
+
+                return
 
         # Only reply sometimes
+        # TODO: This should be more sophisticated...
+        # I think maybe a cooldown threshold, and once it finishes then the next message gets a razz
         if random.random() > c.bot.mind.razzler_rate:
             logger.info("The Razzler chose not to respond")
             return
 
+        # The razzler needs a few messages to prime it
         history_key = "chat_history: {}".format(c.message.recipient())
         logger.info("Retreiving chat history from key: {}".format(history_key))
         message_history = c.bot.storage.read(history_key)
-        if len(message_history) < 3:
+        if len(message_history) < 10:
             logger.info("Not enough messages in chat history to generate a response.")
             return
 
