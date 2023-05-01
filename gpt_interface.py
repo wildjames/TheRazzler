@@ -34,6 +34,7 @@ class SignalAI:
     temperature: float = 0.0
     max_tokens: int = 400
     prompt_filename: str = "prompt.txt"
+    total_cost_filename: str = "total_cost.txt"
 
     total_prompt_tokens: int = 0
     total_completion_tokens: int = 0
@@ -42,6 +43,9 @@ class SignalAI:
     debug: bool = False
     razzler_rate: float = 0.1
     razzler_image_rate: float = 0.1
+
+    def __post_init__(self):
+        total_cost = self.get_total_cost()
 
     def reset(self):
         self.total_prompt_tokens = 0
@@ -94,8 +98,7 @@ class SignalAI:
         logger.info(f"[GPTInterface] Response: {response}")
         image_url = response["data"][0]["url"]
 
-        self.total_cost += COSTS["image"]["prompt"]
-        logger.info(f"[GPTInterface] Total cost: {self.total_cost}")
+        self.update_cost(1, 0, "image")
 
         return image_url
 
@@ -134,7 +137,9 @@ class SignalAI:
             prompt_tokens * COSTS[model]["prompt"]
             + completion_tokens * COSTS[model]["completion"]
         ) / 1000
-        logger.info(f"[GPTInterface] Total running cost: ${self.total_cost:.3f}")
+        logger.info(f"[GPTInterface] Total running cost: ${self.total_cost:.3f} out of a budget of ${self.total_budget:.3f}")
+        with open(self.total_cost_filename, "w") as f:
+            json.dump({"total_cost": self.total_cost}, f)
 
     def set_total_budget(self, total_budget):
         """
@@ -170,6 +175,10 @@ class SignalAI:
         Returns:
         float: The total cost of API calls.
         """
+
+        with open(self.total_cost_filename, "r") as f:
+            self.total_cost = json.load(f)["total_cost"]
+
         return self.total_cost
 
     def get_total_budget(self):
