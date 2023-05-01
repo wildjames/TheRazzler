@@ -2,6 +2,9 @@ import asyncio
 import logging
 import random
 from pprint import pformat
+import requests
+from typing import Tuple
+import base64
 
 from gpt_interface import SignalAI, create_chat_message
 from signalbot.signalbot import Command, Context, triggered
@@ -36,12 +39,37 @@ def interleave(list1, list2):
     return newlist
 
 
-def get_razzle(c: Context, target_name: str = None) -> str:
+def download_image_base64(url):
+    try:
+        # Send a GET request to the URL
+        response = requests.get(url)
+
+        # Raise an exception if the response contains an HTTP error status code
+        response.raise_for_status()
+
+        # Check if the response content is an image
+        if "image" not in response.headers["Content-Type"]:
+            raise ValueError("The URL does not contain an image.")
+
+        # Encode the image content in base64 format
+        image_base64 = base64.b64encode(response.content)
+
+        return image_base64.decode("utf-8")
+
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred while downloading the image: {e}")
+        return None
+    except ValueError as e:
+        print(e)
+        return None
+
+
+def get_razzle(c: Context, target_name: str = None):
     """Return a razzle from the AI.
 
     The razz will be addressed to the target_name
 
-    Returns a string, containing the message body
+    Returns a string, containing the message body, and an optional image encoded in base64, or None if no image was made.
     """
     # Get the chat history from storage
     history_key = "chat_history: {}".format(c.message.recipient())
@@ -116,8 +144,11 @@ def get_razzle(c: Context, target_name: str = None) -> str:
     if "<" in response and ">" in response:
         logger.info("[Razzle] Response contains an image request, generating an image.")
         image_description = response[response.find("<") + 1 : response.find(">")]
-        image = mind.create_image_completion(image_description)
-        response = response.replace("<" + image_description + ">", image)
+        image_url = mind.create_image_completion(image_description)
+        image = download_image_base64(image_url)
+        response = response.replace("<" + image_description + ">", "")
+    else:
+        image = None
 
     # Save the response to the chat history
     with open("razzled.csv", "a") as f:
@@ -138,7 +169,7 @@ def get_razzle(c: Context, target_name: str = None) -> str:
 
     logger.info("[Razzle] Added my own message to history 🗣️ {}".format(message))
 
-    return response
+    return response, image
 
 
 class SaveChatHistory(Command):
@@ -166,7 +197,9 @@ class SaveChatHistory(Command):
             return
 
         if len(c.message.mentions):
-            logger.info("[SaveChatHistory] This message has some mention in it: {c.message.mentions}")
+            logger.info(
+                "[SaveChatHistory] This message has some mention in it: {c.message.mentions}"
+            )
 
             mentions = sorted(c.message.mentions, key=lambda m: m["start"])
             # The mentions are given as phone numbers
@@ -186,7 +219,11 @@ class SaveChatHistory(Command):
 
             # Then reform the message
             message = "".join(interleaved_list)
-            logger.info("[SaveChatHistory] Parsed out the mentions into the message: {}".format(message))
+            logger.info(
+                "[SaveChatHistory] Parsed out the mentions into the message: {}".format(
+                    message
+                )
+            )
 
         else:
             message = c.message.text
@@ -266,7 +303,9 @@ class RazzlerMindCommand(Command):
             mentions = c.message.mentions
             for mention in mentions:
                 logger.info(
-                    "[RazzlerMind] Message with mentions:\n\n{}\n\n".format(pformat(c.message))
+                    "[RazzlerMind] Message with mentions:\n\n{}\n\n".format(
+                        pformat(c.message)
+                    )
                 )
                 # IF IT AINT FOR ME, I DONT CARE
                 if mention["name"] != c.bot._phone_number:
@@ -295,8 +334,12 @@ class RazzlerMindCommand(Command):
                             target_number, target_name
                         )
 
-                    response = get_razzle(c, target_name=target_name)
-                    await c.send(response)
+                    response, image = get_razzle(c, target_name=target_name)
+                    if image:
+                        attach = [image]
+                    else:
+                        attach = None
+                    await c.send(response, base64_attachments=attach)
                 except Exception as e:
                     logger.exception("[RazzlerMind] ❗️ Error getting razzle")
 
@@ -322,17 +365,25 @@ class RazzlerMindCommand(Command):
 
         # The razzler needs a few messages to prime it
         history_key = "chat_history: {}".format(c.message.recipient())
-        logger.info("[RazzlerMind] Retreiving chat history from key: {}".format(history_key))
+        logger.info(
+            "[RazzlerMind] Retreiving chat history from key: {}".format(history_key)
+        )
         message_history = c.bot.storage.read(history_key)
         if len(message_history) < 10:
-            logger.info("[RazzlerMind] Not enough messages in chat history to generate a response.")
+            logger.info(
+                "[RazzlerMind] Not enough messages in chat history to generate a response."
+            )
             return
 
         await c.start_typing()
         try:
-            response = get_razzle(c)
+            response, image = get_razzle(c)
             if response == "":
                 raise Exception("[RazzlerMind] Razzle returned empty string")
+            if image:
+                attach = [image]
+            else:
+                attach = None
         except:
             logger.exception("[RazzlerMind] Error getting razzle")
             # await c.send(
@@ -341,6 +392,6 @@ class RazzlerMindCommand(Command):
             await c.stop_typing()
             return
 
-        await c.send(response)
+        await c.send(response, base64_attachments=attach)
         await c.stop_typing()
         return

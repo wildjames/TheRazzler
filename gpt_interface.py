@@ -92,7 +92,7 @@ class SignalAI:
         )
         logger.info(f"[GPTInterface] Response: {response}")
         image_url = response["data"][0]["url"]
-        
+
         return image_url
 
     def embedding_create(
