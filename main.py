@@ -37,7 +37,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 # Register the openAI token
 with open("openai_api_token.txt", "r") as f:
-    openai_api_token = f.readline()
+    openai_api_token = f.readline().strip()
 openai.api_key = openai_api_token
 
 
