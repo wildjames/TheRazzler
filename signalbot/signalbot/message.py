@@ -17,6 +17,7 @@ class Message:
         timestamp: int,
         type: MessageType,
         text: str,
+        quote: str = None,
         base64_attachments: list = None,
         group: str = None,
         reaction: str = None,
@@ -34,6 +35,7 @@ class Message:
         self.base64_attachments = base64_attachments
         if self.base64_attachments is None:
             self.base64_attachments = []
+        self.quote = quote
 
         self.group = group
 
@@ -89,6 +91,7 @@ class Message:
             group = cls._parse_group_information(raw_message["envelope"]["dataMessage"])
             reaction = cls._parse_reaction(raw_message["envelope"]["dataMessage"])
             mentions = cls._parse_mentions(raw_message["envelope"]["dataMessage"])
+            quote = cls._parse_quote(raw_message["envelope"]["dataMessage"])
 
         elif "typingMessage" in raw_message["envelope"]:
             action = raw_message["envelope"]["typingMessage"]["action"]
@@ -103,6 +106,7 @@ class Message:
             )
             reaction = ""
             mentions = []
+            quote = None
 
         else:
             raise UnknownMessageFormatError
@@ -116,6 +120,7 @@ class Message:
             timestamp,
             type,
             text,
+            quote,
             base64_attachments,
             group,
             reaction,
@@ -160,6 +165,14 @@ class Message:
         try:
             reaction = message["reaction"]["emoji"]
             return reaction
+        except Exception:
+            return None
+
+    @classmethod
+    def _parse_quote(self, message: dict) -> str:
+        try:
+            quote = message["quote"]["text"]
+            return quote
         except Exception:
             return None
 

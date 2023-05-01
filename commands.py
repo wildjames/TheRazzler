@@ -107,7 +107,7 @@ def get_razzle(c: Context, target_name: str = None):
     with open(c.bot.mind.prompt_filename, "r") as f:
         prompt = f.read()
 
-    if random.random() < c.bot.razzler_image_rate:
+    if random.random() < c.bot.mind.razzler_image_rate:
         image_subprompt = "You may also generate a single image for your message, by describing what it should be of. An image description should be a single sentence, and must be enclosed by <>. "
     else:
         image_subprompt = ""
@@ -196,6 +196,7 @@ class SaveChatHistory(Command):
         if c.message.text.strip() in ["￼", ""]:
             return
 
+        # Parse mentions into names
         if len(c.message.mentions):
             logger.info(
                 "[SaveChatHistory] This message has some mention in it: {c.message.mentions}"
@@ -228,6 +229,13 @@ class SaveChatHistory(Command):
         else:
             message = c.message.text
             logger.info("[SaveChatHistory] Got message: {}".format(message))
+
+        # Parse quotes into the chat logs
+        if c.message.quote:
+            logger.info("Got a quote")
+            quote = c.message.quote
+            logger.info(quote)
+
 
         message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
