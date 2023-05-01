@@ -182,7 +182,7 @@ class SaveChatHistory(Command):
             # Split the message into a list of strings, and then interleave the names into it
             broken_message = c.message.text.split("￼")
 
-            interleaved_list = interleave(broken_message, numbers)
+            interleaved_list = interleave(broken_message, names)
 
             # Then reform the message
             message = "".join(interleaved_list)
