@@ -277,11 +277,12 @@ class SignalBot:
         logger.info(f"[Bot] Producer #{name} started")
         try:
             async for raw_message in self._signal.receive():
-                logger.debug(f"[Raw Message] {raw_message}")
+                logger.info(f"[Raw Message] {raw_message}")
 
                 try:
                     message = Message.parse(raw_message)
                 except UnknownMessageFormatError:
+                    logger.info(f"[Bot] Unknown message format: {raw_message}")
                     continue
 
                 if not self._should_react(message):
