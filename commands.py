@@ -22,6 +22,20 @@ goat4 = "images/goat4.txt"
 kick_sand = "images/sand.txt"
 
 
+def interleave(list1, list2):
+    newlist = []
+    a1 = len(list1)
+    a2 = len(list2)
+
+    for i in range(max(a1, a2)):
+        if i < a1:
+            newlist.append(list1[i])
+        if i < a2:
+            newlist.append(list2[i])
+
+    return newlist
+
+
 def get_razzle(c: Context, target_name: str = None) -> str:
     """Return a razzle from the AI.
 
@@ -150,7 +164,21 @@ class SaveChatHistory(Command):
         if c.message.text.strip() in ["￼", ""]:
             return
 
-        message = "{}: {}".format(c.message.sourceName, c.message.text)
+        if len(c.message.mentions):
+            logger.info("This message has some mention in it!")
+            logger.info(c.message.mentions)
+            mentions = sorted(c.message.mentions, key=lambda m: m["start"])
+            numbers = [m["number"] for m in mentions]
+            logger.info("Numbers: {}".format(numbers))
+            broken_message = c.message.text.split("￼")
+
+            interleaved_list = interleave(broken_message, numbers)
+            message = "".join(interleaved_list)
+        
+        else:
+            message = c.message.text
+
+        message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
         c.bot.storage.save(history_key, message_history[-30:])
 
