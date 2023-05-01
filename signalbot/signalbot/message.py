@@ -5,6 +5,8 @@ from enum import Enum
 class MessageType(Enum):
     SYNC_MESSAGE = 1
     DATA_MESSAGE = 2
+    TYPING_START_MESSAGE = 3
+    TYPING_STOP_MESSAGE = 4
 
 
 class Message:
@@ -87,6 +89,20 @@ class Message:
             group = cls._parse_group_information(raw_message["envelope"]["dataMessage"])
             reaction = cls._parse_reaction(raw_message["envelope"]["dataMessage"])
             mentions = cls._parse_mentions(raw_message["envelope"]["dataMessage"])
+
+        elif "typingMessage" in raw_message["envelope"]:
+            action = raw_message["envelope"]["typingMessage"]["action"]
+            if action == "STARTED":
+                type = MessageType.TYPING_START_MESSAGE
+            elif action == "STOPPED":
+                type = MessageType.TYPING_STOP_MESSAGE
+            
+            text = ""
+            group = cls._parse_group_information(
+                raw_message["envelope"]["typingMessage"]
+            )
+            reaction = ""
+            mentions = []
 
         else:
             raise UnknownMessageFormatError
