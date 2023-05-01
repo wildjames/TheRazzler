@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import random
-from pprint import pformat, pprint
+from pprint import pformat
 
 from gpt_interface import SignalAI, create_chat_message
 from signalbot.signalbot import Command, Context, triggered
@@ -147,7 +147,7 @@ class SaveChatHistory(Command):
         # Check if I need to store the contact
         c.bot.add_contact(c.message.source, c.message.sourceName)
 
-        # See if there is a message
+        # See if there is a message. If not, then ignore it.
         if not c.message.text:
             return
 
@@ -166,12 +166,12 @@ class SaveChatHistory(Command):
         if len(c.message.mentions):
             logger.info("This message has some mention in it!")
             logger.info(c.message.mentions)
-            
+
             mentions = sorted(c.message.mentions, key=lambda m: m["start"])
             # The mentions are given as phone numbers
             numbers = [m["number"] for m in mentions]
             logger.info("Numbers: {}".format(numbers))
-            
+
             # Convert the phone numbers to names, if I know them
             logger.info("My contacts list:")
             logger.info(pformat(c.bot.target_lookup))
@@ -186,7 +186,7 @@ class SaveChatHistory(Command):
             # Then reform the message
             message = "".join(interleaved_list)
             logger.info("Parsed out the mentions into the message: {}".format(message))
-        
+
         else:
             message = c.message.text
             logger.info("Got message: {}".format(message))
@@ -250,6 +250,10 @@ class RazzlerMindCommand(Command):
         # Technically unnecessary but I would be nervous without it
         if c.message.sourceName == "The Razzler":
             logger.info("Ignoring message from The Razzler.")
+            return
+
+        # See if there is a message
+        if not c.message.text:
             return
 
         # TODO
