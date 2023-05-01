@@ -11,7 +11,7 @@
     "llm": {
         "model": "gpt-3.5-turbo",
         "debug": true,
-        "temperature": 0.95,
+        "temperature": 1.0,
         "max_tokens": 400,
         "total_budget": 10.0,
         "razzler_rate": 0.05,
