@@ -108,7 +108,7 @@ def get_razzle(c: Context, target_name: str = None):
         prompt = f.read()
 
     if random.random() < c.bot.mind.razzler_image_rate:
-        image_subprompt = "You may also generate a single image for your message, by describing what it should be of. An image description should be a single sentence, and must be enclosed by <>. "
+        image_subprompt = "You should also generate a single image for your message, by describing what it should be of. An image description should be a single sentence, and must be enclosed by <>. "
     else:
         image_subprompt = ""
 
