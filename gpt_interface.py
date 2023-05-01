@@ -90,9 +90,8 @@ class SignalAI:
             n=1,
             size="1024x1024",
         )
-        if self.debug:
-            logger.debug(f"[GPTInterface] Response: {response}")
-        image_url = response["date"][0]["url"]
+        logger.info(f"[GPTInterface] Response: {response}")
+        image_url = response["data"][0]["url"]
         
         return image_url
 
