@@ -9,7 +9,7 @@
         "prompt_filename": "prompt.txt"
     },
     "llm": {
-        "model": "gpt-3.5-turbo",
+        "model": "gpt4",
         "debug": true,
         "temperature": 0.0,
         "max_tokens": 400,
