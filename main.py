@@ -20,16 +20,31 @@ from watchdog.observers import Observer
 
 
 class RestartHandler(FileSystemEventHandler):
-    def __init__(self, script, extensions):
+    def __init__(self, script, extensions, max_restarts, time_threshold):
         self.script = script
         self.extensions = extensions
+        self.max_restarts = max_restarts
+        self.time_threshold = time_threshold
+        self.restart_count = 0
+        self.last_restart = time.time()
 
     def on_modified(self, event):
         if not event.is_directory and any(
             event.src_path.endswith(ext) for ext in self.extensions
         ):
-            print(f"Code change detected in {event.src_path}. Restarting...")
-            os.execl(sys.executable, sys.executable, *sys.argv)
+            current_time = time.time()
+            if current_time - self.last_restart > self.time_threshold:
+                self.restart_count = 0
+
+            if self.restart_count < self.max_restarts:
+                print(f"Code change detected in {event.src_path}. Restarting...")
+                self.restart_count += 1
+                self.last_restart = current_time
+                os.execl(sys.executable, sys.executable, *sys.argv)
+            else:
+                print(
+                    "Maximum restarts reached. Please wait before making more changes."
+                )
 
 
 logger = logging.getLogger(__name__)
@@ -90,13 +105,16 @@ def main(config: dict):
     bot.start()
 
 
-
 if __name__ == "__main__":
     script_path = os.path.abspath(sys.argv[0])
     # List the file extensions you want to monitor for changes
     monitored_extensions = [".py", ".json", ".txt"]
 
-    event_handler = RestartHandler(script_path, monitored_extensions)
+    # Set maximum restarts and time threshold (in seconds)
+    max_restarts = 5
+    time_threshold = 60
+
+    event_handler = RestartHandler(script_path, monitored_extensions, max_restarts, time_threshold)
 
     observer = Observer()
     observer.schedule(event_handler, path=".", recursive=True)
