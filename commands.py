@@ -358,7 +358,7 @@ class RazzlerMindCommand(Command):
                             target_number, target_name
                         )
 
-                    response, image = get_razzle(c, target_name=target_name)
+                    response, image = get_razzle(c, target_name=target_name, image_chance=c.bot.mind.razzler_image_rate/2.0)
                     if image:
                         attach = [image]
                     else:
