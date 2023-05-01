@@ -149,12 +149,17 @@ class SignalBot:
             return False
         return internal_id[-1] == "="
 
+    def save_contacts(self):
+        with open(self.contacts_file, "w") as f:
+            json.dump(self.target_lookup, f)
+
     def load_contacts(self):
         try:
             with open(self.contacts_file, "r") as f:
                 self.target_lookup = json.load(f)
         except FileNotFoundError:
-            self.target_lookup = {}
+            self.target_lookup = {self.config["phone_number"]: "The Razzler"}
+            self.save_contacts()
 
         logger.info("[Bot] Loaded contacts list: {}".format(self.target_lookup))
 
@@ -168,8 +173,7 @@ class SignalBot:
         logger.info(f"[Bot] Adding contact {name} with number {number}")
         
         self.target_lookup[number] = name
-        with open(self.contacts_file, "w") as f:
-            json.dump(self.target_lookup, f)
+        self.save_contacts()
 
     def register(self, command: Command):
         command.bot = self
