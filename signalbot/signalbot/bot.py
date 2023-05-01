@@ -40,8 +40,6 @@ class SignalBot:
         self.target_lookup: dict = {}
         self.load_contacts()
 
-        self.prompt_file = config["prompt_filename"]
-
         self.summonable = config["summonable"]
 
         # Required

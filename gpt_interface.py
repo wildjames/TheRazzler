@@ -33,6 +33,7 @@ class SignalAI:
     model: str = "gpt-3.5-turbo"
     temperature: float = 0.0
     max_tokens: int = 400
+    prompt_filename: str = "prompt.txt"
 
     total_prompt_tokens: int = 0
     total_completion_tokens: int = 0
