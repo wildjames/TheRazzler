@@ -172,7 +172,7 @@ def get_razzle(c: Context, target_name: str = None):
     return response, image
 
 
-def parse_mentions(c: Context) -> str:
+def parse_mentions(c: Context, message_string: str) -> str:
     # Parse mentions into names
     if len(c.message.mentions):
         logger.info(
@@ -191,7 +191,7 @@ def parse_mentions(c: Context) -> str:
         logger.info("[ParseMentions] Names: {}".format(names))
 
         # Split the message into a list of strings, and then interleave the names into it
-        broken_message = c.message.text.split("￼")
+        broken_message = message_string.split("￼")
 
         interleaved_list = interleave(broken_message, names)
 
@@ -204,8 +204,8 @@ def parse_mentions(c: Context) -> str:
         )
         return message
 
-    logger.info("[ParseMentions] Got message: {}".format(c.message.text))
-    return c.message.text
+    logger.info("[ParseMentions] Got message: {}".format(message_string))
+    return message_string
 
 
 class SaveChatHistory(Command):
@@ -232,12 +232,12 @@ class SaveChatHistory(Command):
         if c.message.text.strip() in ["￼", ""]:
             return
 
-        message = parse_mentions(c.message.text)
+        message = parse_mentions(c, message)
 
         # Parse quotes into the chat logs
         if c.message.quote:
             logger.info("Got a quote")
-            quote = parse_mentions(c.message.quote)
+            quote = parse_mentions(c, c.message.quote)
             quoting = c.bot.get_contact(c.message.quoteName)
             logger.info(quote)
 
