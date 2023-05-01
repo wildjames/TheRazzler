@@ -6,7 +6,8 @@
         "contacts_filename": "contacts.csv",
         "storage": null,
         "summonable": true,
-        "prompt_filename": "prompt.txt"
+        "prompt_filename": "prompt.txt",
+        "can_hear_self": false
     },
     "llm": {
         "model": "gpt-3.5-turbo",

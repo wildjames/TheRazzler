@@ -41,6 +41,7 @@ class SignalBot:
         self.load_contacts()
 
         self.summonable = config["summonable"]
+        self.can_hear_self = config["can_hear_self"]
 
         # Required
         self._init_api()

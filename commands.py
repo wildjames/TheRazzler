@@ -164,19 +164,20 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
         f.write(response + "\n")
 
     # Since I dont actually receive my own message, I need to add it to the history manually
-    # bot = c.bot
-    # history_key = "chat_history: {}".format(c.message.recipient())
-    # logger.info("[Razzle] Using history key: {}".format(history_key))
-    # if not bot.storage.exists(history_key):
-    #     bot.storage.save(history_key, [])
+    bot = c.bot
+    if bot.can_hear_self:
+        history_key = "chat_history: {}".format(c.message.recipient())
+        logger.info("[Razzle] Using history key: {}".format(history_key))
+        if not bot.storage.exists(history_key):
+            bot.storage.save(history_key, [])
 
-    # message_history = bot.storage.read(history_key)
+        message_history = bot.storage.read(history_key)
 
-    # message = "{}: {}".format("The Razzler", response)
-    # message_history.append(message)
-    # c.bot.storage.save(history_key, message_history[-30:])
+        message = "{}: {}".format("The Razzler", response)
+        message_history.append(message)
+        c.bot.storage.save(history_key, message_history[-30:])
 
-    # logger.info("[Razzle] Added my own message to history 🗣️ {}".format(message))
+        logger.info("[Razzle] Added my own message to history 🗣️ {}".format(message))
 
     return response, image
 
