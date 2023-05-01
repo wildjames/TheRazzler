@@ -157,6 +157,9 @@ class SignalBot:
         return self.target_lookup.get(number, number)
         
     def add_contact(self, number: str, name: str):
+        if self.get_contact(number) == name:
+            return
+        
         self.target_lookup[number] = name
         with open(self.contacts_file, "w") as f:
             json.dump(self.target_lookup, f)

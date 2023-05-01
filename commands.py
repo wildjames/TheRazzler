@@ -147,6 +147,9 @@ class SaveChatHistory(Command):
         if not c.message.text:
             return
 
+        # Check if I need to store the contact
+        c.bot.add_contact(c.message.source, c.message.sourceName)
+
         bot = c.bot
         history_key = "chat_history: {}".format(c.message.recipient())
         logger.info("Using history key: {}".format(history_key))
@@ -154,11 +157,6 @@ class SaveChatHistory(Command):
             bot.storage.save(history_key, [])
 
         message_history = bot.storage.read(history_key)
-
-        # # Don't save messages from the Razzler (unnecessary - I don't receive my own messages)
-        # if c.bot._phone_number in c.message.source.lower():
-        #     logger.info("🛑 I will not add my own messages to the chat logs!")
-        #     return
 
         # Dont save empty messages, or messages that are a mention of someone with no text
         if c.message.text.strip() in ["￼", ""]:
@@ -176,7 +174,7 @@ class SaveChatHistory(Command):
             # Convert the phone numbers to names, if I know them
             logger.info("My contacts list:")
             logger.info(pformat(c.bot.target_lookup))
-            names = [c.bot.target_lookup.get(num, num) for num in numbers]
+            names = [c.bot.get_contact(num) for num in numbers]
             logger.info("Names: {}".format(names))
 
             # Split the message into a list of strings, and then interleave the names into it
@@ -197,9 +195,6 @@ class SaveChatHistory(Command):
         c.bot.storage.save(history_key, message_history[-30:])
 
         logger.info("Added to history 👍")
-
-        if c.message.source not in c.bot.target_lookup.keys():
-            c.bot.target_lookup[c.message.source] = c.message.sourceName
 
 
 class ClearChatHistory(Command):
