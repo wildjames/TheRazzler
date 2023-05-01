@@ -6,7 +6,8 @@ import subprocess
 app = Flask(__name__)
 
 # Set your webhook secret and service name here
-WEBHOOK_SECRET = "XYp0PWSHG1slYLeocTuKQ9NQ5eosf3vi"
+with open("webhook_secret.txt", "r") as f:
+    WEBHOOK_SECRET = f.readline().strip()
 SERVICE_NAME = "therazzler.service"
 
 @app.route("/", methods=["POST"])
@@ -19,7 +20,7 @@ def webhook():
         return "Unauthorized", 401
 
     # Perform git pull
-    repo_dir = "/path/to/your/repo"
+    repo_dir = "/home/calliope/TheRizzler"
     os.chdir(repo_dir)
     subprocess.run(["git", "pull"])
 

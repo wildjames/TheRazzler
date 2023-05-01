@@ -1,6 +1,7 @@
 *.json
 
 openai_api_token.txt
+webhook_secret.txt
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
