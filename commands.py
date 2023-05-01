@@ -410,3 +410,18 @@ class RazzlerMindCommand(Command):
         await c.send(response, base64_attachments=attach)
         await c.stop_typing()
         return
+
+
+class ReportRazzlerPromptCommand(Command):
+    def describe(self) -> str:
+        return "📝 Report the prompt from the Razzler"
+
+    @triggered("report_prompt")
+    async def handle(self, c: Context):
+        with open(c.bot.mind.prompt_filename, "r") as f:
+            prompt = f.read()
+
+        await c.send("I'll report my prompt. It will be unformatted, but is as follows:")
+        await c.send(prompt)
+
+        logger.info("[ReportRazzlerPrompt] Prompt reported")
