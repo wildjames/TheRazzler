@@ -1,11 +1,12 @@
 import asyncio
+import base64
 import logging
 import random
+import time
 from pprint import pformat
-import requests
 from typing import Tuple
-import base64
 
+import requests
 from gpt_interface import SignalAI, create_chat_message
 from signalbot.signalbot import Command, Context, triggered
 
@@ -132,7 +133,14 @@ def get_razzle(c: Context, target_name: str = None):
     for message in GPT_messages:
         logger.info(f"[Razzle] - {pformat(message)}")
 
-    response = mind.create_chat_completion(GPT_messages)
+    t0 = time.time()
+    while time.time() - t0 < 10:
+        try:
+            response = mind.create_chat_completion(GPT_messages)
+            break
+        except:
+            logger.info("[Razzle] GPT timed out, trying again.")
+
     response: str = response["choices"][0]["message"]["content"]
     logger.info(f"[Razzle] came up with the response: {response}")
 
@@ -242,7 +250,6 @@ class SaveChatHistory(Command):
             logger.info(quote)
 
             message = "[Quote {}] {} [End Quote] {}".format(quoting, quote, message)
-
 
         message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
@@ -421,7 +428,9 @@ class ReportRazzlerPromptCommand(Command):
         with open(c.bot.mind.prompt_filename, "r") as f:
             prompt = f.read()
 
-        await c.send("I'll report my prompt. It will be unformatted, but is as follows:")
+        await c.send(
+            "I'll report my prompt. It will be unformatted, but is as follows:"
+        )
         await c.send(prompt)
 
         logger.info("[ReportRazzlerPrompt] Prompt reported")
