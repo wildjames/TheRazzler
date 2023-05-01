@@ -1,4 +1,5 @@
 import asyncio
+import json
 import time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import logging
@@ -32,7 +33,10 @@ class SignalBot:
         self.user_chats = set()  # populated by .listenUser()
         self.group_chats = {}  # populated by .listenGroup()
 
+        self.contacts_file = config.get("contacts_filename", "contacts.json")
         self.target_lookup: dict = {}
+        self.load_contacts()
+
         self.summonable = config["summonable"]
 
         # Required
@@ -141,6 +145,21 @@ class SignalBot:
         if internal_id is None:
             return False
         return internal_id[-1] == "="
+
+    def load_contacts(self):
+        try:
+            with open(self.contacts_file, "r") as f:
+                self.target_lookup = json.load(f)
+        except FileNotFoundError:
+            self.target_lookup = {}
+
+    def get_contact(self, number: str) -> str:
+        return self.target_lookup.get(number, number)
+        
+    def add_contact(self, number: str, name: str):
+        self.target_lookup[number] = name
+        with open(self.contacts_file, "w") as f:
+            json.dump(self.target_lookup, f)
 
     def register(self, command: Command):
         command.bot = self
