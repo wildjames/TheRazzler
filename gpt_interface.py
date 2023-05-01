@@ -41,7 +41,6 @@ class SignalAI:
     debug: bool = False
     razzler_rate: float = 0.1
 
-
     def reset(self):
         self.total_prompt_tokens = 0
         self.total_completion_tokens = 0

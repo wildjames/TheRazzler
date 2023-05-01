@@ -8,10 +8,12 @@ from signalbot.signalbot import Command, Context, triggered
 
 logger = logging.getLogger(__name__)
 
+
 def load_image(fname):
     with open(fname, "r") as f:
         return f.read()
-    
+
+
 goatse = "images/goatse.txt"
 goat1 = "images/goat1.txt"
 goat2 = "images/goat2.txt"
@@ -19,9 +21,10 @@ goat3 = "images/goat3.txt"
 goat4 = "images/goat4.txt"
 kick_sand = "images/sand.txt"
 
+
 def get_razzle(c: Context, target_name: str = None) -> str:
     """Return a razzle from the AI.
-    
+
     The razz will be addressed to the target_name
 
     Returns a string, containing the message body
@@ -79,7 +82,7 @@ def get_razzle(c: Context, target_name: str = None) -> str:
     combined_message = "Message history: \n" + "\n".join(message_history)
 
     # There is a 4097 token limit. This doesn't actually work since tokens can be (and usually are) a few characters, but it's a start.
-    combined_message = combined_message[-4000-c.bot.mind.max_tokens:]
+    combined_message = combined_message[-4000 - c.bot.mind.max_tokens :]
 
     GPT_messages = [
         create_chat_message("user", combined_message),
@@ -94,7 +97,7 @@ def get_razzle(c: Context, target_name: str = None) -> str:
     response: str = response["choices"][0]["message"]["content"]
     logger.info("came up with the response:")
     logger.info(response)
-    
+
     if not response.startswith("The Razzler:"):
         logger.info("Response is not in the correct format, ignoring.")
         return ""
@@ -213,8 +216,8 @@ class RazzlerMindCommand(Command):
 
         # TODO
         # Summoning is currently too abusable - people just fucking love to slam the Razzler
-        # Instead, I think we have a currency, so people get given credits every say, 5 minutes, 
-        # up to a cap. Then, summoning costs a credit. 
+        # Instead, I think we have a currency, so people get given credits every say, 5 minutes,
+        # up to a cap. Then, summoning costs a credit.
         # Would only need to track the credits.
         if c.bot.summonable:
             mentions = c.message.mentions
@@ -225,7 +228,7 @@ class RazzlerMindCommand(Command):
                 # IF IT AINT FOR ME, I DONT CARE
                 if mention["name"] != c.bot._phone_number:
                     continue
-            
+
                 logger.info("This message is for me!")
 
                 await c.start_typing()
@@ -236,15 +239,19 @@ class RazzlerMindCommand(Command):
 
                     # Have we been given a target?
                     if len(c.message.mentions) > 1:
-                        logger.info("There are multiple mentions, so I will select the last one")
+                        logger.info(
+                            "There are multiple mentions, so I will select the last one"
+                        )
                         target = c.message.mentions[-1]
                         target_number = target["number"]
                         logger.info("Last mention was of {}")
 
                         # Convert their phone number to a name
                         # Fall back to the sender if I don't know it
-                        target_name = c.bot.target_lookup.get(target_number, target_name)
-                    
+                        target_name = c.bot.target_lookup.get(
+                            target_number, target_name
+                        )
+
                     response = get_razzle(c, target_name=target_name)
                     await c.send(response)
                 except Exception as e:

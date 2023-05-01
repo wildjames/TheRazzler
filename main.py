@@ -40,7 +40,7 @@ def main(config: dict):
     logger.info("Got the response:")
     logger.info(response)
 
-    # On start, the Rizzler checks for new group chats. 
+    # On start, the Rizzler checks for new group chats.
     # The signalbot library doesn't have this, so I've hacked it in
     # TODO: Make that upgrade
     response = requests.get(
@@ -63,7 +63,7 @@ def main(config: dict):
     # And my personal number for testing
     bot.listen(bot_config["test_number"])
 
-    # Register commands here. 
+    # Register commands here.
     # Not *technically* executed in order (uses async) but will be queued in order at least
     bot.register(SaveChatHistory())
     bot.register(GoatseCommand())

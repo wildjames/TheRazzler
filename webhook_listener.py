@@ -10,6 +10,7 @@ with open("webhook_secret.txt", "r") as f:
     WEBHOOK_SECRET = f.readline().strip()
 SERVICE_NAME = "therazzler.service"
 
+
 @app.route("/", methods=["POST"])
 def webhook():
     signature = request.headers.get("X-Hub-Signature-256")
@@ -29,11 +30,13 @@ def webhook():
 
     return "OK", 200
 
+
 def verify_signature(signature, payload, secret):
     mac = hmac.new(secret.encode(), payload, "sha256")
     expected_signature = f"sha256={mac.hexdigest()}"
 
     return hmac.compare_digest(expected_signature, signature)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

@@ -18,7 +18,6 @@ class ChingChangChongCommand(Command):
         self.listen = listen
 
     async def handle(self, c: Context) -> bool:
-
         if not Command.triggered(c.message, self.triggers):
             return
 
