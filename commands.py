@@ -232,7 +232,7 @@ class SaveChatHistory(Command):
         if c.message.text.strip() in ["￼", ""]:
             return
 
-        message = parse_mentions(c, message)
+        message = parse_mentions(c, c.message.text)
 
         # Parse quotes into the chat logs
         if c.message.quote:
