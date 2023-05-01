@@ -241,7 +241,7 @@ class SaveChatHistory(Command):
             quoting = c.bot.get_contact(c.message.quoteName)
             logger.info(quote)
 
-            message = "[Quote {}] {} [End Quote]\n{}".format(quoting, quote, message)
+            message = "[Quote {}] {} [End Quote] {}".format(quoting, quote, message)
 
 
         message = "{}: {}".format(c.message.sourceName, message)
