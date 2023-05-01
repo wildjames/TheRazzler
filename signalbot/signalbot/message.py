@@ -17,6 +17,7 @@ class Message:
         timestamp: int,
         type: MessageType,
         text: str,
+        quoteName: str = None,
         quote: str = None,
         base64_attachments: list = None,
         group: str = None,
@@ -36,6 +37,7 @@ class Message:
         if self.base64_attachments is None:
             self.base64_attachments = []
         self.quote = quote
+        self.quoteName = quoteName
 
         self.group = group
 
@@ -91,7 +93,7 @@ class Message:
             group = cls._parse_group_information(raw_message["envelope"]["dataMessage"])
             reaction = cls._parse_reaction(raw_message["envelope"]["dataMessage"])
             mentions = cls._parse_mentions(raw_message["envelope"]["dataMessage"])
-            quote = cls._parse_quote(raw_message["envelope"]["dataMessage"])
+            quote, quoteName = cls._parse_quote(raw_message["envelope"]["dataMessage"])
 
         elif "typingMessage" in raw_message["envelope"]:
             action = raw_message["envelope"]["typingMessage"]["action"]
@@ -106,6 +108,7 @@ class Message:
             )
             reaction = ""
             mentions = []
+            quoteName = None
             quote = None
 
         else:
@@ -120,6 +123,7 @@ class Message:
             timestamp,
             type,
             text,
+            quoteName,
             quote,
             base64_attachments,
             group,
