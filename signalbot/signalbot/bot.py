@@ -156,6 +156,8 @@ class SignalBot:
         except FileNotFoundError:
             self.target_lookup = {}
 
+        logger.info("Loaded contacts list: {}".format(self.target_lookup))
+
     def get_contact(self, number: str) -> str:
         return self.target_lookup.get(number, number)
         
