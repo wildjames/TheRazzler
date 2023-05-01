@@ -1,6 +1,8 @@
 import json
 import logging
+import os
 import sys
+import time
 from pprint import pformat
 
 import openai
@@ -13,6 +15,22 @@ from commands import (
 )
 from gpt_interface import SignalAI
 from signalbot.signalbot import SignalBot
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
+
+class RestartHandler(FileSystemEventHandler):
+    def __init__(self, script, extensions):
+        self.script = script
+        self.extensions = extensions
+
+    def on_modified(self, event):
+        if not event.is_directory and any(
+            event.src_path.endswith(ext) for ext in self.extensions
+        ):
+            print(f"Code change detected in {event.src_path}. Restarting...")
+            os.execl(sys.executable, sys.executable, *sys.argv)
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -72,8 +90,28 @@ def main(config: dict):
     bot.start()
 
 
+
 if __name__ == "__main__":
-    with open("config.json", "r") as f:
-        config = json.load(f)
+    script_path = os.path.abspath(sys.argv[0])
+    # List the file extensions you want to monitor for changes
+    monitored_extensions = [".py", ".json", ".txt"]
+
+    event_handler = RestartHandler(script_path, monitored_extensions)
+
+    observer = Observer()
+    observer.schedule(event_handler, path=".", recursive=True)
+    observer.start()
+
+    try:
+        with open("config.json", "r") as f:
+            config = json.load(f)
+        main(config)
+
+    except KeyboardInterrupt:
+        observer.stop()
+
+    observer.join()
+
+if __name__ == "__main__":
 
     main(config)

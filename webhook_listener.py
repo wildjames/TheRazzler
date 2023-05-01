@@ -25,9 +25,6 @@ def webhook():
     os.chdir(repo_dir)
     subprocess.run(["git", "pull"])
 
-    # Restart the service
-    subprocess.run(["systemctl", "restart", SERVICE_NAME])
-
     return "OK", 200
 
 

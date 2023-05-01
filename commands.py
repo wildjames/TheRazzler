@@ -104,7 +104,7 @@ def get_razzle(c: Context, target_name: str = None) -> str:
     response = response.lstrip("The Razzler:").strip()
 
     # Save the response to the chat history
-    with open("razzled.txt", "a") as f:
+    with open("razzled.csv", "a") as f:
         f.write(response + "\n")
 
     # Since I dont actually receive my own message, I need to add it to the history manually
