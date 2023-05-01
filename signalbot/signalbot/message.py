@@ -172,7 +172,8 @@ class Message:
     def _parse_quote(self, message: dict) -> str:
         try:
             quote = message["quote"]["text"]
-            return quote
+            quoting = message["quote"]["authorNumber"]
+            return quoting, quote
         except Exception:
             return None
 

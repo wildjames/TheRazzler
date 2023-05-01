@@ -172,6 +172,42 @@ def get_razzle(c: Context, target_name: str = None):
     return response, image
 
 
+def parse_mentions(c: Context) -> str:
+    # Parse mentions into names
+    if len(c.message.mentions):
+        logger.info(
+            "[ParseMentions] This message has some mention in it: {c.message.mentions}"
+        )
+
+        mentions = sorted(c.message.mentions, key=lambda m: m["start"])
+        # The mentions are given as phone numbers
+        numbers = [m["number"] for m in mentions]
+        logger.info("[ParseMentions] Numbers: {}".format(numbers))
+
+        # Convert the phone numbers to names, if I know them
+        logger.info("[ParseMentions] My contacts list:")
+        logger.info(pformat(c.bot.target_lookup))
+        names = [c.bot.get_contact(num) for num in numbers]
+        logger.info("[ParseMentions] Names: {}".format(names))
+
+        # Split the message into a list of strings, and then interleave the names into it
+        broken_message = c.message.text.split("￼")
+
+        interleaved_list = interleave(broken_message, names)
+
+        # Then reform the message
+        message = "".join(interleaved_list)
+        logger.info(
+            "[ParseMentions] Parsed out the mentions into the message: {}".format(
+                message
+            )
+        )
+        return message
+
+    logger.info("[ParseMentions] Got message: {}".format(c.message.text))
+    return c.message.text
+
+
 class SaveChatHistory(Command):
     def describe(self) -> str:
         return "😤 Saves chat message to a my memory"
@@ -196,45 +232,16 @@ class SaveChatHistory(Command):
         if c.message.text.strip() in ["￼", ""]:
             return
 
-        # Parse mentions into names
-        if len(c.message.mentions):
-            logger.info(
-                "[SaveChatHistory] This message has some mention in it: {c.message.mentions}"
-            )
-
-            mentions = sorted(c.message.mentions, key=lambda m: m["start"])
-            # The mentions are given as phone numbers
-            numbers = [m["number"] for m in mentions]
-            logger.info("[SaveChatHistory] Numbers: {}".format(numbers))
-
-            # Convert the phone numbers to names, if I know them
-            logger.info("[SaveChatHistory] My contacts list:")
-            logger.info(pformat(c.bot.target_lookup))
-            names = [c.bot.get_contact(num) for num in numbers]
-            logger.info("[SaveChatHistory] Names: {}".format(names))
-
-            # Split the message into a list of strings, and then interleave the names into it
-            broken_message = c.message.text.split("￼")
-
-            interleaved_list = interleave(broken_message, names)
-
-            # Then reform the message
-            message = "".join(interleaved_list)
-            logger.info(
-                "[SaveChatHistory] Parsed out the mentions into the message: {}".format(
-                    message
-                )
-            )
-
-        else:
-            message = c.message.text
-            logger.info("[SaveChatHistory] Got message: {}".format(message))
+        message = parse_mentions(c.message.text)
 
         # Parse quotes into the chat logs
         if c.message.quote:
             logger.info("Got a quote")
-            quote = c.message.quote
+            quote = parse_mentions(c.message.quote)
+            quoting = c.bot.get_contact(c.message.quoteName)
             logger.info(quote)
+
+            message = "[Quote {}] {} [End Quote]\n{}".format(quoting, quote, message)
 
 
         message = "{}: {}".format(c.message.sourceName, message)
