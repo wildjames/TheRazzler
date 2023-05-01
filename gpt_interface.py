@@ -68,7 +68,7 @@ class SignalAI:
             max_tokens=self.max_tokens,
         )
         if self.debug:
-            logger.debug(f"Response: {response}")
+            logger.debug(f"[GPTInterface] Response: {response}")
         prompt_tokens = response.usage.prompt_tokens
         completion_tokens = response.usage.completion_tokens
         self.update_cost(prompt_tokens, completion_tokens, self.model)
@@ -109,7 +109,7 @@ class SignalAI:
             prompt_tokens * COSTS[model]["prompt"]
             + completion_tokens * COSTS[model]["completion"]
         ) / 1000
-        logger.info(f"Total running cost: ${self.total_cost:.3f}")
+        logger.info(f"[GPTInterface] Total running cost: ${self.total_cost:.3f}")
 
     def set_total_budget(self, total_budget):
         """

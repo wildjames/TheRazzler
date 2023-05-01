@@ -19,6 +19,10 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+
 class RestartHandler(FileSystemEventHandler):
     def __init__(self, script, extensions, max_restarts, time_threshold):
         self.script = script
@@ -37,18 +41,17 @@ class RestartHandler(FileSystemEventHandler):
                 self.restart_count = 0
 
             if self.restart_count < self.max_restarts:
-                print(f"Code change detected in {event.src_path}. Restarting...")
+                logger.critical(
+                    f"[WatchDog] Code change detected in {event.src_path}. Restarting..."
+                )
                 self.restart_count += 1
                 self.last_restart = current_time
                 os.execl(sys.executable, sys.executable, *sys.argv)
             else:
-                print(
-                    "Maximum restarts reached. Please wait before making more changes."
+                logger.critical(
+                    "[WatchDog] Maximum restarts reached. Please wait before making more changes."
                 )
 
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 # Register the openAI token
 with open("openai_api_token.txt", "r") as f:
@@ -68,8 +71,8 @@ def main(config: dict):
         [{"role": "user", "content": "Please respond"}]
     )
     response = response["choices"][0]["message"]["content"]
-    logger.info("Testing that we can talk to the AI:")
-    logger.info("Got the response:")
+    logger.info("[Main] Testing that we can talk to the AI:")
+    logger.info("[Main] Got the response:")
     logger.info(response)
 
     # On start, the Rizzler checks for new group chats.
@@ -81,7 +84,7 @@ def main(config: dict):
         )
     )
     groups = response.json()
-    logger.info("The Razzler is part of the following group chats:")
+    logger.info("[Main] The Razzler is part of the following group chats:")
     logger.info(pformat(groups))
 
     bot = SignalBot(bot_config)
@@ -114,7 +117,9 @@ if __name__ == "__main__":
     max_restarts = 5
     time_threshold = 60
 
-    event_handler = RestartHandler(script_path, monitored_extensions, max_restarts, time_threshold)
+    event_handler = RestartHandler(
+        script_path, monitored_extensions, max_restarts, time_threshold
+    )
 
     observer = Observer()
     observer.schedule(event_handler, path=".", recursive=True)

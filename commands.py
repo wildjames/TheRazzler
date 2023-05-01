@@ -55,11 +55,11 @@ def get_razzle(c: Context, target_name: str = None) -> str:
 
     # Check that we're in budget
     if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
-        logger.info("Exceeded budget, sending a message about that.")
+        logger.info("[Razzle] Exceeded budget, sending a message about that.")
         return "The Razzler Razzled too hard and ran out of money. Later nerds (swag) 😎"
 
     # Get the target
-    logger.info("Getting the target for the Razzler.")
+    logger.info("[Razzle] Getting the target for the Razzler.")
 
     # If I wasn't given a target, choose one at random from the message history
     # Since each sender is added to the list, this weights for more active members.
@@ -103,17 +103,16 @@ def get_razzle(c: Context, target_name: str = None) -> str:
         create_chat_message("system", prompt),
     ]
 
-    logger.info("I will send the following messages to GPT:")
+    logger.info("[Razzle] I will send the following messages to GPT:")
     for message in GPT_messages:
-        logger.info(pformat(message))
+        logger.info(f"[Razzle] - {pformat(message)}")
 
     response = mind.create_chat_completion(GPT_messages)
     response: str = response["choices"][0]["message"]["content"]
-    logger.info("came up with the response:")
-    logger.info(response)
+    logger.info(f"[Razzle] came up with the response: {response}")
 
     if not response.startswith("The Razzler:"):
-        logger.info("Response is not in the correct format, ignoring.")
+        logger.info("[Razzle] Response is not in the correct format, ignoring.")
         return ""
     response = response.lstrip("The Razzler:").strip()
 
@@ -124,7 +123,7 @@ def get_razzle(c: Context, target_name: str = None) -> str:
     # Since I dont actually receive my own message, I need to add it to the history manually
     bot = c.bot
     history_key = "chat_history: {}".format(c.message.recipient())
-    logger.info("Using history key: {}".format(history_key))
+    logger.info("[Razzle] Using history key: {}".format(history_key))
     if not bot.storage.exists(history_key):
         bot.storage.save(history_key, [])
 
@@ -134,7 +133,7 @@ def get_razzle(c: Context, target_name: str = None) -> str:
     message_history.append(message)
     c.bot.storage.save(history_key, message_history[-30:])
 
-    logger.info("Added my own message to history 🗣️ {}".format(message))
+    logger.info("[Razzle] Added my own message to history 🗣️ {}".format(message))
 
     return response
 
@@ -153,7 +152,7 @@ class SaveChatHistory(Command):
 
         bot = c.bot
         history_key = "chat_history: {}".format(c.message.recipient())
-        logger.info("Using history key: {}".format(history_key))
+        logger.info("[SaveChatHistory] Using history key: {}".format(history_key))
         if not bot.storage.exists(history_key):
             bot.storage.save(history_key, [])
 
@@ -164,19 +163,18 @@ class SaveChatHistory(Command):
             return
 
         if len(c.message.mentions):
-            logger.info("This message has some mention in it!")
-            logger.info(c.message.mentions)
+            logger.info("[SaveChatHistory] This message has some mention in it: {c.message.mentions}")
 
             mentions = sorted(c.message.mentions, key=lambda m: m["start"])
             # The mentions are given as phone numbers
             numbers = [m["number"] for m in mentions]
-            logger.info("Numbers: {}".format(numbers))
+            logger.info("[SaveChatHistory] Numbers: {}".format(numbers))
 
             # Convert the phone numbers to names, if I know them
-            logger.info("My contacts list:")
+            logger.info("[SaveChatHistory] My contacts list:")
             logger.info(pformat(c.bot.target_lookup))
             names = [c.bot.get_contact(num) for num in numbers]
-            logger.info("Names: {}".format(names))
+            logger.info("[SaveChatHistory] Names: {}".format(names))
 
             # Split the message into a list of strings, and then interleave the names into it
             broken_message = c.message.text.split("￼")
@@ -185,17 +183,17 @@ class SaveChatHistory(Command):
 
             # Then reform the message
             message = "".join(interleaved_list)
-            logger.info("Parsed out the mentions into the message: {}".format(message))
+            logger.info("[SaveChatHistory] Parsed out the mentions into the message: {}".format(message))
 
         else:
             message = c.message.text
-            logger.info("Got message: {}".format(message))
+            logger.info("[SaveChatHistory] Got message: {}".format(message))
 
         message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
         c.bot.storage.save(history_key, message_history[-30:])
 
-        logger.info("Added to history 👍")
+        logger.info("[SaveChatHistory] Added to history 👍")
 
 
 class ClearChatHistory(Command):
@@ -214,7 +212,7 @@ class ClearChatHistory(Command):
 
         bot.storage.save(history_key, [])
 
-        logger.info("Cleared history 👍")
+        logger.info("[ClearChatHistory] Cleared history 👍")
         await c.send("🧠 Cleared history - head empty - brain smooth and cute 👍")
 
 
@@ -238,7 +236,7 @@ class GoatseCommand(Command):
         )
         await c.stop_typing()
 
-        logger.info("Goatse sent ;)")
+        logger.info("[Goats] Goatse sent ;)")
         return
 
 
@@ -249,7 +247,7 @@ class RazzlerMindCommand(Command):
     async def handle(self, c: Context):
         # Technically unnecessary but I would be nervous without it
         if c.message.sourceName == "The Razzler":
-            logger.info("Ignoring message from The Razzler.")
+            logger.info("[RazzlerMind] Ignoring message from The Razzler.")
             return
 
         # See if there is a message
@@ -265,13 +263,13 @@ class RazzlerMindCommand(Command):
             mentions = c.message.mentions
             for mention in mentions:
                 logger.info(
-                    "Message with mentions:\n\n{}\n\n".format(pformat(c.message))
+                    "[RazzlerMind] Message with mentions:\n\n{}\n\n".format(pformat(c.message))
                 )
                 # IF IT AINT FOR ME, I DONT CARE
                 if mention["name"] != c.bot._phone_number:
                     continue
 
-                logger.info("This message is for me!")
+                logger.info("[RazzlerMind] This message is for me!")
 
                 await c.start_typing()
 
@@ -282,11 +280,11 @@ class RazzlerMindCommand(Command):
                     # Have we been given a target?
                     if len(c.message.mentions) > 1:
                         logger.info(
-                            "There are multiple mentions, so I will select the last one"
+                            "[RazzlerMind] There are multiple mentions, so I will select the last one"
                         )
                         target = c.message.mentions[-1]
                         target_number = target["number"]
-                        logger.info("Last mention was of {}")
+                        logger.info("[RazzlerMind] Last mention was of {}")
 
                         # Convert their phone number to a name
                         # Fall back to the sender if I don't know it
@@ -297,7 +295,7 @@ class RazzlerMindCommand(Command):
                     response = get_razzle(c, target_name=target_name)
                     await c.send(response)
                 except Exception as e:
-                    logger.exception("Error getting razzle")
+                    logger.exception("[RazzlerMind] ❗️ Error getting razzle")
 
                     # This got annoying, so I turned it off
                     # await c.send(
@@ -316,24 +314,24 @@ class RazzlerMindCommand(Command):
         # TODO: This should be more sophisticated...
         # I think maybe a cooldown threshold, and once it finishes then the next message gets a razz
         if random.random() > c.bot.mind.razzler_rate:
-            logger.info("The Razzler chose not to respond")
+            logger.info("[RazzlerMind] The Razzler chose not to respond")
             return
 
         # The razzler needs a few messages to prime it
         history_key = "chat_history: {}".format(c.message.recipient())
-        logger.info("Retreiving chat history from key: {}".format(history_key))
+        logger.info("[RazzlerMind] Retreiving chat history from key: {}".format(history_key))
         message_history = c.bot.storage.read(history_key)
         if len(message_history) < 10:
-            logger.info("Not enough messages in chat history to generate a response.")
+            logger.info("[RazzlerMind] Not enough messages in chat history to generate a response.")
             return
 
         await c.start_typing()
         try:
             response = get_razzle(c)
             if response == "":
-                raise Exception("Razzle returned empty string")
+                raise Exception("[RazzlerMind] Razzle returned empty string")
         except:
-            logger.exception("Error getting razzle")
+            logger.exception("[RazzlerMind] Error getting razzle")
             # await c.send(
             #     "", base64_attachments=[load_image(kick_sand)]
             # )
