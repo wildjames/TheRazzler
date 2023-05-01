@@ -110,7 +110,7 @@ def get_razzle(c: Context, target_name: str = None):
 
     if random.random() < c.bot.mind.razzler_image_rate:
         image_subprompt = "You should also generate a single image for your message, by describing what it should be of. "
-        image_subprompt += "An image description should be a single sentence, and must be enclosed by angular brackets, i.e. <image description string>. "
+        image_subprompt += "An image description should be a single sentence, and must be enclosed by angular brackets, i.e. <a piece of shit>. "
     else:
         image_subprompt = ""
 

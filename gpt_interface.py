@@ -94,6 +94,9 @@ class SignalAI:
         logger.info(f"[GPTInterface] Response: {response}")
         image_url = response["data"][0]["url"]
 
+        self.total_cost += COSTS["image"]["prompt"]
+        logger.info(f"[GPTInterface] Total cost: {self.total_cost}")
+
         return image_url
 
     def embedding_create(
