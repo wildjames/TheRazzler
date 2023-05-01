@@ -176,8 +176,11 @@ class SignalAI:
         float: The total cost of API calls.
         """
 
-        with open(self.total_cost_filename, "r") as f:
-            self.total_cost = json.load(f)["total_cost"]
+        try:
+            with open(self.total_cost_filename, "r") as f:
+                self.total_cost = json.load(f)["total_cost"]
+        except FileNotFoundError:
+            self.total_cost = 0
 
         return self.total_cost
 
