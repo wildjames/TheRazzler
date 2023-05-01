@@ -174,6 +174,8 @@ class SaveChatHistory(Command):
             logger.info("Numbers: {}".format(numbers))
             
             # Convert the phone numbers to names, if I know them
+            logger.info("My contacts list:")
+            logger.info(pformat(c.bot.target_lookup))
             names = [c.bot.target_lookup.get(num, num) for num in numbers]
             logger.info("Names: {}".format(names))
 
