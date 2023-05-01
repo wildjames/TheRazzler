@@ -181,7 +181,7 @@ class Message:
             quoting = message["quote"]["authorNumber"]
             return quoting, quote
         except Exception:
-            return None
+            return None, None
 
     def __str__(self):
         if self.text is None:
