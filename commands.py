@@ -65,7 +65,7 @@ def download_image_base64(url):
         return None
 
 
-def get_razzle(c: Context, target_name: str = None):
+def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
     """Return a razzle from the AI.
 
     The razz will be addressed to the target_name
@@ -108,7 +108,7 @@ def get_razzle(c: Context, target_name: str = None):
     with open(c.bot.mind.prompt_filename, "r") as f:
         prompt = f.read()
 
-    if random.random() < c.bot.mind.razzler_image_rate:
+    if random.random() < image_chance:
         image_subprompt = "You should also generate a single image for your message, by describing what it should be of. "
         image_subprompt += "An image description should be a single sentence, and must be enclosed by angular brackets, i.e. <a piece of shit>. "
     else:
@@ -400,7 +400,7 @@ class RazzlerMindCommand(Command):
 
         await c.start_typing()
         try:
-            response, image = get_razzle(c)
+            response, image = get_razzle(c, image_chance=c.bot.mind.razzler_image_rate)
             if response == "":
                 raise Exception("[RazzlerMind] Razzle returned empty string")
             if image:
