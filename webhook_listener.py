@@ -26,7 +26,7 @@ def webhook():
     subprocess.run(["git", "pull"])
 
     # Restart the service
-    subprocess.run(["sudo", "systemctl", "restart", SERVICE_NAME])
+    subprocess.run(["systemctl", "restart", SERVICE_NAME])
 
     return "OK", 200
 
