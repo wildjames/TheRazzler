@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 # Register the openAI token
-# TODO: Move to .env file
 with open("openai_api_token.txt", "r") as f:
     openai_api_token = f.readline()
 openai.api_key = openai_api_token
