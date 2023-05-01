@@ -76,7 +76,7 @@ def get_razzle(c: Context, target_name: str = None) -> str:
     if target_name is None:
         target_name = "The Razzler"
 
-    with open(c.bot.mind.prompt_file, "r") as f:
+    with open(c.bot.mind.prompt_filename, "r") as f:
         prompt = f.read()
     prompt = prompt.format(target_name)
 
