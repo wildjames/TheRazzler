@@ -111,7 +111,7 @@ def main(config: dict):
 if __name__ == "__main__":
     script_path = os.path.abspath(sys.argv[0])
     # List the file extensions you want to monitor for changes
-    monitored_extensions = [".py"]
+    monitored_extensions = [".py", ".json"]
 
     # Set maximum restarts and time threshold (in seconds)
     max_restarts = 5

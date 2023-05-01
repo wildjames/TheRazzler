@@ -14,6 +14,7 @@
         "temperature": 0.0,
         "max_tokens": 400,
         "total_budget": 10.0,
-        "razzler_rate": 0.1
+        "razzler_rate": 0.05,
+        "razzler_image_rate": 0.1
     }
 }

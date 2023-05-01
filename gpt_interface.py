@@ -41,6 +41,7 @@ class SignalAI:
     total_budget: float = 0
     debug: bool = False
     razzler_rate: float = 0.1
+    razzler_image_rate: float = 0.1
 
     def reset(self):
         self.total_prompt_tokens = 0
