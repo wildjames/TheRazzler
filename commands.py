@@ -213,7 +213,7 @@ class RazzlerMindCommand(Command):
 
         # TODO
         # Summoning is currently too abusable - people just fucking love to slam the Razzler
-        # Instead, I think we have either currency, so people get given credits every say, 5 minutes, 
+        # Instead, I think we have a currency, so people get given credits every say, 5 minutes, 
         # up to a cap. Then, summoning costs a credit. 
         # Would only need to track the credits.
         if c.bot.summonable:
