@@ -174,9 +174,11 @@ class SaveChatHistory(Command):
 
             interleaved_list = interleave(broken_message, numbers)
             message = "".join(interleaved_list)
+            logger.info("Parsed out the number into the message: {}".format(message))
         
         else:
             message = c.message.text
+            logger.info("Got message: {}".format(message))
 
         message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
