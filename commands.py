@@ -146,7 +146,7 @@ def get_razzle(c: Context, target_name: str = None):
         image_description = response[response.find("<") + 1 : response.find(">")]
         image_url = mind.create_image_completion(image_description)
         image = download_image_base64(image_url)
-        response = response.replace("<" + image_description + ">", "")
+        # response = response.replace("<" + image_description + ">", "")
     else:
         image = None
 
