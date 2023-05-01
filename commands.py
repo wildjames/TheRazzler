@@ -167,14 +167,24 @@ class SaveChatHistory(Command):
         if len(c.message.mentions):
             logger.info("This message has some mention in it!")
             logger.info(c.message.mentions)
+            
             mentions = sorted(c.message.mentions, key=lambda m: m["start"])
+            # The mentions are given as phone numbers
             numbers = [m["number"] for m in mentions]
             logger.info("Numbers: {}".format(numbers))
+            
+            # Convert the phone numbers to names, if I know them
+            names = [c.bot.target_lookup.get(num, num) for num in numbers]
+            logger.info("Names: {}".format(names))
+
+            # Split the message into a list of strings, and then interleave the names into it
             broken_message = c.message.text.split("￼")
 
             interleaved_list = interleave(broken_message, numbers)
+
+            # Then reform the message
             message = "".join(interleaved_list)
-            logger.info("Parsed out the number into the message: {}".format(message))
+            logger.info("Parsed out the mentions into the message: {}".format(message))
         
         else:
             message = c.message.text
