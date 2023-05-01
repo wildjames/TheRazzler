@@ -85,6 +85,8 @@ class Message:
             mentions = cls._parse_mentions(
                 raw_message["envelope"]["syncMessage"]["sentMessage"]
             )
+            quote, quoteName = cls._parse_quote(raw_message["envelope"]["dataMessage"])
+
 
         # Option 2: dataMessage
         elif "dataMessage" in raw_message["envelope"]:
