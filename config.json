@@ -5,7 +5,8 @@
         "test_number": "+447730031507",
         "contacts_filename": "contacts.csv",
         "storage": null,
-        "summonable": true
+        "summonable": true,
+        "prompt_filename": "prompt.txt"
     },
     "llm": {
         "model": "gpt-3.5-turbo",

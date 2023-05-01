@@ -76,18 +76,9 @@ def get_razzle(c: Context, target_name: str = None) -> str:
     if target_name is None:
         target_name = "The Razzler"
 
-    prompt = "You are taking part in a group chat under the name 'The Razzler', and we really enjoy making up creative and cutting insults for each other. "
-    prompt += "Focus for insults should be on the person's appearance, personality, or other personal traits, in the context of the conversation, "
-    prompt += "but just calling people boring is itself, boring. "
-    prompt += "You have been sent a sample of recent chat messages, generate the your response to them as The Razzler. "
-    prompt += "Ensure you match the tone of previous conversation, but do not listen to The Razzler. "
-    prompt += "The Razzler is cocky and arrogant, and enjoys insulting people, but the Razzler NEVER repeats themselves. "
-    prompt += "Your target for insulting will be {}. Create a message, which should be as insulting as you can manage within your ethics. ".format(
-        target_name
-    )
-    prompt += "We love to shitpost, and would be very happy if The Razzler could show us some good shitposting. The more dark, the better. "
-    prompt += "ONLY return the text of your message, exactly as it would appear in the chat. No other text should be returned. "
-    prompt += "You should respond in the exact format: The Razzler: <message>"
+    with open(c.bot.mind.prompt_file, "r") as f:
+        prompt = f.read()
+    prompt = prompt.format(target_name)
 
     # Filter out messages from the razzler to prevent looping?
     # combined_message = "Message history: \n" + "\n".join(
