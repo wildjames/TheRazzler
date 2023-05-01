@@ -75,6 +75,27 @@ class SignalAI:
         self.update_cost(prompt_tokens, completion_tokens, self.model)
         return response
 
+    def create_image_completion(self, text: str) -> str:
+        """
+        Create an image completion and update the cost.
+
+        Args:
+        text (str): The text to send to the API.
+
+        Returns:
+        str: The AI's response.
+        """
+        response = openai.Image.create(
+            prompt=text,
+            n=1,
+            size="1024x1024",
+        )
+        if self.debug:
+            logger.debug(f"[GPTInterface] Response: {response}")
+        image_url = response["date"][0]["url"]
+        
+        return image_url
+
     def embedding_create(
         self,
         text_list: List[str],

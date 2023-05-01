@@ -78,7 +78,13 @@ def get_razzle(c: Context, target_name: str = None) -> str:
 
     with open(c.bot.mind.prompt_filename, "r") as f:
         prompt = f.read()
-    prompt = prompt.format(target_name)
+
+    if random.random() < 1.0:
+        image_subprompt = "You may also generate a single image for your message, by describing what it should be of. An image description should be a single sentence, and must be enclosed by <>. "
+    else:
+        image_subprompt = ""
+
+    prompt = prompt.format(target_name=target_name, image_subprompt=image_subprompt)
 
     # Filter out messages from the razzler to prevent looping?
     # combined_message = "Message history: \n" + "\n".join(
@@ -106,6 +112,12 @@ def get_razzle(c: Context, target_name: str = None) -> str:
         logger.info("[Razzle] Response is not in the correct format, ignoring.")
         return ""
     response = response.lstrip("The Razzler:").strip()
+
+    if "<" in response and ">" in response:
+        logger.info("[Razzle] Response contains an image request, generating an image.")
+        image_description = response[response.find("<") + 1 : response.find(">")]
+        image = mind.create_image_completion(image_description)
+        response = response.replace("<" + image_description + ">", image)
 
     # Save the response to the chat history
     with open("razzled.csv", "a") as f:
