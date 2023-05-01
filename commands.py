@@ -144,11 +144,12 @@ class SaveChatHistory(Command):
         return "😤 Saves chat message to a my memory"
 
     async def handle(self, c: Context):
-        if not c.message.text:
-            return
-
         # Check if I need to store the contact
         c.bot.add_contact(c.message.source, c.message.sourceName)
+
+        # See if there is a message
+        if not c.message.text:
+            return
 
         bot = c.bot
         history_key = "chat_history: {}".format(c.message.recipient())

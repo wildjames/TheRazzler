@@ -12,6 +12,9 @@ from .storage import RedisStorage, InMemoryStorage
 from .context import Context
 
 
+logger = logging.getLogger(__name__)
+
+
 class SignalBot:
     target_lookup: dict = None
 
@@ -67,7 +70,7 @@ class SignalBot:
             self.storage = RedisStorage(self._redis_host, self._redis_port)
         except Exception:
             self.storage = InMemoryStorage()
-            logging.warning(
+            logger.warning(
                 "[Bot] Could not initialize Redis. In-memory storage will be used. "
                 "Restarting will delete the storage!"
             )
@@ -99,13 +102,13 @@ class SignalBot:
             self.listenGroup(group_id, internal_id)
             return
 
-        logging.warning(
+        logger.warning(
             "[Bot] Can't listen for user/group because input does not look valid"
         )
 
     def listenUser(self, phone_number: str):
         if not self._is_phone_number(phone_number):
-            logging.warning(
+            logger.warning(
                 "[Bot] Can't listen for user because phone number does not look valid"
             )
             return
@@ -114,7 +117,7 @@ class SignalBot:
 
     def listenGroup(self, group_id: str, internal_id: str):
         if not (self._is_group_id(group_id) and self._is_internal_id(internal_id)):
-            logging.warning(
+            logger.warning(
                 "[Bot] Can't listen for group because group id and "
                 "internal id do not look valid"
             )
@@ -160,6 +163,8 @@ class SignalBot:
         if self.get_contact(number) == name:
             return
         
+        logger.info(f"Adding contact {name} with number {number}")
+        
         self.target_lookup[number] = name
         with open(self.contacts_file, "w") as f:
             json.dump(self.target_lookup, f)
@@ -193,7 +198,7 @@ class SignalBot:
         )
         resp_payload = await resp.json()
         timestamp = resp_payload["timestamp"]
-        logging.info(f"[Bot] New message {timestamp} sent:\n{text}")
+        logger.info(f"[Bot] New message {timestamp} sent:\n{text}")
 
         if listen:
             if self._is_phone_number(receiver):
@@ -226,7 +231,7 @@ class SignalBot:
         target_author = message.source
         timestamp = message.timestamp
         await self._signal.react(recipient, emoji, target_author, timestamp)
-        logging.info(f"[Bot] New reaction: {emoji}")
+        logger.info(f"[Bot] New reaction: {emoji}")
 
     async def start_typing(self, receiver: str):
         receiver = self._resolve_receiver(receiver)
@@ -263,10 +268,10 @@ class SignalBot:
             c.cancel()
 
     async def _produce(self, name: int) -> None:
-        logging.info(f"[Bot] Producer #{name} started")
+        logger.info(f"[Bot] Producer #{name} started")
         try:
             async for raw_message in self._signal.receive():
-                logging.info(f"[Raw Message] {raw_message}")
+                logger.info(f"[Raw Message] {raw_message}")
 
                 try:
                     message = Message.parse(raw_message)
@@ -298,7 +303,7 @@ class SignalBot:
             await self._q.put((command, message, time.perf_counter()))
 
     async def _consume(self, name: int) -> None:
-        logging.info(f"[Bot] Consumer #{name} started")
+        logger.info(f"[Bot] Consumer #{name} started")
         while True:
             try:
                 await self._consume_new_item(name)
@@ -308,14 +313,14 @@ class SignalBot:
     async def _consume_new_item(self, name: int) -> None:
         command, message, t = await self._q.get()
         now = time.perf_counter()
-        logging.info(f"[Bot] Consumer #{name} got new job in {now-t:0.5f} seconds")
+        logger.info(f"[Bot] Consumer #{name} got new job in {now-t:0.5f} seconds")
 
         # handle Command
         try:
             context = Context(self, message)
             await command.handle(context)
         except Exception as e:
-            logging.error(f"[{command.__class__.__name__}] Error: {e}")
+            logger.error(f"[{command.__class__.__name__}] Error: {e}")
             raise e
 
         # done
