@@ -470,7 +470,6 @@ class ConfigEditorCommand(Command):
     def describe(self) -> str:
         return "Tweak the Razzler configuration on the fly"
 
-    @triggered("config")
     async def handle(self, c: Context):
         if c.message.source != c.bot.admin:
             logger.info("Non-admin tried to change configuration: {}".format(c.message.sourceName))
@@ -480,7 +479,10 @@ class ConfigEditorCommand(Command):
             logger.info("Message didn't contain any text")
             return
 
-        text = c.message.text.lower()
+        if not c.message.text.lower().startswith("config"):
+            return
+
+        text = c.message.text.lower()[6:].strip()
         command = text.split(" ")[0]
         args = text.split(" ")[1:]
 
