@@ -64,10 +64,11 @@ class SaveChatHistory(Command):
 
         # if c.bot.mind.last_profiled >= c.bot.chat_history_length:
         if c.bot.mind.last_profiled >= 5:
+            logger.info("[SaveChatHistory] Profiling...")
             c.bot.mind.last_profiled = 0
             
             # TODO: Crude. Could be better
-            active_names = [name for name in c.bot.contacts.keys() if name in "".join(message_history)]
+            active_names = [name for name in c.bot.target_lookup.values() if name in "".join(message_history)]
             for name in active_names:
                 create_character_profile(c, name)
 
