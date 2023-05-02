@@ -7,12 +7,12 @@ from pprint import pformat
 
 import openai
 import requests
-from TheRizzler.commands import ReportRazzlerSpendingCommand
 from commands import (
     ClearChatHistory,
     GoatseCommand,
     RazzlerMindCommand,
     ReportRazzlerPromptCommand,
+    ReportRazzlerSpendingCommand,
     SaveChatHistory,
 )
 from gpt_interface import SignalAI
