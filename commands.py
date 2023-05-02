@@ -364,3 +364,20 @@ class ConfigEditorCommand(Command):
         response: str = response["choices"][0]["message"]["content"]
         await c.send(response)
         await c.stop_typing()
+
+
+class RazzlerNaughtyNiceCommand(Command):
+    def describe(self) -> str:
+        return "Allow pleb users to toggle naughty/nice prompts"
+    
+    @triggered("naughtynice")
+    async def handle(self, c: Context):
+        if c.bot.mind.prompt_filename == "naughty.txt":
+            c.bot.mind.prompt_filename = "nice.txt"
+        elif c.bot.mind.prompt_filename == "nice.txt":
+            c.bot.mind.prompt_filename = "naughty.txt"
+        else:
+            await c.send("Sorry, can't toggle naughtyniceness while I am using a custom prompt!")
+
+        await c.send(f"Current prompt filename: {c.bot.mind.prompt_filename}")
+        
