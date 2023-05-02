@@ -34,6 +34,9 @@ class SignalAI:
     temperature: float = 0.0
     max_tokens: int = 400
     prompt_filename: str = "prompt.txt"
+    prompt_profile_filename: str = "prompt_profile.txt"
+    profile_fname_template: str = "profile_{}.txt"
+    last_profiled: int = 0
     total_cost_filename: str = "total_cost.txt"
 
     total_prompt_tokens: int = 0

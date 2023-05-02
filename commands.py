@@ -5,7 +5,7 @@ from pprint import pformat
 
 from gpt_interface import create_chat_message
 from signalbot.signalbot import Command, Context, triggered
-from command_utils import get_razzle, parse_mentions
+from command_utils import get_razzle, parse_mentions, create_character_profile
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +61,14 @@ class SaveChatHistory(Command):
         message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
         c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length:])
+
+        if c.bot.mind.last_profiled >= c.bot.chat_history_length:
+            c.bot.mind.last_profiled = 0
+            
+            # TODO: Crude. Could be better
+            active_names = [name for name in c.bot.contacts.keys() if name in "".join(message_history)]
+            for name in active_names:
+                create_character_profile(c, name)
 
         logger.info("[SaveChatHistory] Added to history 👍")
 

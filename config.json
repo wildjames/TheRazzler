@@ -7,11 +7,12 @@
         "contacts_filename": "contacts.csv",
         "storage": null,
         "summonable": true,
-        "prompt_filename": "prompt.txt",
         "can_hear_self": false,
         "chat_history_length": 50
     },
     "llm": {
+        "prompt_filename": "prompt.txt",
+        "prompt_profile_filename": "prompt_profile.txt",
         "model": "gpt-3.5-turbo",
         "debug": true,
         "temperature": 0.95,

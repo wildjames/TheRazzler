@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import logging
+import os
 import random
 import time
 from pprint import pformat
@@ -206,3 +207,71 @@ def parse_mentions(c: Context, message_string: str) -> str:
 
     logger.info("[ParseMentions] Got message: {}".format(message_string))
     return message_string
+
+
+def create_character_profile(c: Context, target: str):
+    """Take a target name and create a character profile for them based on the current chat history."""
+    profile_fname = c.bot.mind.profile_fname_template.format(target.replace(" ", "_"))
+
+    # Get the chat history from storage
+    history_key = "chat_history: {}".format(c.message.recipient())
+    if c.bot.storage.exists(history_key):
+        message_history = c.bot.storage.read(history_key)
+    else:
+        message_history = []
+
+    # Retrieve the AI
+    mind: SignalAI = c.bot.mind
+
+    # Check that we're in budget
+    if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
+        logger.info("[CharacterProfile] Exceeded budget, sending a message about that.")
+        return 
+
+    # Get the target
+    logger.info("[CharacterProfile] Getting the target for the Razzler.")
+
+    with open(c.bot.mind.prompt_profile_filename, "r") as f:
+        prompt = f.read()
+
+    prompt = prompt.format(target_name=target)
+
+    # Filter out messages from the razzler to prevent looping?
+    combined_message = "Message history: \n" + "\n".join(
+        [m for m in message_history if not m.startswith("The Razzler")]
+    )
+    combined_message = "Message history: \n" + "\n".join(message_history)
+
+    # There is a 4097 token limit. This doesn't actually work since tokens can be (and usually are) a few characters, but it's a start.
+    combined_message = combined_message[-4000 - c.bot.mind.max_tokens :]
+
+    GPT_messages = [
+        create_chat_message("user", combined_message),
+        create_chat_message("system", prompt),
+    ]
+
+    if os.path.exists(profile_fname):
+        with open(profile_fname, "r") as f:
+            profile = f.read()
+        profile = "Pre-existing character profile: \n" + profile
+        GPT_messages.append(create_chat_message("system", profile))
+
+    logger.info("[CharacterProfile] I will send the following messages to GPT:")
+    for message in GPT_messages:
+        logger.info(f"[CharacterProfile] - {pformat(message)}")
+
+    t0 = time.time()
+    while time.time() - t0 < 10:
+        try:
+            response = mind.create_chat_completion(GPT_messages)
+            response: str = response["choices"][0]["message"]["content"]
+            break
+        except:
+            logger.info("[CharacterProfile] GPT timed out, trying again.")
+
+    logger.info(f"[CharacterProfile] came up with the response: {response}")
+
+    response = response.strip()
+    # Save the response to the chat history
+    with open(profile_fname, "w") as f:
+        f.write(response + "\n")
