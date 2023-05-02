@@ -457,7 +457,7 @@ class ReportRazzlerSpendingCommand(Command):
 
         spending = c.bot.mind.get_total_cost()
         await c.send(
-            "So far, I've spent ${} of James's money. You're welcome, fucker".format(
+            "So far, I've spent ${:.2f} of James's money. You're welcome, fucker".format(
                 spending
             )
         )
