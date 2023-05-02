@@ -31,6 +31,8 @@ class SignalBot:
         """
         self.config = config
 
+        self.admin = config["admin"]
+
         self.commands = []  # populated by .register()
 
         self.user_chats = set()  # populated by .listenUser()

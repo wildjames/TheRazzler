@@ -3,6 +3,7 @@
         "phone_number": "+447743992060",
         "signal_service": "127.0.0.1:8080",
         "test_number": "+447730031507",
+        "admin": "+447730031507",
         "contacts_filename": "contacts.csv",
         "storage": null,
         "summonable": true,

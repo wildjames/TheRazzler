@@ -362,7 +362,11 @@ class RazzlerMindCommand(Command):
                             target_number, target_name
                         )
 
-                    response, image = get_razzle(c, target_name=target_name, image_chance=c.bot.mind.razzler_image_rate/2.0)
+                    response, image = get_razzle(
+                        c,
+                        target_name=target_name,
+                        image_chance=c.bot.mind.razzler_image_rate / 2.0,
+                    )
                     if image:
                         attach = [image]
                     else:
@@ -440,3 +444,22 @@ class ReportRazzlerPromptCommand(Command):
         await c.send(prompt)
 
         logger.info("[ReportRazzlerPrompt] Prompt reported")
+
+
+class ReportRazzlerSpendingCommand(Command):
+    def describe(self) -> str:
+        return "📝 Report the spending from the Razzler"
+
+    @triggered("report_spending")
+    async def handle(self, c: Context):
+        if c.message.source != c.bot.admin:
+            return
+
+        spending = c.bot.mind.get_total_cost()
+        await c.send(
+            "So far, I've spent ${} of James's money. You're welcome, fucker".format(
+                spending
+            )
+        )
+
+        logger.info("[ReportRazzlerSpending] Spending reported")

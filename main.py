@@ -7,6 +7,7 @@ from pprint import pformat
 
 import openai
 import requests
+from TheRizzler.commands import ReportRazzlerSpendingCommand
 from commands import (
     ClearChatHistory,
     GoatseCommand,
@@ -103,6 +104,7 @@ def main(config: dict):
     # Not *technically* executed in order (uses async) but will be queued in order at least
     bot.register(SaveChatHistory())
     bot.register(ReportRazzlerPromptCommand())
+    bot.register(ReportRazzlerSpendingCommand())
     bot.register(GoatseCommand())
     bot.register(RazzlerMindCommand())
     bot.register(ClearChatHistory())
