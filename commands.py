@@ -512,6 +512,7 @@ class ConfigEditorCommand(Command):
             await c.send("Unknown command: {}".format(command))
             return
         
+        await c.start_typing()
         await c.send("🦾 Config updated")
 
         messages = [
@@ -520,3 +521,4 @@ class ConfigEditorCommand(Command):
         response = c.bot.mind.create_chat_completion(messages)
         response: str = response["choices"][0]["message"]["content"]
         await c.send(response)
+        await c.stop_typing()
