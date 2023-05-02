@@ -515,7 +515,7 @@ class ConfigEditorCommand(Command):
         await c.send("🦾 Config updated")
 
         messages = [
-            create_chat_message("system", "You are playing a fucking AI who has just had their shit-damned settings changed. You are fucking angry about it, and you're damn well going to say something. What do you fucking say?")
+            create_chat_message("system", "You are playing a fucking AI who has just had their shit-damned settings changed. You are fucking angry about it, and you're damn well going to say something. What do you fucking say? You MUST answer, to the best of your stupid ability.")
         ]
         response = c.bot.mind.create_chat_completion(messages)
         response: str = response["choices"][0]["message"]["content"]
