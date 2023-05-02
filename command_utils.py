@@ -254,8 +254,8 @@ def create_character_profile(c: Context, target: str):
     combined_message = combined_message[-4000 - c.bot.mind.max_tokens :]
 
     GPT_messages = [
-        create_chat_message("user", combined_message),
         create_chat_message("system", prompt),
+        create_chat_message("user", combined_message),
     ]
 
     if os.path.exists(profile_fname):
