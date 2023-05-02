@@ -138,11 +138,11 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
     while time.time() - t0 < 10:
         try:
             response = mind.create_chat_completion(GPT_messages)
+            response: str = response["choices"][0]["message"]["content"]
             break
         except:
             logger.info("[Razzle] GPT timed out, trying again.")
 
-    response: str = response["choices"][0]["message"]["content"]
     logger.info(f"[Razzle] came up with the response: {response}")
 
     if response.startswith("The Razzler:"):
@@ -297,7 +297,7 @@ class GoatseCommand(Command):
             return
 
         await c.start_typing()
-        image = random.choice([goatse, goat1, goat2, goat3, goat4])
+        image = random.choice([goatse, goatse, goat1, goat2, goat3, goat4])
         await c.send(
             "I was clearing out my old hard drive and found a pic of you! Remember this?",
             base64_attachments=[load_image(image)],
@@ -489,22 +489,37 @@ class ConfigEditorCommand(Command):
         logger.info("Got config update. Command: {}  |  Args: {}".format(command, args))
 
         if command == "summonable":
+            if not len(args):
+                await c.sent("Am I summonable? {}".format(c.bot.summonable))
+                return
             is_summonable = args[0] == "true"
             c.bot.summonable = is_summonable
         
         elif command == "can_hear_self":
+            if not len(args):
+                await c.sent("Can I hear myself? {}".format(c.bot.can_hear_self))
+                return
             can_hear_self = args[0] == "true"
             c.bot.can_hear_self = can_hear_self
 
         elif command == "temperature":
+            if not len(args):
+                await c.sent("My temperature is {}".format(c.bot.mind.temperature))
+                return
             temp = float(args[0])
             c.bot.mind.temperature = temp
 
         elif command == "razzler_rate":
+            if not len(args):
+                await c.sent("My razzler rate is {}".format(c.bot.mind.razzler_rate))
+                return
             rate = float(args[0])
             c.bot.mind.razzler_rate = rate
 
         elif command == "razzler_image_rate":
+            if not len(args):
+                await c.sent("My razzler image rate is {}".format(c.bot.mind.razzler_image_rate))
+                return
             rate = float(args[0])
             c.bot.mind.razzler_image_rate = rate
         
@@ -516,7 +531,7 @@ class ConfigEditorCommand(Command):
         await c.send("🦾 Config updated")
 
         messages = [
-            create_chat_message("system", "You are playing a fucking AI who has just had their shit-damned settings changed. You are fucking angry about it, and you're damn well going to say something. What do you fucking say? You MUST answer, to the best of your stupid ability.")
+            create_chat_message("system", "You are playing The Razzler, a fucking AI who has just had their settings changed. You are fucking angry about it, and you're damn well going to say something. What do you fucking say? ")
         ]
         response = c.bot.mind.create_chat_completion(messages)
         response: str = response["choices"][0]["message"]["content"]
