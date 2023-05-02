@@ -280,7 +280,7 @@ class SignalBot:
         logger.info(f"[Bot] Producer #{name} started")
         try:
             async for raw_message in self._signal.receive():
-                logger.info(f"[Raw Message] {raw_message}")
+                logger.debug(f"[Raw Message] {raw_message}")
 
                 try:
                     message = Message.parse(raw_message)

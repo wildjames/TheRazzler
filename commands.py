@@ -145,10 +145,10 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
     response: str = response["choices"][0]["message"]["content"]
     logger.info(f"[Razzle] came up with the response: {response}")
 
-    if not response.startswith("The Razzler:"):
-        logger.info("[Razzle] Response is not in the correct format, ignoring.")
-        return ""
-    response = response.lstrip("The Razzler:").strip()
+    if response.startswith("The Razzler:"):
+        response = response[13:]
+
+    response = response.strip()
 
     if "<" in response and ">" in response:
         logger.info("[Razzle] Response contains an image request, generating an image.")
@@ -456,10 +456,62 @@ class ReportRazzlerSpendingCommand(Command):
             return
 
         spending = c.bot.mind.get_total_cost()
+        budget = c.bot.mind.total_budget
         await c.send(
-            "So far, I've spent ${:.2f} of James's money. You're welcome, fucker".format(
-                spending
+            "So far, I've spent ${:.2f} of James's money (my pocket money is ${:.2f} for the month). You're welcome, fucker".format(
+                spending, budget
             )
         )
 
         logger.info("[ReportRazzlerSpending] Spending reported")
+
+
+class ConfigEditorCommand(Command):
+    def describe(self) -> str:
+        return "Tweak the Razzler configuration on the fly"
+
+    @triggered("config")
+    async def handle(self, c: Context):
+        if c.message.source != c.bot.admin:
+            return
+        if not c.message.text:
+            return
+
+        text = c.message.text.lower()
+        command = text.split(" ")[0]
+        args = text.split(" ")[1:]
+
+        logger.info("Got config update. Command: {}  |  Args: {}".format(command, args))
+
+        if command == "summonable":
+            is_summonable = args[0] == "true"
+            c.bot.summonable = is_summonable
+        
+        elif command == "can_hear_self":
+            can_hear_self = args[0] == "true"
+            c.bot.can_hear_self = can_hear_self
+
+        elif command == "temperature":
+            temp = float(args[0])
+            c.bot.mind.temperature = temp
+
+        elif command == "razzler_rate":
+            rate = float(args[0])
+            c.bot.mind.razzler_rate = rate
+
+        elif command == "razzler_image_rate":
+            rate = float(args[0])
+            c.bot.mind.razzler_image_rate = rate
+        
+        else:
+            await c.send("Unknown command: {}".format(command))
+            return
+        
+        await c.send("🦾 Config updated")
+
+        messages = [
+            create_chat_message("system", "You are playing a fucking AI who has just had their shit-damned settings changed. You are fucking angry about it, and you're damn well going to say something. What do you fucking say?")
+        ]
+        response = c.bot.mind.create_chat_completion(messages)
+        response: str = response["choices"][0]["message"]["content"]
+        await c.send(response)
