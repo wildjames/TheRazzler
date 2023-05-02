@@ -44,6 +44,7 @@ class SignalBot:
 
         self.summonable = config["summonable"]
         self.can_hear_self = config["can_hear_self"]
+        self.chat_history_length = config["chat_history_length"]
 
         # Required
         self._init_api()

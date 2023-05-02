@@ -259,7 +259,7 @@ class SaveChatHistory(Command):
 
         message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
-        c.bot.storage.save(history_key, message_history[-30:])
+        c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length:])
 
         logger.info("[SaveChatHistory] Added to history 👍")
 
@@ -490,35 +490,35 @@ class ConfigEditorCommand(Command):
 
         if command == "summonable":
             if not len(args):
-                await c.sent("Am I summonable? {}".format(c.bot.summonable))
+                await c.send("Am I summonable? {}".format(c.bot.summonable))
                 return
             is_summonable = args[0] == "true"
             c.bot.summonable = is_summonable
         
         elif command == "can_hear_self":
             if not len(args):
-                await c.sent("Can I hear myself? {}".format(c.bot.can_hear_self))
+                await c.send("Can I hear myself? {}".format(c.bot.can_hear_self))
                 return
             can_hear_self = args[0] == "true"
             c.bot.can_hear_self = can_hear_self
 
         elif command == "temperature":
             if not len(args):
-                await c.sent("My temperature is {}".format(c.bot.mind.temperature))
+                await c.send("My temperature is {}".format(c.bot.mind.temperature))
                 return
             temp = float(args[0])
             c.bot.mind.temperature = temp
 
         elif command == "razzler_rate":
             if not len(args):
-                await c.sent("My razzler rate is {}".format(c.bot.mind.razzler_rate))
+                await c.send("My razzler rate is {}".format(c.bot.mind.razzler_rate))
                 return
             rate = float(args[0])
             c.bot.mind.razzler_rate = rate
 
         elif command == "razzler_image_rate":
             if not len(args):
-                await c.sent("My razzler image rate is {}".format(c.bot.mind.razzler_image_rate))
+                await c.send("My razzler image rate is {}".format(c.bot.mind.razzler_image_rate))
                 return
             rate = float(args[0])
             c.bot.mind.razzler_image_rate = rate
