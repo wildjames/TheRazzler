@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import random
 from pprint import pformat
 
@@ -334,6 +335,20 @@ class ConfigEditorCommand(Command):
                 return
             rate = float(args[0])
             c.bot.mind.razzler_image_rate = rate
+
+        elif command == "prompt_filename":
+            if not len(args):
+                await c.send("My prompt filename is {}".format(c.bot.mind.prompt_filename))
+                return
+            filename = args[0]
+            if not filename.endswith(".txt"):
+                filename += ".txt"
+
+            if os.path.exists(filename):
+                await c.send("Changing prompt filename to {}".format(filename))
+                c.bot.mind.prompt_filename = filename
+            else:
+                await c.send("Couldn't find file {}".format(filename))
         
         else:
             await c.send("Unknown command: {}".format(command))
