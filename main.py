@@ -13,6 +13,7 @@ from commands import (
     RazzlerMindCommand,
     ReportRazzlerPromptCommand,
     ReportRazzlerSpendingCommand,
+    ConfigEditorCommand,
     SaveChatHistory,
 )
 from gpt_interface import SignalAI
@@ -103,6 +104,7 @@ def main(config: dict):
     # Register commands here.
     # Not *technically* executed in order (uses async) but will be queued in order at least
     bot.register(SaveChatHistory())
+    bot.register(ConfigEditorCommand())
     bot.register(ReportRazzlerPromptCommand())
     bot.register(ReportRazzlerSpendingCommand())
     bot.register(GoatseCommand())

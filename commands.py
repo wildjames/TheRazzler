@@ -473,8 +473,11 @@ class ConfigEditorCommand(Command):
     @triggered("config")
     async def handle(self, c: Context):
         if c.message.source != c.bot.admin:
+            logger.info("Non-admin tried to change configuration: {}".format(c.message.sourceName))
             return
+
         if not c.message.text:
+            logger.info("Message didn't contain any text")
             return
 
         text = c.message.text.lower()
