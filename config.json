@@ -11,7 +11,7 @@
         "chat_history_length": 50
     },
     "llm": {
-        "prompt_filename": "prompt.txt",
+        "prompt_filename": "naughty.txt",
         "prompt_profile_filename": "prompt_profile.txt",
         "model": "gpt-3.5-turbo",
         "debug": true,
