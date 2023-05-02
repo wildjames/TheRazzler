@@ -71,6 +71,8 @@ class SaveChatHistory(Command):
             active_names = [name for name in c.bot.target_lookup.values() if name in "".join(message_history)]
             for name in active_names:
                 create_character_profile(c, name)
+        else:
+            c.bot.mind.last_profiled += 1
 
         logger.info("[SaveChatHistory] Added to history 👍")
 
