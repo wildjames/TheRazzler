@@ -117,6 +117,14 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
         create_chat_message("system", prompt),
     ]
 
+    # Recall from long-term memory
+    profile_fname = c.bot.mind.profile_fname_template.format(target_name.replace(" ", "_"))
+    if os.path.exists(profile_fname):
+        with open(profile_fname, "r") as f:
+            profile = f.read()
+        profile = "Pre-existing character profile of target: \n" + profile
+        GPT_messages.insert(0, create_chat_message("system", profile))
+
     logger.info("[Razzle] I will send the following messages to GPT:")
     for message in GPT_messages:
         logger.info(f"[Razzle] - {pformat(message)}")
