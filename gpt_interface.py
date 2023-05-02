@@ -90,15 +90,18 @@ class SignalAI:
         Returns:
         str: The AI's response.
         """
-        response = openai.Image.create(
-            prompt=text,
-            n=1,
-            size="1024x1024",
-        )
-        logger.info(f"[GPTInterface] Response: {response}")
-        image_url = response["data"][0]["url"]
+        try:
+            response = openai.Image.create(
+                prompt=text,
+                n=1,
+                size="1024x1024",
+            )
+            logger.info(f"[GPTInterface] Response: {response}")
+            image_url = response["data"][0]["url"]
 
-        self.update_cost(1, 0, "image")
+            self.update_cost(1, 0, "image")
+        except:
+            image_url = "https://cdn.openart.ai/stable_diffusion/42f53e9b69daeaef0d2e7b29f9cb938e2e385496_2000x2000.webp"
 
         return image_url
 
