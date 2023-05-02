@@ -372,6 +372,7 @@ class RazzlerNaughtyNiceCommand(Command):
     
     @triggered("naughtynice")
     async def handle(self, c: Context):
+        logger.info("[NaughtyNice] Toggling Naughtyness")
         if c.bot.mind.prompt_filename == "naughty.txt":
             c.bot.mind.prompt_filename = "nice.txt"
         elif c.bot.mind.prompt_filename == "nice.txt":
@@ -380,4 +381,3 @@ class RazzlerNaughtyNiceCommand(Command):
             await c.send("Sorry, can't toggle naughtyniceness while I am using a custom prompt!")
 
         await c.send(f"Current prompt filename: {c.bot.mind.prompt_filename}")
-        
