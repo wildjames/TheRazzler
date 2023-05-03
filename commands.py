@@ -67,18 +67,19 @@ class SaveChatHistory(Command):
             logger.info("[SaveChatHistory] Profiling...")
             c.bot.mind.last_profiled = 0
 
-            # TODO: Crude. Could be better
             active_names = [
                 name
                 for name in c.bot.target_lookup.values()
                 if name in "".join(message_history)
             ]
+
             # call create_character_profile on each name in active_names in parallel, using async
             tasks = [
-                asyncio.create_task(create_character_profile(c.bot, name))
+                asyncio.create_task(create_character_profile(c, name))
                 for name in active_names
             ]
             await asyncio.gather(*tasks)
+            
             logger.info("[SaveChatHistory] Done profiling 👍")
         else:
             c.bot.mind.last_profiled += 1
@@ -160,7 +161,7 @@ class RazzlerProfileCommand(Command):
             for name in c.bot.target_lookup.values()
             if name in "".join(message_history)
         ]
-        logger.info("[Pr] Creating profiles on: {}".format(active_names))
+        logger.info("[ManualProfiling] Creating profiles on: {}".format(active_names))
         # call create_character_profile on each name in active_names in parallel, using async
         tasks = [
             asyncio.create_task(create_character_profile(c, name))
