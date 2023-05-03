@@ -381,3 +381,24 @@ class RazzlerNaughtyNiceCommand(Command):
             await c.send("Sorry, can't toggle naughtyniceness while I am using a custom prompt!")
 
         await c.send(f"Current prompt filename: {c.bot.mind.prompt_filename}")
+
+
+class RazzlerReportProfileCommand(Command):
+    def describe(self) -> str:
+        return "Let people get their character profile"
+    
+    @triggered("report_profile")
+    async def handle(self, c: Context):
+        target_name = c.message.sourceName
+
+        # Recall from long-term memory
+        profile_fname = c.bot.mind.profile_fname_template.format(target_name.replace(" ", "_"))
+        if os.path.exists(profile_fname):
+            with open(profile_fname, "r") as f:
+                profile = f.read()
+
+            await c.send("Here's what I know about {}".format(target_name))
+            await c.send(profile)
+
+        else:
+            await c.send("Sorry, I don't know who you are :(")
