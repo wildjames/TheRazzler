@@ -144,15 +144,14 @@ class RazzlerProfileCommand(Command):
             )
             return
 
-        bot = c.bot
         history_key = "chat_history: {}".format(c.message.recipient())
-        logger.info("[SaveChatHistory] Using history key: {}".format(history_key))
-        if not bot.storage.exists(history_key):
-            bot.storage.save(history_key, [])
+        logger.info("[ManualProfiling] Using history key: {}".format(history_key))
+        if not c.bot.storage.exists(history_key):
+            c.bot.storage.save(history_key, [])
 
-        message_history = bot.storage.read(history_key)
+        message_history = c.bot.storage.read(history_key)
 
-        logger.info("[SaveChatHistory] Profiling...")
+        logger.info("[ManualProfiling] Profiling...")
         c.bot.mind.last_profiled = 0
 
         # TODO: Crude. Could be better
@@ -161,13 +160,14 @@ class RazzlerProfileCommand(Command):
             for name in c.bot.target_lookup.values()
             if name in "".join(message_history)
         ]
+        logger.info("[Pr] Creating profiles on: {}".format(active_names))
         # call create_character_profile on each name in active_names in parallel, using async
         tasks = [
             asyncio.create_task(create_character_profile(c.bot, name))
             for name in active_names
         ]
         await asyncio.gather(*tasks)
-        logger.info("[SaveChatHistory] Done profiling 👍")
+        logger.info("[ManualProfiling] Done profiling 👍")
 
 
 class RazzlerMindCommand(Command):
