@@ -248,7 +248,7 @@ async def create_character_profile(c: Context, target: str):
 
     # Filter out messages from the razzler to prevent looping?
     combined_message = "Message history: \n" + "\n".join(
-        [m for m in message_history if not m.startswith("The Razzler")]
+        [m for m in message_history if not "The Razzler: " in m]
     )
     combined_message = "Message history: \n" + "\n".join(message_history)
 
