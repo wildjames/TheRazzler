@@ -296,7 +296,9 @@ class SignalBot:
 
         except ReceiveMessagesError as e:
             # TODO: retry strategy
-            raise SignalBotError(f"Cannot receive messages: {e}")
+            # raise SignalBotError(f"Cannot receive messages: {e}")
+            logger.error(f"[Bot] Cannot receive messages: {e}")
+            pass
 
     def _should_react(self, message: Message) -> bool:
         group = message.group
