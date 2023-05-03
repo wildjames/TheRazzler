@@ -79,7 +79,7 @@ class SaveChatHistory(Command):
                 for name in active_names
             ]
             await asyncio.gather(*tasks)
-            
+
             logger.info("[SaveChatHistory] Done profiling 👍")
         else:
             c.bot.mind.last_profiled += 1
@@ -137,13 +137,13 @@ class RazzlerProfileCommand(Command):
     
     @triggered("create_profiles")
     async def handle(self, c: Context):
-        if c.message.source != c.bot.admin:
-            logger.info(
-                "[ManualProfiling] Non-admin tried to trigger character profiles: {}".format(
-                    c.message.sourceName
-                )
-            )
-            return
+        # if c.message.source != c.bot.admin:
+        #     logger.info(
+        #         "[ManualProfiling] Non-admin tried to trigger character profiles: {}".format(
+        #             c.message.sourceName
+        #         )
+        #     )
+        #     return
 
         history_key = "chat_history: {}".format(c.message.recipient())
         logger.info("[ManualProfiling] Using history key: {}".format(history_key))
