@@ -145,6 +145,8 @@ class RazzlerProfileCommand(Command):
         #     )
         #     return
 
+        await c.start_typing()
+
         history_key = "chat_history: {}".format(c.message.recipient())
         logger.info("[ManualProfiling] Using history key: {}".format(history_key))
         if not c.bot.storage.exists(history_key):
@@ -169,6 +171,9 @@ class RazzlerProfileCommand(Command):
         ]
         await asyncio.gather(*tasks)
         logger.info("[ManualProfiling] Done profiling 👍")
+
+        await c.send("I have updated my profiles on everyone 🫦")
+        await c.stop_typing()
 
 
 class RazzlerMindCommand(Command):
