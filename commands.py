@@ -73,8 +73,13 @@ class SaveChatHistory(Command):
                 for name in c.bot.target_lookup.values()
                 if name in "".join(message_history)
             ]
-            for name in active_names:
-                create_character_profile(c, name)
+            # call create_character_profile on each name in active_names in parallel, using async
+            tasks = [
+                asyncio.create_task(create_character_profile(c.bot, name))
+                for name in active_names
+            ]
+            await asyncio.gather(*tasks)
+            logger.info("[SaveChatHistory] Done profiling 👍")
         else:
             c.bot.mind.last_profiled += 1
 
