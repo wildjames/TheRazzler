@@ -219,7 +219,7 @@ def parse_mentions(c: Context, message_string: str) -> str:
     return message_string
 
 
-def create_character_profile(c: Context, target: str):
+async def create_character_profile(c: Context, target: str):
     """Take a target name and create a character profile for them based on the current chat history."""
     profile_fname = c.bot.mind.profile_fname_template.format(target.replace(" ", "_"))
 
