@@ -14,6 +14,7 @@ from commands import (
     ReportRazzlerPromptCommand,
     ReportRazzlerSpendingCommand,
     ConfigEditorCommand,
+    RazzlerReportProfileCommand,
     RazzlerNaughtyNiceCommand,
     SaveChatHistory,
 )
@@ -110,6 +111,7 @@ def main(config: dict):
     bot.register(ReportRazzlerPromptCommand())
     bot.register(ReportRazzlerSpendingCommand())
     bot.register(GoatseCommand())
+    bot.register(RazzlerReportProfileCommand())
     bot.register(RazzlerMindCommand())
     bot.register(ClearChatHistory())
 
