@@ -129,6 +129,7 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
     for message in GPT_messages:
         logger.info(f"[Razzle] - {pformat(message)}")
 
+    # Send the messages to GPT. Wrap this in a timeout loop to prevent hanging.
     t0 = time.time()
     while time.time() - t0 < 10:
         try:
@@ -145,6 +146,7 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
 
     response = response.strip()
 
+    # Check if the response contains an image request. If it does, generate an image.
     if "<" in response and ">" in response:
         logger.info("[Razzle] Response contains an image request, generating an image.")
         image_description = response[response.find("<") + 1 : response.find(">")]
@@ -174,7 +176,7 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
 
         message = "{}: {}".format("The Razzler", response)
         message_history.append(message)
-        c.bot.storage.save(history_key, message_history[-30:])
+        c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length:])
 
         logger.info("[Razzle] Added my own message to history 🗣️ {}".format(message))
 

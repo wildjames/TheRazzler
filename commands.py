@@ -61,14 +61,18 @@ class SaveChatHistory(Command):
 
         message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
-        c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length:])
+        c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length :])
 
-        if c.bot.mind.last_profiled >= c.bot.chat_history_length//2:
+        if c.bot.mind.last_profiled >= c.bot.chat_history_length // 2:
             logger.info("[SaveChatHistory] Profiling...")
             c.bot.mind.last_profiled = 0
-            
+
             # TODO: Crude. Could be better
-            active_names = [name for name in c.bot.target_lookup.values() if name in "".join(message_history)]
+            active_names = [
+                name
+                for name in c.bot.target_lookup.values()
+                if name in "".join(message_history)
+            ]
             for name in active_names:
                 create_character_profile(c, name)
         else:
@@ -292,7 +296,11 @@ class ConfigEditorCommand(Command):
             return
 
         if c.message.source != c.bot.admin:
-            logger.info("Non-admin tried to change configuration: {}".format(c.message.sourceName))
+            logger.info(
+                "Non-admin tried to change configuration: {}".format(
+                    c.message.sourceName
+                )
+            )
             return
 
         text = c.message.text.lower()[6:].strip()
@@ -301,13 +309,22 @@ class ConfigEditorCommand(Command):
 
         logger.info("Got config update. Command: {}  |  Args: {}".format(command, args))
 
+        commands = [
+            "summonable",
+            "can_hear_self",
+            "temperature",
+            "razzler_rate",
+            "razzler_image_rate",
+            "prompt_filename",
+        ]
+
         if command == "summonable":
             if not len(args):
                 await c.send("Am I summonable? {}".format(c.bot.summonable))
                 return
             is_summonable = args[0] == "true"
             c.bot.summonable = is_summonable
-        
+
         elif command == "can_hear_self":
             if not len(args):
                 await c.send("Can I hear myself? {}".format(c.bot.can_hear_self))
@@ -331,14 +348,18 @@ class ConfigEditorCommand(Command):
 
         elif command == "razzler_image_rate":
             if not len(args):
-                await c.send("My razzler image rate is {}".format(c.bot.mind.razzler_image_rate))
+                await c.send(
+                    "My razzler image rate is {}".format(c.bot.mind.razzler_image_rate)
+                )
                 return
             rate = float(args[0])
             c.bot.mind.razzler_image_rate = rate
 
         elif command == "prompt_filename":
             if not len(args):
-                await c.send("My prompt filename is {}".format(c.bot.mind.prompt_filename))
+                await c.send(
+                    "My prompt filename is {}".format(c.bot.mind.prompt_filename)
+                )
                 return
             filename = args[0]
             if not filename.endswith(".txt"):
@@ -349,16 +370,23 @@ class ConfigEditorCommand(Command):
                 c.bot.mind.prompt_filename = filename
             else:
                 await c.send("Couldn't find file {}".format(filename))
-        
+
         else:
-            await c.send("Unknown command: {}".format(command))
+            await c.send(
+                "Unknown command: {}\nPossible Commands: {}".format(
+                    command, ", ".join(commands)
+                )
+            )
             return
-        
+
         await c.start_typing()
         await c.send("🦾 Config updated")
 
         messages = [
-            create_chat_message("system", "You are playing The Razzler, a fucking AI who has just had their settings changed. You are fucking angry about it, and you're damn well going to say something. What do you fucking say? ")
+            create_chat_message(
+                "system",
+                "You are playing The Razzler, a fucking AI who has just had their settings changed. You are fucking angry about it, and you're damn well going to say something. What do you fucking say? ",
+            )
         ]
         response = c.bot.mind.create_chat_completion(messages)
         response: str = response["choices"][0]["message"]["content"]
@@ -369,7 +397,7 @@ class ConfigEditorCommand(Command):
 class RazzlerNaughtyNiceCommand(Command):
     def describe(self) -> str:
         return "Allow pleb users to toggle naughty/nice prompts"
-    
+
     @triggered("naughtynice")
     async def handle(self, c: Context):
         logger.info("[NaughtyNice] Toggling Naughtyness")
@@ -378,7 +406,9 @@ class RazzlerNaughtyNiceCommand(Command):
         elif c.bot.mind.prompt_filename == "nice.txt":
             c.bot.mind.prompt_filename = "naughty.txt"
         else:
-            await c.send("Sorry, can't toggle naughtyniceness while I am using a custom prompt!")
+            await c.send(
+                "Sorry, can't toggle naughtyniceness while I am using a custom prompt!"
+            )
 
         await c.send(f"Current prompt filename: {c.bot.mind.prompt_filename}")
 
@@ -386,13 +416,15 @@ class RazzlerNaughtyNiceCommand(Command):
 class RazzlerReportProfileCommand(Command):
     def describe(self) -> str:
         return "Let people get their character profile"
-    
+
     @triggered("report_profile")
     async def handle(self, c: Context):
         target_name = c.message.sourceName
 
         # Recall from long-term memory
-        profile_fname = c.bot.mind.profile_fname_template.format(target_name.replace(" ", "_"))
+        profile_fname = c.bot.mind.profile_fname_template.format(
+            target_name.replace(" ", "_")
+        )
         if os.path.exists(profile_fname):
             with open(profile_fname, "r") as f:
                 profile = f.read()
