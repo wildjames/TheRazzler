@@ -163,7 +163,7 @@ class RazzlerProfileCommand(Command):
         logger.info("[Pr] Creating profiles on: {}".format(active_names))
         # call create_character_profile on each name in active_names in parallel, using async
         tasks = [
-            asyncio.create_task(create_character_profile(c.bot, name))
+            asyncio.create_task(create_character_profile(c, name))
             for name in active_names
         ]
         await asyncio.gather(*tasks)
