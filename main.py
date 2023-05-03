@@ -17,6 +17,7 @@ from commands import (
     RazzlerReportProfileCommand,
     RazzlerNaughtyNiceCommand,
     SaveChatHistory,
+    RazzlerProfileCommand,
 )
 from gpt_interface import SignalAI
 from signalbot.signalbot import SignalBot
@@ -111,6 +112,7 @@ def main(config: dict):
     bot.register(ReportRazzlerPromptCommand())
     bot.register(ReportRazzlerSpendingCommand())
     bot.register(GoatseCommand())
+    bot.register(RazzlerProfileCommand())
     bot.register(RazzlerReportProfileCommand())
     bot.register(RazzlerMindCommand())
     bot.register(ClearChatHistory())
