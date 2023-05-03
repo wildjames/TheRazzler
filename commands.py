@@ -53,11 +53,11 @@ class SaveChatHistory(Command):
         # Parse quotes into the chat logs
         if c.message.quote:
             logger.info("Got a quote")
-            quote = parse_mentions(c, c.message.quote)
-            quoting = c.bot.get_contact(c.message.quoteName)
-            logger.info(quote)
+            quote = parse_mentions(c, c.message.quoteName)
+            quoting = c.bot.get_contact(c.message.quote)
 
             message = "[Quote {}] {} [End Quote] {}".format(quoting, quote, message)
+            logger.info("[SaveChatHistory] Quote detected. Message is now: {}".format(message))
 
         message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
