@@ -233,16 +233,15 @@ class RazzlerMindCommand(Command):
                         )
                         target = c.message.mentions[-1]
                         target_number = target["number"]
-                        logger.info("[RazzlerMind] Last mention was of {}")
-
-                        # Convert their phone number to a name
                         # Fall back to the sender if I don't know it
                         target_name = c.bot.target_lookup.get(
                             target_number, target_name
                         )
+                        logger.info("[RazzlerMind] Last mention was of {}".format(target))
 
                         response, image = get_razzle(
                             c,
+                            target_name=target_name,
                             image_chance=c.bot.mind.razzler_image_rate / 2.0,
                         )
 
