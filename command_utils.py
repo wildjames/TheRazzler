@@ -240,6 +240,9 @@ def get_reply(c: Context, image_chance: float = 0.0):
         if name in "".join(message_history)
     ]
     for name in active_names:
+        if name == "The Razzler":
+            continue
+        
         logger.info(f"[RazzleReply] Found active name: {name}")
         profile_fname = c.bot.mind.profile_fname_template.format(name.replace(" ", "_"))
         if os.path.exists(profile_fname):
