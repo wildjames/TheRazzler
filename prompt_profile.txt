@@ -5,7 +5,7 @@ Your response must only contain a character profile of the target, with no other
 Then the new prompt should look something like:
 "<target> is tall. They have red hair"
 
-Profiles should be given in the following format:
+Profiles should be factual, and given in the following format:
 Physical Characteristics: <text>
 Personality Traits: <text>
 Relationships: <text>
