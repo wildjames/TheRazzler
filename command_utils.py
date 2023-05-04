@@ -241,7 +241,7 @@ def get_reply(c: Context, image_chance: float = 0.0):
     ]
     for name in active_names:
         logger.info(f"[RazzleReply] Found active name: {name}")
-        profile_fname = c.bot.mind.profile_fname_template.format(name)
+        profile_fname = c.bot.mind.profile_fname_template.format(name.replace(" ", "_"))
         if os.path.exists(profile_fname):
             with open(profile_fname, "r") as f:
                 profile = f.read()
