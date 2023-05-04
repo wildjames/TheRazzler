@@ -240,10 +240,14 @@ class RazzlerMindCommand(Command):
                         target_name = c.bot.target_lookup.get(
                             target_number, target_name
                         )
+                    
+                    elif len(c.message.mentions) == 1:
+                        logger.info(
+                            "[RazzlerMind] There is one mention, so I will target the sender"
+                        )
 
                         response, image = get_razzle(
                             c,
-                            target_name=target_name,
                             image_chance=c.bot.mind.razzler_image_rate / 2.0,
                         )
 
@@ -254,6 +258,10 @@ class RazzlerMindCommand(Command):
                             )
                         )
                         response, image = get_reply(c, image_chance=c.bot.mind.razzler_image_rate / 2.0)
+                    else:
+                        logger.warning("❌ This situation is odd - if we are able to reach this then I should implement a fix")
+                        response = "James fucked up and you need to let him know. This is my error message!"
+                        image = None
 
                     if image:
                         attach = [image]
