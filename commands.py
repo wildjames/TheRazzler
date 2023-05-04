@@ -240,6 +240,14 @@ class RazzlerMindCommand(Command):
                         target_name = c.bot.target_lookup.get(
                             target_number, target_name
                         )
+
+                    elif message_text.replace("The Razzler", "").strip():
+                        logger.info(
+                            "[RazzlerMind] I've been asked a question: {}".format(
+                                message_text
+                            )
+                        )
+                        response, image = get_reply(c, image_chance=c.bot.mind.razzler_image_rate / 2.0)
                     
                     elif len(c.message.mentions) == 1:
                         logger.info(
@@ -251,13 +259,6 @@ class RazzlerMindCommand(Command):
                             image_chance=c.bot.mind.razzler_image_rate / 2.0,
                         )
 
-                    elif message_text.replace("The Razzler", "").strip():
-                        logger.info(
-                            "[RazzlerMind] I've been asked a question: {}".format(
-                                message_text
-                            )
-                        )
-                        response, image = get_reply(c, image_chance=c.bot.mind.razzler_image_rate / 2.0)
                     else:
                         logger.warning("❌ This situation is odd - if we are able to reach this then I should implement a fix")
                         response = "James fucked up and you need to let him know. This is my error message!"
