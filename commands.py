@@ -4,9 +4,14 @@ import os
 import random
 from pprint import pformat
 
+from command_utils import (
+    create_character_profile,
+    get_razzle,
+    get_reply,
+    parse_mentions,
+)
 from gpt_interface import create_chat_message
 from signalbot.signalbot import Command, Context, triggered
-from command_utils import get_razzle, parse_mentions, create_character_profile
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +62,9 @@ class SaveChatHistory(Command):
             quoting = c.bot.get_contact(c.message.quote)
 
             message = "[Quote {}] {} [End Quote] {}".format(quoting, quote, message)
-            logger.info("[SaveChatHistory] Quote detected. Message is now: {}".format(message))
+            logger.info(
+                "[SaveChatHistory] Quote detected. Message is now: {}".format(message)
+            )
 
         message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
@@ -131,12 +138,12 @@ class GoatseCommand(Command):
 
         logger.info("[Goats] Goatse sent ;)")
         return
-    
+
 
 class RazzlerProfileCommand(Command):
     def describe(self) -> str:
         return "Manually trigger character profiling"
-    
+
     @triggered("create_profiles")
     async def handle(self, c: Context):
         # if c.message.source != c.bot.admin:
@@ -217,6 +224,8 @@ class RazzlerMindCommand(Command):
                     # Default to the summoner
                     target_name = c.message.sourceName
 
+                    message_text = parse_mentions(c, c.message.text)
+
                     # Have we been given a target?
                     if len(c.message.mentions) > 1:
                         logger.info(
@@ -232,11 +241,20 @@ class RazzlerMindCommand(Command):
                             target_number, target_name
                         )
 
-                    response, image = get_razzle(
-                        c,
-                        target_name=target_name,
-                        image_chance=c.bot.mind.razzler_image_rate / 2.0,
-                    )
+                        response, image = get_razzle(
+                            c,
+                            target_name=target_name,
+                            image_chance=c.bot.mind.razzler_image_rate / 2.0,
+                        )
+                        
+                    elif message_text.replace("The Razzler", "").strip():
+                        logger.info(
+                            "[RazzlerMind] I've been asked a question: {}".format(
+                                message_text
+                            )
+                        )
+                        response, image = get_reply(c, message_text)
+
                     if image:
                         attach = [image]
                     else:
@@ -425,9 +443,7 @@ class ConfigEditorCommand(Command):
                 await c.send("Couldn't find file {}".format(filename))
 
         elif command == "help":
-            await c.send(
-                "Possible Commands: {}".format(", ".join(commands))
-            )
+            await c.send("Possible Commands: {}".format(", ".join(commands)))
             return
 
         else:
@@ -495,11 +511,10 @@ class RazzlerReportProfileCommand(Command):
             await c.send("Sorry, I don't know who you are :(")
 
 
-
 class HelpCommand(Command):
     def describe(self) -> str:
         return "Send the available commands"
-    
+
     @triggered("razzler_help")
     async def handle(self, c: Context):
         await c.start_typing()

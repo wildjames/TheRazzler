@@ -183,6 +183,118 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
     return response, image
 
 
+def get_reply(c: Context, image_chance: float = 0.0):
+    """Return a razzle from the AI.
+
+    The razz will be addressed to the target_name
+
+    Returns a string, containing the message body, and an optional image encoded in base64, or None if no image was made.
+    """
+    # Get the chat history from storage
+    history_key = "chat_history: {}".format(c.message.recipient())
+    if c.bot.storage.exists(history_key):
+        message_history = c.bot.storage.read(history_key)
+    else:
+        message_history = []
+
+    # Retrieve the AI
+    mind: SignalAI = c.bot.mind
+
+    # Check that we're in budget
+    if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
+        logger.info("[RazzleReply] Exceeded budget, sending a message about that.")
+        return "The Razzler Razzled too hard and ran out of money. Later nerds (swag) 😎"
+
+    # Get the target
+    logger.info("[RazzleReply] Getting the target for the Razzler.")
+
+    with open("reply_prompt.txt", "r") as f:
+        prompt = f.read()
+
+    if random.random() < image_chance:
+        image_subprompt = "You should also generate a single image for your message, by describing what it should be of. "
+        image_subprompt += "An image description should be a single sentence, and must be enclosed by angular brackets, i.e. <a piece of shit>. "
+    else:
+        image_subprompt = ""
+
+    prompt = prompt.format(image_subprompt=image_subprompt)
+
+    # Filter out messages from the razzler to prevent looping?
+    # combined_message = "Message history: \n" + "\n".join(
+    #     [m for m in message_history if not m.startswith("The Razzler")]
+    # )
+    combined_message = "Message history: \n" + "\n".join(message_history)
+
+    # There is a 4097 token limit. This doesn't actually work since tokens can be (and usually are) a few characters, but it's a start.
+    combined_message = combined_message[-4000 - c.bot.mind.max_tokens :]
+
+    GPT_messages = [
+        create_chat_message("user", combined_message),
+        create_chat_message("system", prompt),
+    ]
+
+    # Recall from long-term memory
+    profile_fname = c.bot.mind.profile_fname_template.format("The_Razzler")
+    if os.path.exists(profile_fname):
+        with open(profile_fname, "r") as f:
+            profile = f.read()
+        profile = "Character profile of the Razzler: \n" + profile
+        GPT_messages.insert(0, create_chat_message("system", profile))
+
+    logger.info("[RazzleReply] I will send the following messages to GPT:")
+    for message in GPT_messages:
+        logger.info(f"[RazzleReply] - {pformat(message)}")
+
+    # Send the messages to GPT. Wrap this in a timeout loop to prevent hanging.
+    t0 = time.time()
+    while time.time() - t0 < 10:
+        try:
+            response = mind.create_chat_completion(GPT_messages)
+            response: str = response["choices"][0]["message"]["content"]
+            break
+        except:
+            logger.info("[RazzleReply] GPT timed out, trying again.")
+
+    logger.info(f"[RazzleReply] came up with the response: {response}")
+
+    if response.startswith("The Razzler:"):
+        response = response[13:]
+
+    response = response.strip()
+
+    # Check if the response contains an image request. If it does, generate an image.
+    if "<" in response and ">" in response:
+        logger.info("[RazzleReply] Response contains an image request, generating an image.")
+        image_description = response[response.find("<") + 1 : response.find(">")]
+        try:
+            image_url = mind.create_image_completion(image_description)
+            image = download_image_base64(image_url)
+            # response = response.replace("<" + image_description + ">", "")
+        except:
+            logger.info("[RazzleReply] Image generation failed, ignoring.")
+            image = None
+    else:
+        image = None
+
+    # Since I dont actually receive my own message, I need to add it to the history manually
+    bot = c.bot
+    if bot.can_hear_self:
+        history_key = "chat_history: {}".format(c.message.recipient())
+        logger.info("[RazzleReply] Using history key: {}".format(history_key))
+        if not bot.storage.exists(history_key):
+            bot.storage.save(history_key, [])
+
+        message_history = bot.storage.read(history_key)
+
+        message = "{}: {}".format("The Razzler", response)
+        message_history.append(message)
+        c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length:])
+
+        logger.info("[RazzleReply] Added my own message to history 🗣️ {}".format(message))
+
+    return response, image
+
+
 def parse_mentions(c: Context, message_string: str) -> str:
     # Parse mentions into names
     if len(c.message.mentions):
