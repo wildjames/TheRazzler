@@ -241,6 +241,21 @@ def get_reply(c: Context, image_chance: float = 0.0):
         profile = "Character profile of the Razzler: \n" + profile
         GPT_messages.insert(0, create_chat_message("system", profile))
 
+    
+    active_names = [
+        name
+        for name in c.bot.target_lookup.values()
+        if name in "".join(message_history)
+    ]
+    for name in active_names:
+        profile_fname = c.bot.mind.profile_fname_template.format(name)
+        if os.path.exists(profile_fname):
+            with open(profile_fname, "r") as f:
+                profile = f.read()
+            profile = "Character profile of {}: \n".format(name) + profile
+            GPT_messages.insert(0, create_chat_message("system", profile))
+
+
     logger.info("[RazzleReply] I will send the following messages to GPT:")
     for message in GPT_messages:
         logger.info(f"[RazzleReply] - {pformat(message)}")
