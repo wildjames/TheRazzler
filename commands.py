@@ -253,7 +253,7 @@ class RazzlerMindCommand(Command):
                                 message_text
                             )
                         )
-                        response, image = get_reply(cimage_chance=c.bot.mind.razzler_image_rate / 2.0)
+                        response, image = get_reply(c, image_chance=c.bot.mind.razzler_image_rate / 2.0)
 
                     if image:
                         attach = [image]
