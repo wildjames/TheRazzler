@@ -241,6 +241,11 @@ class RazzlerMindCommand(Command):
                             target_number, target_name
                         )
 
+                        response, image = get_razzle(
+                            c,
+                            image_chance=c.bot.mind.razzler_image_rate / 2.0,
+                        )
+
                     elif message_text.replace("The Razzler", "").strip():
                         logger.info(
                             "[RazzlerMind] I've been asked a question: {}".format(
