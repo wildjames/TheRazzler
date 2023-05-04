@@ -7,7 +7,7 @@
         "contacts_filename": "contacts.csv",
         "storage": null,
         "summonable": true,
-        "can_hear_self": false,
+        "can_hear_self": true,
         "chat_history_length": 50
     },
     "llm": {
