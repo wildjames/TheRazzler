@@ -246,14 +246,14 @@ class RazzlerMindCommand(Command):
                             target_name=target_name,
                             image_chance=c.bot.mind.razzler_image_rate / 2.0,
                         )
-                        
+
                     elif message_text.replace("The Razzler", "").strip():
                         logger.info(
                             "[RazzlerMind] I've been asked a question: {}".format(
                                 message_text
                             )
                         )
-                        response, image = get_reply(c, message_text)
+                        response, image = get_reply(cimage_chance=c.bot.mind.razzler_image_rate / 2.0)
 
                     if image:
                         attach = [image]
