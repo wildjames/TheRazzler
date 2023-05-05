@@ -139,11 +139,12 @@ class SignalAI:
         """
         self.total_prompt_tokens += prompt_tokens
         self.total_completion_tokens += completion_tokens
-        self.total_cost += (
+        this_cost = (
             prompt_tokens * COSTS[model]["prompt"]
             + completion_tokens * COSTS[model]["completion"]
         ) / 1000
-        logger.info(f"[GPTInterface] Total running cost: ${self.total_cost:.3f} out of a budget of ${self.total_budget:.3f}")
+        self.total_cost += this_cost
+        logger.info(f"[GPTInterface] OpenAI call cost ${this_cost:.3f}. Total running cost: ${self.total_cost:.3f} out of a budget of ${self.total_budget:.3f}")
         with open(self.total_cost_filename, "w") as f:
             json.dump({"total_cost": self.total_cost}, f)
 
