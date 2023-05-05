@@ -235,14 +235,15 @@ def get_reply(c: Context, image_chance: float = 0.0):
 
     # Get profiles of people present in the chat history
     active_names = [
-        name
-        for name in c.bot.target_lookup.values()
-        if name in "".join(message_history)
+        c.bot.get_contact(c.message.source)
+        # name
+        # for name in c.bot.target_lookup.values()
+        # if name in "".join(message_history)
     ]
     for name in active_names:
         if name == "The Razzler":
             continue
-        
+
         logger.info(f"[RazzleReply] Found active name: {name}")
         profile_fname = c.bot.mind.profile_fname_template.format(name.replace(" ", "_"))
         if os.path.exists(profile_fname):
