@@ -59,6 +59,7 @@ class SignalAI:
     def create_chat_completion(
         self,
         messages: list,  # type: ignore
+        model: str = None,
     ) -> str:
         """
         Create a chat completion and update the cost.
@@ -70,8 +71,10 @@ class SignalAI:
         Returns:
         str: The AI's response.
         """
+        if model is None:
+            model = self.model
         response = openai.ChatCompletion.create(
-            model=self.model,
+            model=model,
             messages=messages,
             temperature=self.temperature,
             max_tokens=self.max_tokens,
