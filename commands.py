@@ -242,7 +242,7 @@ class RazzlerMindCommand(Command):
                         response, image = get_razzle(
                             c,
                             target_name=target_name,
-                            image_chance=c.bot.mind.razzler_image_rate / 2.0,
+                            image_chance=c.bot.mind.razzler_image_rate,
                         )
 
                     elif message_text.replace("The Razzler", "").strip():
@@ -251,7 +251,7 @@ class RazzlerMindCommand(Command):
                                 message_text
                             )
                         )
-                        response, image = get_reply(c, image_chance=c.bot.mind.razzler_image_rate / 2.0)
+                        response, image = get_reply(c, image_chance=c.bot.mind.razzler_image_rate)
                     
                     elif len(c.message.mentions) == 1:
                         logger.info(
@@ -260,7 +260,7 @@ class RazzlerMindCommand(Command):
 
                         response, image = get_razzle(
                             c,
-                            image_chance=c.bot.mind.razzler_image_rate / 2.0,
+                            image_chance=c.bot.mind.razzler_image_rate,
                         )
 
                     else:
