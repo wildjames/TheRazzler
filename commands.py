@@ -70,7 +70,7 @@ class SaveChatHistory(Command):
         message_history.append(message)
         c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length :])
 
-        if c.bot.mind.last_profiled >= c.bot.chat_history_length // 2:
+        if c.bot.mind.last_profiled >= c.bot.chat_history_length:
             logger.info("[SaveChatHistory] Profiling...")
             c.bot.mind.last_profiled = 0
 
