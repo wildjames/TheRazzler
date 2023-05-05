@@ -400,6 +400,7 @@ class ConfigEditorCommand(Command):
             "razzler_rate",
             "razzler_image_rate",
             "prompt_filename",
+            "model",
         ]
 
         if command == "summonable":
@@ -415,6 +416,19 @@ class ConfigEditorCommand(Command):
                 return
             can_hear_self = args[0] == "true"
             c.bot.can_hear_self = can_hear_self
+
+        elif command == "model":
+            if not len(args):
+                await c.send("My model is {}".format(c.bot.mind.model))
+                return
+            model = args[0]
+            models = ["gpt-3.5-turbo", "gpt-4"]
+            if model not in models:
+                await c.send(
+                    "Invalid model. Valid models are: {}".format(", ".join(models))
+                )
+                return
+            c.bot.mind.model = model
 
         elif command == "temperature":
             if not len(args):
