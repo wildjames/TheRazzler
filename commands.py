@@ -237,7 +237,9 @@ class RazzlerMindCommand(Command):
                         target_name = c.bot.target_lookup.get(
                             target_number, target_name
                         )
-                        logger.info("[RazzlerMind] Last mention was of {}".format(target))
+                        logger.info(
+                            "[RazzlerMind] Last mention was of {}".format(target)
+                        )
 
                         response, image = get_razzle(
                             c,
@@ -251,8 +253,10 @@ class RazzlerMindCommand(Command):
                                 message_text
                             )
                         )
-                        response, image = get_reply(c, image_chance=c.bot.mind.razzler_image_rate)
-                    
+                        response, image = get_reply(
+                            c, image_chance=c.bot.mind.razzler_image_rate
+                        )
+
                     elif len(c.message.mentions) == 1:
                         logger.info(
                             "[RazzlerMind] There is one mention, so I will target the sender"
@@ -264,7 +268,9 @@ class RazzlerMindCommand(Command):
                         )
 
                     else:
-                        logger.warning("❌ This situation is odd - if we are able to reach this then I should implement a fix")
+                        logger.warning(
+                            "❌ This situation is odd - if we are able to reach this then I should implement a fix"
+                        )
                         response = "James fucked up and you need to let him know. This is my error message!"
                         image = None
 
@@ -327,6 +333,15 @@ class RazzlerMindCommand(Command):
 
         await c.send(response, base64_attachments=attach)
         await c.stop_typing()
+
+        # Randomly change state
+        if random.random() < 0.5:
+            logger.info("[NaughtyNice] Toggling Naughtyness")
+            if c.bot.mind.prompt_filename == "naughty.txt":
+                c.bot.mind.prompt_filename = "nice.txt"
+            elif c.bot.mind.prompt_filename == "nice.txt":
+                c.bot.mind.prompt_filename = "naughty.txt"
+
         return
 
 
