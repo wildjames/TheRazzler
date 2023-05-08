@@ -214,7 +214,7 @@ class RazzlerProfileCommand(Command):
 
         logger.info("[ManualProfiling] Creating profile on: {}".format(target_name))
         # call create_character_profile on each name in target_name in parallel, using async
-        create_character_profile(c, target_name)
+        await create_character_profile(c, target_name)
         logger.info("[ManualProfiling] Done profiling 👍")
 
         await c.send(f"I have updated my profiles on {target_name} 🫦")
