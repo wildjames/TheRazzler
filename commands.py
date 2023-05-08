@@ -224,7 +224,7 @@ class RazzlerMindCommand(Command):
                 if mention["name"] != c.bot._phone_number:
                     continue
 
-                logger.info("[RazzlerMind] This message is for me!")
+                logger.info(f"[RazzlerMind] This message is for me! Sent by {c.message.source}")
 
                 await c.start_typing()
 
