@@ -270,6 +270,8 @@ class RazzlerMindCommand(Command):
                         logger.info(
                             "[RazzlerMind] There is one mention, so I will target the sender"
                         )
+                        target_name = c.bot.get_contact(c.message.source)
+                        logger.info(f"[RazzlerMind] Razzling {target_name}")
 
                         response, image = get_razzle(
                             c,
