@@ -199,6 +199,14 @@ class RazzlerMindCommand(Command):
         if not c.message.text:
             return
 
+        # Randomly change state
+        if random.random() < 0.5:
+            logger.info("[NaughtyNice] Toggling Naughtyness")
+            if c.bot.mind.prompt_filename == "naughty.txt":
+                c.bot.mind.prompt_filename = "nice.txt"
+            elif c.bot.mind.prompt_filename == "nice.txt":
+                c.bot.mind.prompt_filename = "naughty.txt"
+
         # TODO
         # Summoning is currently too abusable - people just fucking love to slam the Razzler
         # Instead, I think we have a currency, so people get given credits every say, 5 minutes,
@@ -333,14 +341,6 @@ class RazzlerMindCommand(Command):
 
         await c.send(response, base64_attachments=attach)
         await c.stop_typing()
-
-        # Randomly change state
-        if random.random() < 0.5:
-            logger.info("[NaughtyNice] Toggling Naughtyness")
-            if c.bot.mind.prompt_filename == "naughty.txt":
-                c.bot.mind.prompt_filename = "nice.txt"
-            elif c.bot.mind.prompt_filename == "nice.txt":
-                c.bot.mind.prompt_filename = "naughty.txt"
 
         return
 
