@@ -140,7 +140,7 @@ class GoatseCommand(Command):
         return
 
 
-class RazzlerProfileCommand(Command):
+class RazzlerProfilesCommand(Command):
     def describe(self) -> str:
         return "Manually trigger character profiling"
 
@@ -184,6 +184,42 @@ class RazzlerProfileCommand(Command):
         await c.send("I have updated my profiles on everyone 🫦")
         await c.stop_typing()
 
+class RazzlerProfileCommand(Command):
+    def describe(self) -> str:
+        return "Manually trigger character profiling"
+
+    @triggered("update_profile")
+    async def handle(self, c: Context):
+        # if c.message.source != c.bot.admin:
+        #     logger.info(
+        #         "[ManualProfiling] Non-admin tried to trigger character profiles: {}".format(
+        #             c.message.sourceName
+        #         )
+        #     )
+        #     return
+
+        await c.start_typing()
+
+        history_key = "chat_history: {}".format(c.message.recipient())
+        logger.info("[ManualProfiling] Using history key: {}".format(history_key))
+        if not c.bot.storage.exists(history_key):
+            c.bot.storage.save(history_key, [])
+
+        message_history = c.bot.storage.read(history_key)
+
+        logger.info("[ManualProfiling] Profiling...")
+        c.bot.mind.last_profiled = 0
+
+        target_name = c.bot.get_contact(c.message.source)
+
+        logger.info("[ManualProfiling] Creating profile on: {}".format(target_name))
+        # call create_character_profile on each name in target_name in parallel, using async
+        create_character_profile(c, target_name)
+        logger.info("[ManualProfiling] Done profiling 👍")
+
+        await c.send("I have updated my profiles on everyone 🫦")
+        await c.stop_typing()
+
 
 class RazzlerMindCommand(Command):
     def describe(self) -> str:
@@ -208,7 +244,7 @@ class RazzlerMindCommand(Command):
                 c.bot.mind.prompt_filename = "naughty.txt"
             logger.info(f"[NaughtyNice] Current prompt filename: {c.bot.mind.prompt_filename}")
 
-        # TODO
+        # TODO move this to its own command
         # Summoning is currently too abusable - people just fucking love to slam the Razzler
         # Instead, I think we have a currency, so people get given credits every say, 5 minutes,
         # up to a cap. Then, summoning costs a credit.
@@ -573,6 +609,7 @@ class HelpCommand(Command):
             "create_profiles": "Manually trigger the Razzler to update profiles",
             "naughtynice": "Toggle naughty/nice prompts",
             "report_prompt": "Get the current prompt",
+            "update_profile": "Manually trigger the Razzler to update your profile",
             "clear_history": "Clear the current conversation history",
             "goat": "Get a goat",
         }
