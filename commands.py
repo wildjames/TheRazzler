@@ -206,6 +206,7 @@ class RazzlerMindCommand(Command):
                 c.bot.mind.prompt_filename = "nice.txt"
             elif c.bot.mind.prompt_filename == "nice.txt":
                 c.bot.mind.prompt_filename = "naughty.txt"
+            logger.info(f"[NaughtyNice] Current prompt filename: {c.bot.mind.prompt_filename}")
 
         # TODO
         # Summoning is currently too abusable - people just fucking love to slam the Razzler
