@@ -217,7 +217,7 @@ class RazzlerProfileCommand(Command):
         create_character_profile(c, target_name)
         logger.info("[ManualProfiling] Done profiling 👍")
 
-        await c.send("I have updated my profiles on everyone 🫦")
+        await c.send(f"I have updated my profiles on {target_name} 🫦")
         await c.stop_typing()
 
 
