@@ -236,7 +236,7 @@ class RazzlerMindCommand(Command):
             return
 
         # Randomly change state
-        if random.random() < 0.5:
+        if random.random() < 0.2:
             logger.info("[NaughtyNice] Toggling Naughtyness")
             if c.bot.mind.prompt_filename == "naughty.txt":
                 c.bot.mind.prompt_filename = "nice.txt"
