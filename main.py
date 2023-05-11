@@ -9,22 +9,22 @@ import openai
 import requests
 from commands import (
     ClearChatHistory,
+    ConfigEditorCommand,
     GoatseCommand,
+    HelpCommand,
     RazzlerMindCommand,
+    RazzlerNaughtyNiceCommand,
+    RazzlerProfileCommand,
+    RazzlerProfilesCommand,
+    RazzlerReportProfileCommand,
     ReportRazzlerPromptCommand,
     ReportRazzlerSpendingCommand,
-    ConfigEditorCommand,
-    RazzlerReportProfileCommand,
-    RazzlerNaughtyNiceCommand,
     SaveChatHistory,
-    RazzlerProfileCommand,
-    HelpCommand,
 )
 from gpt_interface import SignalAI
 from signalbot.signalbot import SignalBot
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -114,6 +114,7 @@ def main(config: dict):
     bot.register(ReportRazzlerSpendingCommand())
     bot.register(GoatseCommand())
     bot.register(RazzlerProfileCommand())
+    bot.register(RazzlerProfilesCommand())
     bot.register(RazzlerReportProfileCommand())
     bot.register(RazzlerMindCommand())
     bot.register(ClearChatHistory())

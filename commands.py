@@ -146,13 +146,13 @@ class RazzlerProfilesCommand(Command):
 
     @triggered("create_profiles")
     async def handle(self, c: Context):
-        # if c.message.source != c.bot.admin:
-        #     logger.info(
-        #         "[ManualProfiling] Non-admin tried to trigger character profiles: {}".format(
-        #             c.message.sourceName
-        #         )
-        #     )
-        #     return
+        if c.message.source != c.bot.admin:
+            logger.info(
+                "[ManualProfiling] Non-admin tried to trigger character profiles: {}".format(
+                    c.message.sourceName
+                )
+            )
+            return
 
         await c.start_typing()
 
