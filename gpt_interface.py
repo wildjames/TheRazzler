@@ -35,7 +35,7 @@ class SignalAI:
     max_tokens: int = 400
     prompt_filename: str = "prompt.txt"
     prompt_profile_filename: str = "prompt_profile.txt"
-    profile_fname_template: str = "profiles/profile_{}.txt"
+    profile_fname_template: str = "profiles/profile_{group}_{name}.txt"
     last_profiled: int = 0
     total_cost_filename: str = "total_cost.txt"
 

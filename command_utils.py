@@ -118,7 +118,9 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
     ]
 
     # Recall from long-term memory
-    profile_fname = c.bot.mind.profile_fname_template.format(target_name.replace(" ", "_"))
+    name = target_name.replace(" ", "_")
+    group = c.message.recipient()
+    profile_fname = c.bot.mind.profile_fname_template.format(group=group, name=name)
     if os.path.exists(profile_fname):
         with open(profile_fname, "r") as f:
             profile = f.read()
@@ -247,7 +249,11 @@ def get_reply(c: Context, image_chance: float = 0.0):
             continue
 
         logger.info(f"[RazzleReply] Found active name: {name}")
-        profile_fname = c.bot.mind.profile_fname_template.format(name.replace(" ", "_"))
+            name = name.replace(" ", "_")
+            group = c.message.recipient()
+            name = name.replace(" ", "_")
+            group = c.message.recipient()
+            profile_fname = c.bot.mind.profile_fname_template.format(group=group, name=name)
         if os.path.exists(profile_fname):
             with open(profile_fname, "r") as f:
                 profile = f.read()
@@ -354,7 +360,9 @@ def parse_mentions(c: Context, message_string: str) -> str:
 
 async def create_character_profile(c: Context, target: str):
     """Take a target name and create a character profile for them based on the current chat history."""
-    profile_fname = c.bot.mind.profile_fname_template.format(target.replace(" ", "_"))
+    name = target.replace(" ", "_")
+    group = c.message.recipient()
+    profile_fname = c.bot.mind.profile_fname_template.format(group=group, name=name)
 
     # Get the chat history from storage
     history_key = "chat_history: {}".format(c.message.recipient())

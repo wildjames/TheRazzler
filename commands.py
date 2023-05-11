@@ -578,9 +578,11 @@ class RazzlerReportProfileCommand(Command):
         target_name = c.message.sourceName
 
         # Recall from long-term memory
-        profile_fname = c.bot.mind.profile_fname_template.format(
-            target_name.replace(" ", "_")
-        )
+
+        name = target_name.replace(" ", "_")
+        group = c.message.recipient()
+        profile_fname = c.bot.mind.profile_fname_template.format(group=group, name=name)
+        
         if os.path.exists(profile_fname):
             with open(profile_fname, "r") as f:
                 profile = f.read()
