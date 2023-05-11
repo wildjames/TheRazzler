@@ -1,10 +1,13 @@
 import json
 import logging
 from dataclasses import dataclass
+import os
 from typing import List, Tuple
 
 import openai
 from modelsinfo import COSTS
+
+from pathvalidate import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -48,13 +51,38 @@ class SignalAI:
     razzler_image_rate: float = 0.1
 
     def __post_init__(self):
-        total_cost = self.get_total_cost()
+        self.get_total_cost()
 
     def reset(self):
         self.total_prompt_tokens = 0
         self.total_completion_tokens = 0
         self.total_cost = 0
         self.total_budget = 0.0
+
+    def get_profile(self, group, name):
+        """
+        Get the profile for the given group and name.
+
+        Args:
+        group (str): The group of the profile.
+        name (str): The name of the profile.
+
+        Returns:
+        str: The profile text.
+        """
+        profile_fname = self.profile_fname_template.format(group=group, name=name)
+        profile_fname = profile_fname.replace(" ", "")
+        profile_fname = sanitize_filename(profile_fname)
+
+        if os.path.exists(profile_fname):
+            with open(profile_fname, "r") as f:
+                profile = f.read()
+        else:
+            profile = "Unkown"
+
+        profile = "Character profile of {}: \n".format(name) + profile
+        return profile
+
 
     def create_chat_completion(
         self,

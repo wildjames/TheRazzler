@@ -118,14 +118,9 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
     ]
 
     # Recall from long-term memory
-    name = target_name.replace(" ", "_")
     group = c.message.recipient()
-    profile_fname = c.bot.mind.profile_fname_template.format(group=group, name=name)
-    if os.path.exists(profile_fname):
-        with open(profile_fname, "r") as f:
-            profile = f.read()
-        profile = "Pre-existing character profile of target: \n" + profile
-        GPT_messages.insert(0, create_chat_message("system", profile))
+    profile = c.bot.mind.get_profile(group=group, name=target_name)
+    GPT_messages.insert(0, create_chat_message("system", profile))
 
     logger.info("[Razzle] I will send the following messages to GPT:")
     for message in GPT_messages:
@@ -249,24 +244,13 @@ def get_reply(c: Context, image_chance: float = 0.0):
             continue
 
         logger.info(f"[RazzleReply] Found active name: {name}")
-        name = name.replace(" ", "_")
         group = c.message.recipient()
-        name = name.replace(" ", "_")
-        group = c.message.recipient()
-        profile_fname = c.bot.mind.profile_fname_template.format(group=group, name=name)
-        if os.path.exists(profile_fname):
-            with open(profile_fname, "r") as f:
-                profile = f.read()
-            profile = "Character profile of {}: \n".format(name) + profile
-            GPT_messages.insert(0, create_chat_message("system", profile))
+        profile = c.bot.mind.get_profile(group=group, name=name)
+        GPT_messages.insert(0, create_chat_message("system", profile))
 
     # Recall from long-term memory
-    profile_fname = c.bot.mind.profile_fname_template.format("The_Razzler")
-    if os.path.exists(profile_fname):
-        with open(profile_fname, "r") as f:
-            profile = f.read()
-        profile = "Character profile of the Razzler: \n" + profile
-        GPT_messages.insert(0, create_chat_message("system", profile))
+    profile = c.bot.mind.get_profile(group=group, name="The_Razzler")
+    GPT_messages.insert(0, create_chat_message("system", profile))
 
     logger.info("[RazzleReply] I will send the following messages to GPT:")
     for message in GPT_messages:
@@ -360,9 +344,8 @@ def parse_mentions(c: Context, message_string: str) -> str:
 
 async def create_character_profile(c: Context, target: str):
     """Take a target name and create a character profile for them based on the current chat history."""
-    name = target.replace(" ", "_")
     group = c.message.recipient()
-    profile_fname = c.bot.mind.profile_fname_template.format(group=group, name=name)
+    profile = c.bot.mind.get_profile(group=group, name=target)
 
     # Get the chat history from storage
     history_key = "chat_history: {}".format(c.message.recipient())
@@ -401,11 +384,7 @@ async def create_character_profile(c: Context, target: str):
         create_chat_message("user", combined_message),
     ]
 
-    if os.path.exists(profile_fname):
-        with open(profile_fname, "r") as f:
-            profile = f.read()
-        profile = "Pre-existing character profile: \n" + profile
-        GPT_messages.append(create_chat_message("system", profile))
+    GPT_messages.append(create_chat_message("system", profile))
 
     logger.info("[CharacterProfile] I will send the following messages to GPT:")
     for message in GPT_messages:

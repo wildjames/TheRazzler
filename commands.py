@@ -578,20 +578,11 @@ class RazzlerReportProfileCommand(Command):
         target_name = c.message.sourceName
 
         # Recall from long-term memory
-
-        name = target_name.replace(" ", "_")
         group = c.message.recipient()
-        profile_fname = c.bot.mind.profile_fname_template.format(group=group, name=name)
+        profile = c.bot.mind.get_profile(group=group, name=target_name)
         
-        if os.path.exists(profile_fname):
-            with open(profile_fname, "r") as f:
-                profile = f.read()
-
-            await c.send("Here's what I know about {}".format(target_name))
-            await c.send(profile)
-
-        else:
-            await c.send("Sorry, I don't know who you are :(")
+        await c.send("Here's what I know about {}".format(target_name))
+        await c.send(profile)
 
 
 class HelpCommand(Command):
