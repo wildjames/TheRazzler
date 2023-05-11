@@ -258,7 +258,7 @@ def get_reply(c: Context, image_chance: float = 0.0):
 
     # Send the messages to GPT. Wrap this in a timeout loop to prevent hanging.
     t0 = time.time()
-    while time.time() - t0 < 10:
+    while time.time() - t0 < 60:
         try:
             response = mind.create_chat_completion(GPT_messages)
             response: str = response["choices"][0]["message"]["content"]
