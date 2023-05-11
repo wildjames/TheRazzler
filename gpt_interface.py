@@ -1,15 +1,22 @@
 import json
 import logging
-from dataclasses import dataclass
 import os
+import re
+from dataclasses import dataclass
 from typing import List, Tuple
 
 import openai
 from modelsinfo import COSTS
 
-from pathvalidate import sanitize_filename
-
 logger = logging.getLogger(__name__)
+
+
+def clean_filename(filename):
+    # Replaces non-alphanumeric characters (except for periods, hyphens and underscores) with an underscore
+    filename = re.sub(r"[^a-zA-Z0-9_.-]", "_", filename)
+    # Replaces any remaining forward slashes with an underscore
+    filename = filename.replace("/", "_")
+    return filename
 
 
 def create_chat_message(role, content):
@@ -38,7 +45,7 @@ class SignalAI:
     max_tokens: int = 400
     prompt_filename: str = "prompt.txt"
     prompt_profile_filename: str = "prompt_profile.txt"
-    profile_fname_template: str = "profiles/profile_{group}_{name}.txt"
+    profile_fname_template: str = "profile_{group}_{name}.txt"
     last_profiled: int = 0
     total_cost_filename: str = "total_cost.txt"
 
@@ -63,7 +70,8 @@ class SignalAI:
 
         profile_fname = self.profile_fname_template.format(group=group, name=name)
         profile_fname = profile_fname.replace(" ", "")
-        profile_fname = sanitize_filename(profile_fname)
+        profile_fname = clean_filename(profile_fname)
+        profile_fname = os.path.join("profiles", profile_fname)
 
         return profile_fname
 
@@ -79,7 +87,7 @@ class SignalAI:
         str: The profile text.
         """
         profile_fname = self.get_profile_fname(group=group, name=name)
-        
+
         if os.path.exists(profile_fname):
             with open(profile_fname, "r") as f:
                 profile = f.read()
@@ -88,7 +96,6 @@ class SignalAI:
 
         profile = "Character profile of {}: \n".format(name) + profile
         return profile
-
 
     def create_chat_completion(
         self,
@@ -181,7 +188,9 @@ class SignalAI:
             + completion_tokens * COSTS[model]["completion"]
         ) / 1000
         self.total_cost += this_cost
-        logger.info(f"[GPTInterface] OpenAI call cost ${this_cost:.3f}. Total running cost: ${self.total_cost:.3f} out of a budget of ${self.total_budget:.3f}")
+        logger.info(
+            f"[GPTInterface] OpenAI call cost ${this_cost:.3f}. Total running cost: ${self.total_cost:.3f} out of a budget of ${self.total_budget:.3f}"
+        )
         with open(self.total_cost_filename, "w") as f:
             json.dump({"total_cost": self.total_cost}, f)
 
