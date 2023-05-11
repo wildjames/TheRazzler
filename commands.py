@@ -302,13 +302,14 @@ class RazzlerMindCommand(Command):
 
                     elif len(c.message.mentions) == 1:
                         logger.info(
-                            "[RazzlerMind] There is one mention, so I will target the sender"
+                            f"[RazzlerMind] There is one mention, so I will target the sender. Source: {c.message.source}"
                         )
                         target_name = c.bot.get_contact(c.message.source)
                         logger.info(f"[RazzlerMind] Razzling {target_name}")
 
                         response, image = get_razzle(
                             c,
+                            target_name=target_name,
                             image_chance=c.bot.mind.razzler_image_rate,
                         )
 
