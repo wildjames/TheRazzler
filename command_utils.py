@@ -249,11 +249,11 @@ def get_reply(c: Context, image_chance: float = 0.0):
             continue
 
         logger.info(f"[RazzleReply] Found active name: {name}")
-            name = name.replace(" ", "_")
-            group = c.message.recipient()
-            name = name.replace(" ", "_")
-            group = c.message.recipient()
-            profile_fname = c.bot.mind.profile_fname_template.format(group=group, name=name)
+        name = name.replace(" ", "_")
+        group = c.message.recipient()
+        name = name.replace(" ", "_")
+        group = c.message.recipient()
+        profile_fname = c.bot.mind.profile_fname_template.format(group=group, name=name)
         if os.path.exists(profile_fname):
             with open(profile_fname, "r") as f:
                 profile = f.read()
