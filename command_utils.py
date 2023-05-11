@@ -198,7 +198,7 @@ def get_reply(c: Context, image_chance: float = 0.0):
         message_history = []
 
     # Retrieve the AI
-    mind: SignalAI = c.bot.mind
+    mind: SignalAI = c.bot.mindˆ
 
     # Check that we're in budget
     if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
@@ -212,8 +212,10 @@ def get_reply(c: Context, image_chance: float = 0.0):
         prompt = f.read()
 
     if random.random() < image_chance:
-        image_subprompt = "You should also generate a single image for your message, by describing what it should be of. "
-        image_subprompt += "An image description should be a single sentence, and must be enclosed by angular brackets, i.e. <a piece of shit>. "
+        # image_subprompt = "You should also generate a single image for your message, by describing what it should be of. "
+        # image_subprompt += "An image description should be a single sentence, and must be enclosed by angular brackets, i.e. <a piece of shit>. "
+        image_subprompt = "You should also generate a single image that perfectly depicts your reply to the given prompt. "
+        image_subprompt += "Add a text description for the image. The description must be enclosed by angular brackets, i.e. <a smelly foot>. "
     else:
         image_subprompt = ""
 
