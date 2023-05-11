@@ -403,5 +403,5 @@ async def create_character_profile(c: Context, target: str):
 
     response = response.strip()
     # Save the response to the chat history
-    with open(profile_fname, "w") as f:
+    with open(c.bot.mind.get_profile_fname(group, target), "w") as f:
         f.write(response + "\n")

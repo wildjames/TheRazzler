@@ -205,8 +205,6 @@ class RazzlerProfileCommand(Command):
         if not c.bot.storage.exists(history_key):
             c.bot.storage.save(history_key, [])
 
-        message_history = c.bot.storage.read(history_key)
-
         logger.info("[ManualProfiling] Profiling...")
         c.bot.mind.last_profiled = 0
 

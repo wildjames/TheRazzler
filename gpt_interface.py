@@ -59,6 +59,14 @@ class SignalAI:
         self.total_cost = 0
         self.total_budget = 0.0
 
+    def get_profile_fname(self, group, name):
+
+        profile_fname = self.profile_fname_template.format(group=group, name=name)
+        profile_fname = profile_fname.replace(" ", "")
+        profile_fname = sanitize_filename(profile_fname)
+
+        return profile_fname
+
     def get_profile(self, group, name):
         """
         Get the profile for the given group and name.
@@ -70,10 +78,8 @@ class SignalAI:
         Returns:
         str: The profile text.
         """
-        profile_fname = self.profile_fname_template.format(group=group, name=name)
-        profile_fname = profile_fname.replace(" ", "")
-        profile_fname = sanitize_filename(profile_fname)
-
+        profile_fname = self.get_profile_fname(group=group, name=name)
+        
         if os.path.exists(profile_fname):
             with open(profile_fname, "r") as f:
                 profile = f.read()
