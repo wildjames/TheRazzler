@@ -195,7 +195,7 @@ def get_reply(c: Context, image_chance: float = 0.0):
         message_history = []
 
     # Retrieve the AI
-    mind: SignalAI = c.bot.mindˆ
+    mind: SignalAI = c.bot.mind
 
     # Check that we're in budget
     if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
