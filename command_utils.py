@@ -381,10 +381,9 @@ async def create_character_profile(c: Context, target: str):
 
     GPT_messages = [
         create_chat_message("system", prompt),
+        create_chat_message("system", profile),
         create_chat_message("user", combined_message),
     ]
-
-    GPT_messages.append(create_chat_message("system", profile))
 
     logger.info("[CharacterProfile] I will send the following messages to GPT:")
     for message in GPT_messages:
