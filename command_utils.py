@@ -233,6 +233,7 @@ def get_reply(c: Context, image_chance: float = 0.0):
     ]
 
     # Recall from long-term memory my own profile
+    group = c.message.recipient()
     profile = c.bot.mind.get_profile(group=group, name="The_Razzler")
     GPT_messages.insert(0, create_chat_message("system", profile))
 
@@ -245,7 +246,6 @@ def get_reply(c: Context, image_chance: float = 0.0):
             continue
 
         logger.info(f"[RazzleReply] Found active name: {name}")
-        group = c.message.recipient()
         profile = c.bot.mind.get_profile(group=group, name=name)
         GPT_messages.insert(1, create_chat_message("system", profile))
 
