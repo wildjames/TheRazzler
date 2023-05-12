@@ -232,12 +232,13 @@ def get_reply(c: Context, image_chance: float = 0.0):
         create_chat_message("system", prompt),
     ]
 
+    # Recall from long-term memory my own profile
+    profile = c.bot.mind.get_profile(group=group, name="The_Razzler")
+    GPT_messages.insert(0, create_chat_message("system", profile))
+
     # Get profiles of people present in the chat history
     active_names = [
         c.bot.get_contact(c.message.source)
-        # name
-        # for name in c.bot.target_lookup.values()
-        # if name in "".join(message_history)
     ]
     for name in active_names:
         if name == "The Razzler":
@@ -246,11 +247,7 @@ def get_reply(c: Context, image_chance: float = 0.0):
         logger.info(f"[RazzleReply] Found active name: {name}")
         group = c.message.recipient()
         profile = c.bot.mind.get_profile(group=group, name=name)
-        GPT_messages.insert(0, create_chat_message("system", profile))
-
-    # Recall from long-term memory
-    profile = c.bot.mind.get_profile(group=group, name="The_Razzler")
-    GPT_messages.insert(0, create_chat_message("system", profile))
+        GPT_messages.insert(1, create_chat_message("system", profile))
 
     logger.info("[RazzleReply] I will send the following messages to GPT:")
     for message in GPT_messages:
