@@ -234,13 +234,11 @@ class RazzlerMindCommand(Command):
             return
 
         # Randomly change state
-        if random.random() < 0.2:
-            logger.info("[NaughtyNice] Toggling Naughtyness")
-            if c.bot.mind.prompt_filename == "naughty.txt":
-                c.bot.mind.prompt_filename = "nice.txt"
-            elif c.bot.mind.prompt_filename == "nice.txt":
-                c.bot.mind.prompt_filename = "naughty.txt"
-            logger.info(f"[NaughtyNice] Current prompt filename: {c.bot.mind.prompt_filename}")
+        if random.random() < c.bot.mind.niceness:
+            c.bot.mind.prompt_filename = "nice.txt"
+        else:
+            c.bot.mind.prompt_filename = "naughty.txt"
+        logger.info(f"[NaughtyNice] Current prompt filename: {c.bot.mind.prompt_filename}")
 
         # TODO move this to its own command
         # Summoning is currently too abusable - people just fucking love to slam the Razzler
@@ -452,7 +450,7 @@ class ConfigEditorCommand(Command):
             "temperature",
             "razzler_rate",
             "razzler_image_rate",
-            "prompt_filename",
+            "razzler_niceness",
             "model",
         ]
 
@@ -497,6 +495,17 @@ class ConfigEditorCommand(Command):
             rate = float(args[0])
             c.bot.mind.razzler_rate = rate
 
+        elif command == "razzler_niceness":
+            if not len(args):
+                await c.send("My niceness is {}".format(c.bot.mind.niceness))
+                return
+            try:
+                niceness = float(args[0])
+            except:
+                await c.send("Niceness must be a float between 0 and 1")
+                return
+            c.bot.mind.niceness = niceness
+
         elif command == "razzler_image_rate":
             if not len(args):
                 await c.send(
@@ -505,22 +514,6 @@ class ConfigEditorCommand(Command):
                 return
             rate = float(args[0])
             c.bot.mind.razzler_image_rate = rate
-
-        elif command == "prompt_filename":
-            if not len(args):
-                await c.send(
-                    "My prompt filename is {}".format(c.bot.mind.prompt_filename)
-                )
-                return
-            filename = args[0]
-            if not filename.endswith(".txt"):
-                filename += ".txt"
-
-            if os.path.exists(filename):
-                await c.send("Changing prompt filename to {}".format(filename))
-                c.bot.mind.prompt_filename = filename
-            else:
-                await c.send("Couldn't find file {}".format(filename))
 
         elif command == "help":
             await c.send("Possible Commands: {}".format(", ".join(commands)))
