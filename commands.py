@@ -591,7 +591,7 @@ class HelpCommand(Command):
             message += f"{trigger} - {description}\n"
         if is_admin:
             message += "\nAdmin Commands:\n"
-            for trigger, description in admin_commands:
+            for trigger, description in admin_commands.items():
                 message += f"{trigger} - {description}\n"
 
         await c.send(message)
