@@ -542,25 +542,6 @@ class ConfigEditorCommand(Command):
         await c.stop_typing()
 
 
-class RazzlerNaughtyNiceCommand(Command):
-    def describe(self) -> str:
-        return "Allow pleb users to toggle naughty/nice prompts"
-
-    @triggered("naughtynice")
-    async def handle(self, c: Context):
-        logger.info("[NaughtyNice] Toggling Naughtyness")
-        if c.bot.mind.prompt_filename == "naughty.txt":
-            c.bot.mind.prompt_filename = "nice.txt"
-        elif c.bot.mind.prompt_filename == "nice.txt":
-            c.bot.mind.prompt_filename = "naughty.txt"
-        else:
-            await c.send(
-                "Sorry, can't toggle naughtyniceness while I am using a custom prompt!"
-            )
-
-        await c.send(f"Current prompt filename: {c.bot.mind.prompt_filename}")
-
-
 class RazzlerReportProfileCommand(Command):
     def describe(self) -> str:
         return "Let people get their character profile"
@@ -591,8 +572,7 @@ class HelpCommand(Command):
         general_commands = {
             "razzler_help": "Show this help message",
             "report_profile": "Get your character profile",
-            "create_profiles": "Manually trigger the Razzler to update profiles",
-            "naughtynice": "Toggle naughty/nice prompts",
+            "create_profiles": "Manually trigger the Razzler to update all profiles",
             "report_prompt": "Get the current prompt",
             "update_profile": "Manually trigger the Razzler to update your profile",
             "clear_history": "Clear the current conversation history",
@@ -605,12 +585,14 @@ class HelpCommand(Command):
         }
 
         commands = general_commands
-        if is_admin:
-            commands.update(admin_commands)
 
         message = "Available Commands:\n"
         for trigger, description in commands.items():
             message += f"{trigger} - {description}\n"
+        if is_admin:
+            message += "\nAdmin Commands:\n"
+            for trigger, description in admin_commands:
+                message += f"{trigger} - {description}\n"
 
         await c.send(message)
         await c.stop_typing()
