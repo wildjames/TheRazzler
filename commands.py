@@ -452,6 +452,7 @@ class ConfigEditorCommand(Command):
             "razzler_image_rate",
             "razzler_niceness",
             "model",
+            "profile_model",
         ]
 
         if command == "summonable":
@@ -480,6 +481,19 @@ class ConfigEditorCommand(Command):
                 )
                 return
             c.bot.mind.model = model
+
+        elif command == "profile_model":
+            if not len(args):
+                await c.send("My profile model is {}".format(c.bot.mind.profile_model))
+                return
+            model = args[0]
+            models = ["gpt-3.5-turbo", "gpt-4"]
+            if model not in models:
+                await c.send(
+                    "Invalid model. Valid models are: {}".format(", ".join(models))
+                )
+                return
+            c.bot.mind.profile_model = model
 
         elif command == "temperature":
             if not len(args):
