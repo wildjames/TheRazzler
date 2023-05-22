@@ -13,7 +13,8 @@
     "llm": {
         "prompt_filename": "naughty.txt",
         "prompt_profile_filename": "prompt_profile.txt",
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-4",
+        "profile_model": "gpt-4",
         "debug": true,
         "temperature": 0.95,
         "max_tokens": 400,

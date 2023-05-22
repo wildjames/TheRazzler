@@ -47,6 +47,7 @@ class SignalAI:
     prompt_profile_filename: str = "prompt_profile.txt"
     niceness: float = 0.5
     profile_fname_template: str = "profile_{group}_{name}.txt"
+    profile_model: str = "gpt-3.5-turbo"
     last_profiled: int = 0
     total_cost_filename: str = "total_cost.txt"
 
@@ -115,6 +116,7 @@ class SignalAI:
         """
         if model is None:
             model = self.model
+        logger.debug(f"[GPTInterface] Using model: {model}")
         response = openai.ChatCompletion.create(
             model=model,
             messages=messages,

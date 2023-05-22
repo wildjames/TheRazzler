@@ -389,7 +389,7 @@ async def create_character_profile(c: Context, target: str):
     t0 = time.time()
     while time.time() - t0 < 10:
         try:
-            response = mind.create_chat_completion(GPT_messages, model="gpt-3.5-turbo")
+            response = mind.create_chat_completion(GPT_messages, model=c.bot.mind.profile_model)
             response: str = response["choices"][0]["message"]["content"]
             break
         except:
