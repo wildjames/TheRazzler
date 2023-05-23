@@ -44,6 +44,7 @@ redis==4.5.4
 requests==2.29.0
 six==1.16.0
 stack-data==0.6.2
+tiktoken==0.4.0
 tomli==2.0.1
 tqdm==4.65.0
 traitlets==5.9.0
