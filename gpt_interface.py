@@ -3,9 +3,10 @@ import logging
 import os
 import re
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import openai
+import tiktoken
 from modelsinfo import COSTS
 
 logger = logging.getLogger(__name__)
@@ -58,8 +59,14 @@ class SignalAI:
     debug: bool = False
     razzler_rate: float = 0.1
     razzler_image_rate: float = 0.1
+    
+    enc: Dict[str, tiktoken.Encoding] = None # type: ignore
 
     def __post_init__(self):
+        self.enc = {
+            "voice": tiktoken.encoding_for_model(self.model),
+            "profile": tiktoken.encoding_for_model(self.profile_model),
+        }
         self.get_total_cost()
 
     def reset(self):

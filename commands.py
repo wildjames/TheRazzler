@@ -68,6 +68,16 @@ class SaveChatHistory(Command):
 
         message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
+        
+        # TODO: Verify that this works!
+        # While the message history is too long, remove the oldest message
+        token_length = sum([len(c.bot.mind.enc.encode(m)) for m in message_history])
+        while token_length > 4000:
+            print(f"Token length of the chat history is {token_length}. Removing oldest message.")
+            message_history.pop(0)
+            token_length = sum([len(c.bot.mind.enc.encode(m)) for m in message_history])
+            print(f"Token length of the chat history is now {token_length}")
+        
         c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length :])
 
         if c.bot.mind.last_profiled >= c.bot.chat_history_length:
