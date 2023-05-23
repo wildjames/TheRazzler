@@ -8,7 +8,7 @@
         "storage": null,
         "summonable": true,
         "can_hear_self": true,
-        "chat_history_length": 25
+        "chat_history_length": 100
     },
     "llm": {
         "prompt_filename": "naughty.txt",

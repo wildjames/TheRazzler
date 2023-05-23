@@ -448,6 +448,7 @@ class ConfigEditorCommand(Command):
             "summonable",
             "can_hear_self",
             "temperature",
+            "chat_length",
             "razzler_rate",
             "razzler_image_rate",
             "razzler_niceness",
@@ -494,6 +495,13 @@ class ConfigEditorCommand(Command):
                 )
                 return
             c.bot.mind.profile_model = model
+            
+        elif command == "chat_length":
+            if not len(args):
+                await c.send("My chat length is {}".format(c.bot.chat_history_length))
+                return
+            length = int(args[0])
+            c.bot.chat_history_length = length
 
         elif command == "temperature":
             if not len(args):
