@@ -78,7 +78,7 @@ class SaveChatHistory(Command):
         print("The chat history is now {} tokens long".format(token_length))
         
         while token_length > 4000:
-            print(f"Token length of the chat history is {token_length}. Removing oldest message.")
+            print(f"Token length of the chat history is too long: {token_length} tokens. Removing oldest message.")
             message_history.pop(0)
             
             voice_token_length = sum([len(c.bot.mind.enc["voice"].encode(m)) for m in message_history])
@@ -87,7 +87,7 @@ class SaveChatHistory(Command):
             
             print(f"Token length of the chat history is now {token_length}")
         
-        c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length :])
+        c.bot.storage.save(history_key, message_history)
 
         if c.bot.mind.last_profiled >= c.bot.chat_history_length:
             logger.info("[SaveChatHistory] Profiling...")
