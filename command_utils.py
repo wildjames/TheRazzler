@@ -72,7 +72,7 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
     # Check that we're in budget
     if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
         logger.info("[Razzle] Exceeded budget, sending a message about that.")
-        return "The Razzler Razzled too hard and ran out of money. Later nerds (swag) 😎"
+        return "The Razzler Razzled too hard and ran out of money. Later nerds (swag) 😎", None
 
     # Get the target
     logger.info("[Razzle] Getting the target for the Razzler.")
@@ -200,7 +200,7 @@ def get_reply(c: Context, image_chance: float = 0.0):
     # Check that we're in budget
     if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
         logger.info("[RazzleReply] Exceeded budget, sending a message about that.")
-        return "The Razzler Razzled too hard and ran out of money. Later nerds (swag) 😎"
+        return "The Razzler Razzled too hard and ran out of money. Later nerds (swag) 😎", None
 
     # Get the target
     logger.info("[RazzleReply] Getting the target for the Razzler.")

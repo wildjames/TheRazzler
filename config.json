@@ -18,7 +18,7 @@
         "debug": true,
         "temperature": 0.95,
         "max_tokens": 400,
-        "total_budget": 10.0,
+        "total_budget": 20.0,
         "niceness": 0.5,
         "razzler_rate": 0.01,
         "razzler_image_rate": 0.5
