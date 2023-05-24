@@ -185,7 +185,8 @@ class RazzlerProfilesCommand(Command):
         logger.info("[ManualProfiling] Profiling...")
         c.bot.mind.last_profiled = 0
 
-        # TODO: Crude. Could be better
+        # TODO: Crude. Could be better. Notably, if you mention a name of someone in the contacts list in a text,
+        # they will be profiled even if they are not in the chat.
         active_names = [
             name
             for name in c.bot.target_lookup.values()
