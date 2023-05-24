@@ -234,7 +234,7 @@ def get_reply(c: Context, image_chance: float = 0.0):
 
     # Recall from long-term memory my own profile
     group = c.message.recipient()
-    profile = c.bot.mind.get_profile(group=group, name="The_Razzler")
+    profile = c.bot.mind.get_profile(group=group, name="The Razzler")
     GPT_messages.insert(0, create_chat_message("system", profile))
 
     # Get profiles of people present in the chat history
@@ -260,7 +260,8 @@ def get_reply(c: Context, image_chance: float = 0.0):
             response = mind.create_chat_completion(GPT_messages)
             response: str = response["choices"][0]["message"]["content"]
             break
-        except:
+        except Exception as e:
+            logger.exception(e)
             logger.info("[RazzleReply] GPT timed out, trying again.")
 
     logger.info(f"[RazzleReply] came up with the response: {response}")
