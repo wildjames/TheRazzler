@@ -63,6 +63,7 @@ class RestartHandler(FileSystemEventHandler):
                 )
 
     def set_bot(self, bot):
+        print("Set bot!")
         self.bot = bot
 
 
@@ -126,10 +127,10 @@ def main(config: dict, restart_handler: RestartHandler):
     bot.register(ClearChatHistory())
     bot.register(HelpCommand())
 
-    bot.start()
-
     # Set the bot in the restart handler
     restart_handler.set_bot(bot)
+
+    bot.start()
 
 
 if __name__ == "__main__":
