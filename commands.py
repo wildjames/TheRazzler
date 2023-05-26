@@ -613,7 +613,7 @@ class RazzlerReportProfileCommand(Command):
         profile = c.bot.mind.get_profile(group=group, name=target_name)
         spending = c.bot.mind.get_spending(target_name)
 
-        await c.send("{} has spent £{:.3f}".format(target_name, spending))
+        await c.send("{} has spent ${:.3f}".format(target_name, spending))
         await c.send(profile)
 
 
