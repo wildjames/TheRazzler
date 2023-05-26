@@ -227,20 +227,18 @@ class SignalBot:
                     "[ManualProfiling] Creating profiles on: {}".format(active_names)
                 )
 
-                # call create_character_profile on each name in active_names in parallel, using async
-                tasks = [
-                    asyncio.create_task(create_character_profile(self, group_id, name))
-                    for name in active_names
-                ]
-
-                # Run the tasks in the event loop
-                self._event_loop.run_until_complete(asyncio.wait(tasks))
-            except:
+                # Run each coroutine sequentially in the event loop
+                for name in active_names:
+                    self._event_loop.run_until_complete(
+                        create_character_profile(self, group_id, name)
+                    )
+            except Exception as e:
                 logger.warning(
                     "[ManualProfiling] Could not create profile for group: {}".format(
                         group_id
                     )
                 )
+                logger.exception(f"[ManualProfiling] Exception: {e}")
                 continue
 
             logger.info("[ManualProfiling] Done profiling 👍")
