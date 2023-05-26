@@ -341,13 +341,20 @@ def parse_mentions(c: Context, message_string: str) -> str:
     return message_string
 
 
-async def get_character_profile(bot, group, target):
+async def create_character_profile(bot: SignalAI, group: str, target: str):
+    """Take a target name and create a character profile for them based on the current chat history."""
+    profile = bot.mind.get_profile(group=group, name=target)
+
+    # Get the chat history from storage
+    history_key = "chat_history: {}".format(c.message.recipient())
+    if bot.storage.exists(history_key):
+        message_history = bot.storage.read(history_key)
+    else:
+        message_history = []
 
     # Retrieve the AI
     mind: SignalAI = bot.mind
 
-    profile = mind.get_profile(group=group, name=target)
-    
     # Check that we're in budget
     if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
         logger.info("[CharacterProfile] Exceeded budget, sending a message about that.")
@@ -355,13 +362,6 @@ async def get_character_profile(bot, group, target):
 
     # Get the target
     logger.info("[CharacterProfile] Getting the target for the Razzler.")
-
-    # Get the chat history from storage
-    history_key = "chat_history: {}".format(group)
-    if bot.storage.exists(history_key):
-        message_history = bot.storage.read(history_key)
-    else:
-        message_history = []
 
     with open(bot.mind.prompt_profile_filename, "r") as f:
         prompt = f.read()
@@ -390,7 +390,7 @@ async def get_character_profile(bot, group, target):
     t0 = time.time()
     while time.time() - t0 < 10:
         try:
-            response = mind.create_chat_completion(GPT_messages, model=c.bot.mind.profile_model)
+            response = mind.create_chat_completion(GPT_messages, model=bot.mind.profile_model)
             response: str = response["choices"][0]["message"]["content"]
             break
         except:
@@ -399,11 +399,6 @@ async def get_character_profile(bot, group, target):
     logger.info(f"[CharacterProfile] came up with the response: {response}")
 
     response = response.strip()
-    
-async def create_character_profile(c: Context, group: str, target: str):
-    """Take a target name and create a character profile for them based on the current chat history."""
-    await get_character_profile(c.bot, group, target)
-
     # Save the response to the chat history
-    with open(c.bot.mind.get_profile_fname(group, target), "w") as f:
+    with open(bot.mind.get_profile_fname(group, target), "w") as f:
         f.write(response + "\n")

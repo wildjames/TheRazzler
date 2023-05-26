@@ -4,8 +4,6 @@ import time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import logging
 
-from command_utils import get_character_profile
-
 
 from .api import SignalAPI, ReceiveMessagesError
 from .command import Command
@@ -199,6 +197,8 @@ class SignalBot:
     def stop(self):
         logger.info("[Bot] Stopping bot")
         
+        from command_utils import create_character_profile
+
         # Create profiles for each group chat before closing
         for group_id in self.group_chats.values():
             print("Creating profile for group: {}".format(group_id))
@@ -219,7 +219,7 @@ class SignalBot:
             
             # call create_character_profile on each name in active_names in parallel, using async
             tasks = [
-                asyncio.create_task(get_character_profile(self, group_id, name))
+                asyncio.create_task(create_character_profile(self, group_id, name))
                 for name in active_names
             ]
             
