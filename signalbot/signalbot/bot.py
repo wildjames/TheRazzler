@@ -194,7 +194,7 @@ class SignalBot:
 
         # Run event loop
         self._event_loop.run_forever()
-        
+
         self._event_loop.run_until_complete(self.send(self.admin, "Razzler is online!"))
 
     def stop(self):
@@ -203,9 +203,7 @@ class SignalBot:
         from command_utils import create_character_profile
 
         logger.info(
-            "[Bot] Creating profiles for all users in the following: {}".format(
-                self.group_chats
-            )
+            f"[Bot] Creating profiles for all users in the following: {self.group_chats}"
         )
 
         # Create a new event loop
@@ -216,14 +214,16 @@ class SignalBot:
 
         # Create profiles for each group chat before closing
         for group_id in self.group_chats.keys():
-            print("Creating profile for group: {}".format(group_id))
+            print(f"Creating profile for group: {group_id}")
 
-            history_key = "chat_history: {}".format(group_id)
-            logger.info("[ManualProfiling] Using history key: {}".format(history_key))
+            history_key = f"chat_history: {group_id}"
+            logger.info(f"[ManualProfiling] Using history key: {history_key}")
+
+            if not self.storage.exists(history_key):
+                continue
+            message_history = self.storage.read(history_key)
 
             try:
-                message_history = self.storage.read(history_key)
-
                 # TODO: Crude. Could be better. Notably, if you mention a name of someone in the contacts list in a text,
                 # they will be profiled even if they are not in the chat.
                 active_names = [
@@ -231,9 +231,7 @@ class SignalBot:
                     for name in self.target_lookup.values()
                     if name in "".join(message_history)
                 ]
-                logger.info(
-                    "[ManualProfiling] Creating profiles on: {}".format(active_names)
-                )
+                logger.info(f"[ManualProfiling] Creating profiles on: {active_names}")
 
                 # Run each coroutine sequentially in the new event loop
                 for name in active_names:
@@ -242,9 +240,7 @@ class SignalBot:
                     )
             except Exception as e:
                 logger.warning(
-                    "[ManualProfiling] Could not create profile for group: {}".format(
-                        group_id
-                    )
+                    f"[ManualProfiling] Could not create profile for group: {group_id}"
                 )
                 logger.exception(f"[ManualProfiling] Exception: {e}")
                 continue

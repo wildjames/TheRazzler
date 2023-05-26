@@ -37,7 +37,7 @@ class RestartHandler(FileSystemEventHandler):
         self.time_threshold = time_threshold
         self.restart_count = 0
         self.last_restart = time.time()
-        self.bot = None
+        self.bot: SignalBot = None
 
     def on_modified(self, event):
         if not event.is_directory and any(
@@ -65,7 +65,7 @@ class RestartHandler(FileSystemEventHandler):
                     "Maximum restarts reached. Please wait before making more changes."
                 )
 
-    def set_bot(self, bot):
+    def set_bot(self, bot: SignalBot):
         print("Set bot!")
         self.bot = bot
 
