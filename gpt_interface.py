@@ -218,7 +218,7 @@ class SignalAI:
         
     def get_spending(self, spender):
         spending: Dict = json.load(open(self.total_cost_filename, "r"))
-        return spending[spender]
+        return 0.0 if spender not in spending.keys() else spending[spender]
 
     def set_total_budget(self, total_budget):
         """
