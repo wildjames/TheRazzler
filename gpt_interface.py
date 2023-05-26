@@ -202,20 +202,20 @@ class SignalAI:
 
     def update_cost(self, prompt_tokens, completion_tokens, model, spender=None):
         this_cost = self.get_this_cost(prompt_tokens, completion_tokens, model)
-        
+
         # Load the cost JSON file
         spending: Dict = json.load(open(self.total_cost_filename, "r"))
         spending["total_cost"] += this_cost
-        
+
         if spender not in spending.keys():
             spending[spender] = 0.0
-        
+
         spending[spender] += this_cost
         json.dump(spending, open(self.total_cost_filename, "w"))
         logger.info(
             f"[GPTInterface] OpenAI call cost ${this_cost:.3f}. Total running cost: ${self.total_cost:.3f} out of a budget of ${self.total_budget:.3f}"
         )
-        
+
     def get_spending(self, spender):
         spending: Dict = json.load(open(self.total_cost_filename, "r"))
         return 0.0 if spender not in spending.keys() else spending[spender]

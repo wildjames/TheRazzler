@@ -223,7 +223,6 @@ class RazzlerProfileCommand(Command):
 
     @triggered("update_profile")
     async def handle(self, c: Context):
-
         await c.start_typing()
 
         history_key = "chat_history: {}".format(c.message.recipient())
@@ -443,7 +442,10 @@ class ReportRazzlerSpendingCommand(Command):
         budget = c.bot.mind.total_budget
         await c.send(
             "So far, I've spent ${:.2f} of James's money (my pocket money is ${:.2f} for the month). {} has spent ${:.3f}. You're welcome, fucker".format(
-                spending, budget, c.message.sourceName, c.bot.mind.get_spending(c.message.sourceName)
+                spending,
+                budget,
+                c.message.sourceName,
+                c.bot.mind.get_spending(c.message.sourceName),
             )
         )
 

@@ -52,7 +52,9 @@ def download_image_base64(url):
         return None
 
 
-def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0, summoner=None):
+def get_razzle(
+    c: Context, target_name: str = None, image_chance: float = 0.0, summoner=None
+):
     """Return a razzle from the AI.
 
     The razz will be addressed to the target_name
@@ -72,7 +74,10 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0, s
     # Check that we're in budget
     if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
         logger.info("[Razzle] Exceeded budget, sending a message about that.")
-        return "The Razzler Razzled too hard and ran out of money. Later nerds (swag) 😎", None
+        return (
+            "The Razzler Razzled too hard and ran out of money. Later nerds (swag) 😎",
+            None,
+        )
 
     # Get the target
     logger.info("[Razzle] Getting the target for the Razzler.")
@@ -138,7 +143,6 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0, s
 
     logger.info(f"[Razzle] came up with the response: {response}")
 
-
     if response.startswith("The Razzler:"):
         response = response[13:]
 
@@ -174,7 +178,7 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0, s
 
         message = "{}: {}".format("The Razzler", response)
         message_history.append(message)
-        c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length:])
+        c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length :])
 
         logger.info("[Razzle] Added my own message to history 🗣️ {}".format(message))
 
@@ -201,7 +205,10 @@ def get_reply(c: Context, image_chance: float = 0.0, summoner=None):
     # Check that we're in budget
     if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
         logger.info("[RazzleReply] Exceeded budget, sending a message about that.")
-        return "The Razzler Razzled too hard and ran out of money. Later nerds (swag) 😎", None
+        return (
+            "The Razzler Razzled too hard and ran out of money. Later nerds (swag) 😎",
+            None,
+        )
 
     # Get the target
     logger.info("[RazzleReply] Getting the target for the Razzler.")
@@ -239,9 +246,7 @@ def get_reply(c: Context, image_chance: float = 0.0, summoner=None):
     GPT_messages.insert(0, create_chat_message("system", profile))
 
     # Get profiles of people present in the chat history
-    active_names = [
-        c.bot.get_contact(c.message.source)
-    ]
+    active_names = [c.bot.get_contact(c.message.source)]
     for name in active_names:
         if name == "The Razzler":
             continue
@@ -274,7 +279,9 @@ def get_reply(c: Context, image_chance: float = 0.0, summoner=None):
 
     # Check if the response contains an image request. If it does, generate an image.
     if "<" in response and ">" in response:
-        logger.info("[RazzleReply] Response contains an image request, generating an image.")
+        logger.info(
+            "[RazzleReply] Response contains an image request, generating an image."
+        )
         image_description = response[response.find("<") + 1 : response.find(">")]
         try:
             image_url = mind.create_image_completion(image_description)
@@ -298,9 +305,11 @@ def get_reply(c: Context, image_chance: float = 0.0, summoner=None):
 
         message = "{}: {}".format("The Razzler", response)
         message_history.append(message)
-        c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length:])
+        c.bot.storage.save(history_key, message_history[-c.bot.chat_history_length :])
 
-        logger.info("[RazzleReply] Added my own message to history 🗣️ {}".format(message))
+        logger.info(
+            "[RazzleReply] Added my own message to history 🗣️ {}".format(message)
+        )
 
     return response, image
 
@@ -358,7 +367,7 @@ async def create_character_profile(bot, group: str, target: str):
     # Check that we're in budget
     if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
         logger.info("[CharacterProfile] Exceeded budget, sending a message about that.")
-        return 
+        return
 
     # Get the target
     logger.info("[CharacterProfile] Getting the target for the Razzler.")
@@ -390,7 +399,9 @@ async def create_character_profile(bot, group: str, target: str):
     t0 = time.time()
     while time.time() - t0 < 10:
         try:
-            response = mind.create_chat_completion(GPT_messages, model=bot.mind.profile_model)
+            response = mind.create_chat_completion(
+                GPT_messages, model=bot.mind.profile_model
+            )
             response: str = response["choices"][0]["message"]["content"]
             break
         except:
