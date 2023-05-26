@@ -68,25 +68,35 @@ class SaveChatHistory(Command):
 
         message = "{}: {}".format(c.message.sourceName, message)
         message_history.append(message)
-        
+
         # TODO: Verify that this works!
         # While the message history is too long, remove the oldest message
         # Note that we use the longest token length, since we want to be conservative
-        voice_token_length = sum([len(c.bot.mind.enc["voice"].encode(m)) for m in message_history])
-        profile_token_length = sum([len(c.bot.mind.enc["profile"].encode(m)) for m in message_history])
+        voice_token_length = sum(
+            [len(c.bot.mind.enc["voice"].encode(m)) for m in message_history]
+        )
+        profile_token_length = sum(
+            [len(c.bot.mind.enc["profile"].encode(m)) for m in message_history]
+        )
         token_length = max(voice_token_length, profile_token_length)
         print("The chat history is now {} tokens long".format(token_length))
-        
+
         while token_length > 4000:
-            print(f"Token length of the chat history is too long: {token_length} tokens. Removing oldest message.")
+            print(
+                f"Token length of the chat history is too long: {token_length} tokens. Removing oldest message."
+            )
             message_history.pop(0)
-            
-            voice_token_length = sum([len(c.bot.mind.enc["voice"].encode(m)) for m in message_history])
-            profile_token_length = sum([len(c.bot.mind.enc["profile"].encode(m)) for m in message_history])
+
+            voice_token_length = sum(
+                [len(c.bot.mind.enc["voice"].encode(m)) for m in message_history]
+            )
+            profile_token_length = sum(
+                [len(c.bot.mind.enc["profile"].encode(m)) for m in message_history]
+            )
             token_length = max(voice_token_length, profile_token_length)
-            
+
             print(f"Token length of the chat history is now {token_length}")
-        
+
         c.bot.storage.save(history_key, message_history)
 
         if c.bot.mind.last_profiled >= c.bot.chat_history_length:
@@ -204,6 +214,7 @@ class RazzlerProfilesCommand(Command):
         await c.send("I have updated my profiles on everyone 🫦")
         await c.stop_typing()
 
+
 class RazzlerProfileCommand(Command):
     def describe(self) -> str:
         return "Manually trigger character profiling"
@@ -258,7 +269,9 @@ class RazzlerMindCommand(Command):
             c.bot.mind.prompt_filename = "nice.txt"
         else:
             c.bot.mind.prompt_filename = "naughty.txt"
-        logger.info(f"[NaughtyNice] Current prompt filename: {c.bot.mind.prompt_filename}")
+        logger.info(
+            f"[NaughtyNice] Current prompt filename: {c.bot.mind.prompt_filename}"
+        )
 
         # TODO move this to its own command
         # Summoning is currently too abusable - people just fucking love to slam the Razzler
@@ -277,7 +290,9 @@ class RazzlerMindCommand(Command):
                 if mention["name"] != c.bot._phone_number:
                     continue
 
-                logger.info(f"[RazzlerMind] This message is for me! Sent by {c.message.source}")
+                logger.info(
+                    f"[RazzlerMind] This message is for me! Sent by {c.message.source}"
+                )
 
                 await c.start_typing()
 
@@ -306,6 +321,7 @@ class RazzlerMindCommand(Command):
                             c,
                             target_name=target_name,
                             image_chance=c.bot.mind.razzler_image_rate,
+                            summoner=c.bot.get_contact(c.message.source),
                         )
 
                     elif message_text.replace("The Razzler", "").strip():
@@ -315,7 +331,9 @@ class RazzlerMindCommand(Command):
                             )
                         )
                         response, image = get_reply(
-                            c, image_chance=c.bot.mind.razzler_image_rate
+                            c,
+                            image_chance=c.bot.mind.razzler_image_rate,
+                            summoner=c.bot.get_contact(c.message.source),
                         )
 
                     elif len(c.message.mentions) == 1:
@@ -329,6 +347,7 @@ class RazzlerMindCommand(Command):
                             c,
                             target_name=target_name,
                             image_chance=c.bot.mind.razzler_image_rate,
+                            summoner=target_name,
                         )
 
                     else:
@@ -515,7 +534,7 @@ class ConfigEditorCommand(Command):
                 )
                 return
             c.bot.mind.profile_model = model
-            
+
         elif command == "chat_length":
             if not len(args):
                 await c.send("My chat length is {}".format(c.bot.chat_history_length))
@@ -578,7 +597,7 @@ class ConfigEditorCommand(Command):
                 "You are playing The Razzler, a fucking AI who has just had their settings changed. You are fucking angry about it, and you're damn well going to say something. What do you fucking say? ",
             )
         ]
-        response = c.bot.mind.create_chat_completion(messages)
+        response = c.bot.mind.create_chat_completion(messages, model="gpt-3.5-turbo")
         response: str = response["choices"][0]["message"]["content"]
         await c.send(response)
         await c.stop_typing()
@@ -595,8 +614,9 @@ class RazzlerReportProfileCommand(Command):
         # Recall from long-term memory
         group = c.message.recipient()
         profile = c.bot.mind.get_profile(group=group, name=target_name)
-        
-        await c.send("Here's what I know about {}".format(target_name))
+        spending = c.bot.mind.geet_spending(target_name)
+
+        await c.send("You have spent {:.3f}\n{}".format(spending, target_name))
         await c.send(profile)
 
 

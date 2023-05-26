@@ -59,8 +59,8 @@ class SignalAI:
     debug: bool = False
     razzler_rate: float = 0.1
     razzler_image_rate: float = 0.1
-    
-    enc: Dict[str, tiktoken.Encoding] = None # type: ignore
+
+    enc: Dict[str, tiktoken.Encoding] = None  # type: ignore
 
     def __post_init__(self):
         self.enc = {
@@ -76,7 +76,6 @@ class SignalAI:
         self.total_budget = 0.0
 
     def get_profile_fname(self, group, name):
-
         profile_fname = self.profile_fname_template.format(group=group, name=name)
         profile_fname = profile_fname.replace(" ", "")
         profile_fname = clean_filename(profile_fname)
@@ -110,6 +109,7 @@ class SignalAI:
         self,
         messages: list,  # type: ignore
         model: str = None,
+        spender: str = None,
     ) -> str:
         """
         Create a chat completion and update the cost.
@@ -134,10 +134,10 @@ class SignalAI:
             logger.debug(f"[GPTInterface] Response: {response}")
         prompt_tokens = response.usage.prompt_tokens
         completion_tokens = response.usage.completion_tokens
-        self.update_cost(prompt_tokens, completion_tokens, self.model)
+        self.update_cost(prompt_tokens, completion_tokens, self.model, spender)
         return response
 
-    def create_image_completion(self, text: str) -> str:
+    def create_image_completion(self, text: str, spender=None) -> str:
         """
         Create an image completion and update the cost.
 
@@ -156,7 +156,7 @@ class SignalAI:
             logger.info(f"[GPTInterface] Response: {response}")
             image_url = response["data"][0]["url"]
 
-            self.update_cost(1, 0, "image")
+            self.update_cost(1, 0, "image", spender)
         except:
             image_url = "https://cdn.openart.ai/stable_diffusion/42f53e9b69daeaef0d2e7b29f9cb938e2e385496_2000x2000.webp"
 
@@ -166,6 +166,7 @@ class SignalAI:
         self,
         text_list: List[str],
         model: str = "text-embedding-ada-002",
+        spender: str = None,
     ) -> List[float]:
         """
         Create an embedding for the given input text using the specified model.
@@ -179,10 +180,10 @@ class SignalAI:
         """
         response = openai.Embedding.create(input=text_list, model=model)
 
-        self.update_cost(response.usage.prompt_tokens, 0, model)
+        self.update_cost(response.usage.prompt_tokens, 0, model, spender)
         return response["data"][0]["embedding"]
 
-    def update_cost(self, prompt_tokens, completion_tokens, model):
+    def get_this_cost(self, prompt_tokens, completion_tokens, model):
         """
         Update the total cost, prompt tokens, and completion tokens.
 
@@ -197,12 +198,27 @@ class SignalAI:
             prompt_tokens * COSTS[model]["prompt"]
             + completion_tokens * COSTS[model]["completion"]
         ) / 1000
-        self.total_cost += this_cost
+        return this_cost
+
+    def update_cost(self, prompt_tokens, completion_tokens, model, spender=None):
+        this_cost = self.get_this_cost(prompt_tokens, completion_tokens, model)
+        
+        # Load the cost JSON file
+        spending: Dict = json.load(open(self.total_cost_filename, "r"))
+        spending["total_cost"] += this_cost
+        
+        if spender not in spending.keys():
+            spending[spender] = 0.0
+        
+        spending[spender] += this_cost
+        json.dump(spending, open(self.total_cost_filename, "w"))
         logger.info(
             f"[GPTInterface] OpenAI call cost ${this_cost:.3f}. Total running cost: ${self.total_cost:.3f} out of a budget of ${self.total_budget:.3f}"
         )
-        with open(self.total_cost_filename, "w") as f:
-            json.dump({"total_cost": self.total_cost}, f)
+        
+    def get_spending(self, spender):
+        spending: Dict = json.load(open(self.total_cost_filename, "r"))
+        return spending[spender]
 
     def set_total_budget(self, total_budget):
         """

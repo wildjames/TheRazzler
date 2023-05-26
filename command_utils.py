@@ -52,7 +52,7 @@ def download_image_base64(url):
         return None
 
 
-def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
+def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0, summoner=None):
     """Return a razzle from the AI.
 
     The razz will be addressed to the target_name
@@ -130,13 +130,14 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
     t0 = time.time()
     while time.time() - t0 < 10:
         try:
-            response = mind.create_chat_completion(GPT_messages)
+            response = mind.create_chat_completion(GPT_messages, spender=summoner)
             response: str = response["choices"][0]["message"]["content"]
             break
         except:
             logger.info("[Razzle] GPT timed out, trying again.")
 
     logger.info(f"[Razzle] came up with the response: {response}")
+
 
     if response.startswith("The Razzler:"):
         response = response[13:]
@@ -180,7 +181,7 @@ def get_razzle(c: Context, target_name: str = None, image_chance: float = 0.0):
     return response, image
 
 
-def get_reply(c: Context, image_chance: float = 0.0):
+def get_reply(c: Context, image_chance: float = 0.0, summoner=None):
     """Return a razzle from the AI.
 
     The razz will be addressed to the target_name
@@ -257,7 +258,7 @@ def get_reply(c: Context, image_chance: float = 0.0):
     t0 = time.time()
     while time.time() - t0 < 60:
         try:
-            response = mind.create_chat_completion(GPT_messages)
+            response = mind.create_chat_completion(GPT_messages, spender=summoner)
             response: str = response["choices"][0]["message"]["content"]
             break
         except Exception as e:
