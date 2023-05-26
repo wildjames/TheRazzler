@@ -62,7 +62,7 @@ def get_razzle(
     Returns a string, containing the message body, and an optional image encoded in base64, or None if no image was made.
     """
     # Get the chat history from storage
-    history_key = "chat_history: {}".format(c.message.recipient())
+    history_key = "chat_history: {}".formatmessage.recipient())
     if c.bot.storage.exists(history_key):
         message_history = c.bot.storage.read(history_key)
     else:
@@ -355,7 +355,7 @@ async def create_character_profile(bot, group: str, target: str):
     profile = bot.mind.get_profile(group=group, name=target)
 
     # Get the chat history from storage
-    history_key = "chat_history: {}".format(c.message.recipient())
+    history_key = "chat_history: {}".format(group)
     if bot.storage.exists(history_key):
         message_history = bot.storage.read(history_key)
     else:
