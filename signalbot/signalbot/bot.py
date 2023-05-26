@@ -194,6 +194,8 @@ class SignalBot:
 
         # Run event loop
         self._event_loop.run_forever()
+        
+        self._event_loop.run_until_complete(self.send(self.admin, "Razzler is online!"))
 
     def stop(self):
         logger.info("[Bot] Stopping bot")
