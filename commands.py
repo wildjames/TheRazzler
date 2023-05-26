@@ -110,8 +110,9 @@ class SaveChatHistory(Command):
             ]
 
             # call create_character_profile on each name in active_names in parallel, using async
+            group = c.message.recipient()
             tasks = [
-                asyncio.create_task(create_character_profile(c, name))
+                asyncio.create_task(create_character_profile(c, group, name))
                 for name in active_names
             ]
             await asyncio.gather(*tasks)
@@ -204,8 +205,9 @@ class RazzlerProfilesCommand(Command):
         ]
         logger.info("[ManualProfiling] Creating profiles on: {}".format(active_names))
         # call create_character_profile on each name in active_names in parallel, using async
+        group = c.message.recipient()
         tasks = [
-            asyncio.create_task(create_character_profile(c, name))
+            asyncio.create_task(create_character_profile(c, group, name))
             for name in active_names
         ]
         await asyncio.gather(*tasks)
@@ -243,7 +245,8 @@ class RazzlerProfileCommand(Command):
 
         logger.info("[ManualProfiling] Creating profile on: {}".format(target_name))
         # call create_character_profile on each name in target_name in parallel, using async
-        await create_character_profile(c, target_name)
+        group = c.message.recipient()
+        await create_character_profile(c, group, target_name)
         logger.info("[ManualProfiling] Done profiling 👍")
 
         await c.send(f"I have updated my profiles on {target_name} 🫦")

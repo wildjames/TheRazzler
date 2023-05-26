@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 
+
 class RestartHandler(FileSystemEventHandler):
     def __init__(self, script, extensions, max_restarts, time_threshold):
         self.script = script
@@ -37,26 +38,27 @@ class RestartHandler(FileSystemEventHandler):
         self.time_threshold = time_threshold
         self.restart_count = 0
         self.last_restart = time.time()
+        self.bot = None
 
     def on_modified(self, event):
-        if not event.is_directory and any(
-            event.src_path.endswith(ext) for ext in self.extensions
-        ):
+        if not event.is_directory and any(event.src_path.endswith(ext) for ext in self.extensions):
             current_time = time.time()
             if current_time - self.last_restart > self.time_threshold:
                 self.restart_count = 0
 
             if self.restart_count < self.max_restarts:
-                logger.critical(
-                    f"[WatchDog] Code change detected in {event.src_path}. Restarting..."
-                )
+                print(f"Code change detected in {event.src_path}. Restarting...")
+                if self.bot is not None:
+                    print("Stopping bot...")
+                    self.bot.stop()
                 self.restart_count += 1
                 self.last_restart = current_time
                 os.execl(sys.executable, sys.executable, *sys.argv)
             else:
-                logger.critical(
-                    "[WatchDog] Maximum restarts reached. Please wait before making more changes."
-                )
+                print("Maximum restarts reached. Please wait before making more changes.")
+
+    def set_bot(self, bot):
+        self.bot = bot
 
 
 # Register the openAI token
@@ -65,7 +67,7 @@ with open("openai_api_token.txt", "r") as f:
 openai.api_key = openai_api_token
 
 
-def main(config: dict):
+def main(config: dict, restart_handler: RestartHandler):
     bot_config = config["bot"]
     llm_config = config["llm"]
 
@@ -119,6 +121,10 @@ def main(config: dict):
     bot.register(HelpCommand())
 
     bot.start()
+    
+    # Set the bot in the restart handler
+    restart_handler.set_bot(bot)
+    
 
 
 if __name__ == "__main__":
@@ -141,13 +147,9 @@ if __name__ == "__main__":
     try:
         with open("config.json", "r") as f:
             config = json.load(f)
-        main(config)
+        main(config, event_handler)
 
     except KeyboardInterrupt:
         observer.stop()
 
     observer.join()
-
-if __name__ == "__main__":
-
-    main(config)

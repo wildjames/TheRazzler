@@ -341,21 +341,13 @@ def parse_mentions(c: Context, message_string: str) -> str:
     return message_string
 
 
-async def create_character_profile(c: Context, target: str):
-    """Take a target name and create a character profile for them based on the current chat history."""
-    group = c.message.recipient()
-    profile = c.bot.mind.get_profile(group=group, name=target)
-
-    # Get the chat history from storage
-    history_key = "chat_history: {}".format(c.message.recipient())
-    if c.bot.storage.exists(history_key):
-        message_history = c.bot.storage.read(history_key)
-    else:
-        message_history = []
+async def get_character_profile(bot, group, target):
 
     # Retrieve the AI
-    mind: SignalAI = c.bot.mind
+    mind: SignalAI = bot.mind
 
+    profile = mind.get_profile(group=group, name=target)
+    
     # Check that we're in budget
     if mind.total_budget > 0 and mind.total_cost > mind.total_budget:
         logger.info("[CharacterProfile] Exceeded budget, sending a message about that.")
@@ -364,7 +356,14 @@ async def create_character_profile(c: Context, target: str):
     # Get the target
     logger.info("[CharacterProfile] Getting the target for the Razzler.")
 
-    with open(c.bot.mind.prompt_profile_filename, "r") as f:
+    # Get the chat history from storage
+    history_key = "chat_history: {}".format(group)
+    if bot.storage.exists(history_key):
+        message_history = bot.storage.read(history_key)
+    else:
+        message_history = []
+
+    with open(bot.mind.prompt_profile_filename, "r") as f:
         prompt = f.read()
 
     prompt = prompt.format(target_name=target)
@@ -376,7 +375,7 @@ async def create_character_profile(c: Context, target: str):
     combined_message = "Message history: \n" + "\n".join(message_history)
 
     # There is a 4097 token limit. This doesn't actually work since tokens can be (and usually are) a few characters, but it's a start.
-    combined_message = combined_message[-4000 - c.bot.mind.max_tokens :]
+    combined_message = combined_message[-4000 - bot.mind.max_tokens :]
 
     GPT_messages = [
         create_chat_message("system", prompt),
@@ -400,6 +399,11 @@ async def create_character_profile(c: Context, target: str):
     logger.info(f"[CharacterProfile] came up with the response: {response}")
 
     response = response.strip()
+    
+async def create_character_profile(c: Context, group: str, target: str):
+    """Take a target name and create a character profile for them based on the current chat history."""
+    await get_character_profile(c.bot, group, target)
+
     # Save the response to the chat history
     with open(c.bot.mind.get_profile_fname(group, target), "w") as f:
         f.write(response + "\n")

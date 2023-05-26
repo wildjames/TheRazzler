@@ -4,6 +4,8 @@ import time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import logging
 
+from command_utils import get_character_profile
+
 
 from .api import SignalAPI, ReceiveMessagesError
 from .command import Command
@@ -193,6 +195,41 @@ class SignalBot:
 
         # Run event loop
         self._event_loop.run_forever()
+        
+    def stop(self):
+        logger.info("[Bot] Stopping bot")
+        
+        # Create profiles for each group chat before closing
+        for group_id in self.group_chats.values():
+            print("Creating profile for group: {}".format(group_id))
+            
+            history_key = "chat_history: {}".format(group_id)
+            logger.info("[ManualProfiling] Using history key: {}".format(history_key))
+            
+            message_history = self.storage.read(history_key)
+
+            # TODO: Crude. Could be better. Notably, if you mention a name of someone in the contacts list in a text,
+            # they will be profiled even if they are not in the chat.
+            active_names = [
+                name
+                for name in self.target_lookup.values()
+                if name in "".join(message_history)
+            ]
+            logger.info("[ManualProfiling] Creating profiles on: {}".format(active_names))
+            
+            # call create_character_profile on each name in active_names in parallel, using async
+            tasks = [
+                asyncio.create_task(get_character_profile(self, group_id, name))
+                for name in active_names
+            ]
+            
+            # Run the tasks in the event loop
+            self._event_loop.run_until_complete(asyncio.wait(tasks))
+            
+            logger.info("[ManualProfiling] Done profiling 👍")
+
+        
+        self._event_loop.stop()
 
     async def send(
         self,
