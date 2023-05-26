@@ -206,6 +206,12 @@ class SignalBot:
             )
         )
 
+        # Create a new event loop
+        event_loop = asyncio.new_event_loop()
+
+        # Set the event loop as current
+        asyncio.set_event_loop(event_loop)
+
         # Create profiles for each group chat before closing
         for group_id in self.group_chats.keys():
             print("Creating profile for group: {}".format(group_id))
@@ -227,9 +233,9 @@ class SignalBot:
                     "[ManualProfiling] Creating profiles on: {}".format(active_names)
                 )
 
-                # Run each coroutine sequentially in the event loop
+                # Run each coroutine sequentially in the new event loop
                 for name in active_names:
-                    self._event_loop.run_until_complete(
+                    event_loop.run_until_complete(
                         create_character_profile(self, group_id, name)
                     )
             except Exception as e:
@@ -243,7 +249,9 @@ class SignalBot:
 
             logger.info("[ManualProfiling] Done profiling 👍")
 
-        self._event_loop.stop()
+        # Stop and close the event loop
+        event_loop.stop()
+        event_loop.close()
 
     async def send(
         self,
