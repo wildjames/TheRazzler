@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 
-
 class RestartHandler(FileSystemEventHandler):
     def __init__(self, script, extensions, max_restarts, time_threshold):
         self.script = script
@@ -41,13 +40,17 @@ class RestartHandler(FileSystemEventHandler):
         self.bot = None
 
     def on_modified(self, event):
-        if not event.is_directory and any(event.src_path.endswith(ext) for ext in self.extensions):
+        if not event.is_directory and any(
+            event.src_path.endswith(ext) for ext in self.extensions
+        ):
             current_time = time.time()
             if current_time - self.last_restart > self.time_threshold:
                 self.restart_count = 0
 
             if self.restart_count < self.max_restarts:
-                logger.critical(f"Code change detected in {event.src_path}. Restarting...")
+                logger.critical(
+                    f"Code change detected in {event.src_path}. Restarting..."
+                )
                 if self.bot is not None:
                     logger.critical("Stopping bot...")
                     self.bot.stop()
@@ -55,7 +58,9 @@ class RestartHandler(FileSystemEventHandler):
                 self.last_restart = current_time
                 os.execl(sys.executable, sys.executable, *sys.argv)
             else:
-                logger.critical("Maximum restarts reached. Please wait before making more changes.")
+                logger.critical(
+                    "Maximum restarts reached. Please wait before making more changes."
+                )
 
     def set_bot(self, bot):
         self.bot = bot
@@ -122,10 +127,9 @@ def main(config: dict, restart_handler: RestartHandler):
     bot.register(HelpCommand())
 
     bot.start()
-    
+
     # Set the bot in the restart handler
     restart_handler.set_bot(bot)
-    
 
 
 if __name__ == "__main__":
