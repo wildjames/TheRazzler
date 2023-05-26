@@ -200,8 +200,10 @@ class SignalBot:
 
         from command_utils import create_character_profile
 
+        logger.info("[Bot] Creating profiles for all users in the following: {}".format(self.group_chats))
+
         # Create profiles for each group chat before closing
-        for group_id in self.group_chats.values():
+        for group_id in self.group_chats.keys():
             print("Creating profile for group: {}".format(group_id))
 
             history_key = "chat_history: {}".format(group_id)
