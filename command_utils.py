@@ -341,7 +341,7 @@ def parse_mentions(c: Context, message_string: str) -> str:
     return message_string
 
 
-async def create_character_profile(bot: SignalAI, group: str, target: str):
+async def create_character_profile(bot, group: str, target: str):
     """Take a target name and create a character profile for them based on the current chat history."""
     profile = bot.mind.get_profile(group=group, name=target)
 

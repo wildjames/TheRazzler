@@ -3,7 +3,7 @@ import json
 import time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import logging
-
+from typing import Any
 
 from .api import SignalAPI, ReceiveMessagesError
 from .command import Command
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class SignalBot:
     target_lookup: dict = None
+    mind: Any = None
 
     def __init__(self, config: dict):
         """SignalBot
@@ -169,13 +170,13 @@ class SignalBot:
 
     def get_contact(self, number: str) -> str:
         return self.target_lookup.get(number, number)
-        
+
     def add_contact(self, number: str, name: str):
         if self.get_contact(number) == name:
             return
-        
+
         logger.info(f"[Bot] Adding contact {name} with number {number}")
-        
+
         self.target_lookup[number] = name
         self.save_contacts()
 
@@ -193,19 +194,19 @@ class SignalBot:
 
         # Run event loop
         self._event_loop.run_forever()
-        
+
     def stop(self):
         logger.info("[Bot] Stopping bot")
-        
+
         from command_utils import create_character_profile
 
         # Create profiles for each group chat before closing
         for group_id in self.group_chats.values():
             print("Creating profile for group: {}".format(group_id))
-            
+
             history_key = "chat_history: {}".format(group_id)
             logger.info("[ManualProfiling] Using history key: {}".format(history_key))
-            
+
             message_history = self.storage.read(history_key)
 
             # TODO: Crude. Could be better. Notably, if you mention a name of someone in the contacts list in a text,
@@ -215,20 +216,21 @@ class SignalBot:
                 for name in self.target_lookup.values()
                 if name in "".join(message_history)
             ]
-            logger.info("[ManualProfiling] Creating profiles on: {}".format(active_names))
-            
+            logger.info(
+                "[ManualProfiling] Creating profiles on: {}".format(active_names)
+            )
+
             # call create_character_profile on each name in active_names in parallel, using async
             tasks = [
                 asyncio.create_task(create_character_profile(self, group_id, name))
                 for name in active_names
             ]
-            
+
             # Run the tasks in the event loop
             self._event_loop.run_until_complete(asyncio.wait(tasks))
-            
+
             logger.info("[ManualProfiling] Done profiling 👍")
 
-        
         self._event_loop.stop()
 
     async def send(

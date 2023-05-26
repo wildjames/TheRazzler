@@ -47,15 +47,15 @@ class RestartHandler(FileSystemEventHandler):
                 self.restart_count = 0
 
             if self.restart_count < self.max_restarts:
-                print(f"Code change detected in {event.src_path}. Restarting...")
+                logger.critical(f"Code change detected in {event.src_path}. Restarting...")
                 if self.bot is not None:
-                    print("Stopping bot...")
+                    logger.critical("Stopping bot...")
                     self.bot.stop()
                 self.restart_count += 1
                 self.last_restart = current_time
                 os.execl(sys.executable, sys.executable, *sys.argv)
             else:
-                print("Maximum restarts reached. Please wait before making more changes.")
+                logger.critical("Maximum restarts reached. Please wait before making more changes.")
 
     def set_bot(self, bot):
         self.bot = bot
@@ -68,6 +68,7 @@ openai.api_key = openai_api_token
 
 
 def main(config: dict, restart_handler: RestartHandler):
+    logger.info("[Main] Starting the Razzler")
     bot_config = config["bot"]
     llm_config = config["llm"]
 
