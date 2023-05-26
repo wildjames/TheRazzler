@@ -350,9 +350,12 @@ def parse_mentions(c: Context, message_string: str) -> str:
     return message_string
 
 
-async def create_character_profile(bot, group: str, target: str):
+async def create_character_profile(bot, group: str, target: str, model=None):
     """Take a target name and create a character profile for them based on the current chat history."""
     profile = bot.mind.get_profile(group=group, name=target)
+    
+    if model is None:
+        model = bot.mind.profile_model
 
     # Get the chat history from storage
     history_key = "chat_history: {}".format(group)
@@ -400,7 +403,7 @@ async def create_character_profile(bot, group: str, target: str):
     while time.time() - t0 < 10:
         try:
             response = mind.create_chat_completion(
-                GPT_messages, model=bot.mind.profile_model
+                GPT_messages, model=model
             )
             response: str = response["choices"][0]["message"]["content"]
             break

@@ -236,7 +236,8 @@ class SignalBot:
                 # Run each coroutine sequentially in the new event loop
                 for name in active_names:
                     event_loop.run_until_complete(
-                        create_character_profile(self, group_id, name)
+                        # Use the fast model
+                        create_character_profile(self, group_id, name, model="gpt-3.5-turbo")
                     )
             except Exception as e:
                 logger.warning(
