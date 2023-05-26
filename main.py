@@ -53,7 +53,10 @@ class RestartHandler(FileSystemEventHandler):
                 )
                 if self.bot is not None:
                     logger.critical("Stopping bot...")
-                    self.bot.stop()
+                    try:
+                        self.bot.stop()
+                    except:
+                        logger.exception("Error stopping bot. Restarting anyway...")
                 self.restart_count += 1
                 self.last_restart = current_time
                 os.execl(sys.executable, sys.executable, *sys.argv)
