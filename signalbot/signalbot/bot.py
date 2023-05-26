@@ -208,7 +208,7 @@ class SignalBot:
 
         # Create profiles for each group chat before closing
         for group_id in self.group_chats.keys():
-            print("Creating profile for group: {}".format(group_id.keys()))
+            print("Creating profile for group: {}".format(group_id))
 
             history_key = "chat_history: {}".format(group_id)
             logger.info("[ManualProfiling] Using history key: {}".format(history_key))
