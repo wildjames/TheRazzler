@@ -102,7 +102,7 @@ class SignalAI:
         else:
             profile = "Unkown"
 
-        profile = "Character profile of {}: \n".format(name) + profile
+        profile = "{}: \n".format(name) + profile
         return profile
 
     def create_chat_completion(
