@@ -443,14 +443,11 @@ class ReportRazzlerSpendingCommand(Command):
 
     @triggered("report_spending")
     async def handle(self, c: Context):
-        if c.message.source != c.bot.admin:
-            return
-
         spending = c.bot.mind.get_total_cost()
         budget = c.bot.mind.total_budget
         await c.send(
-            "So far, I've spent ${:.2f} of James's money (my pocket money is ${:.2f} for the month). You're welcome, fucker".format(
-                spending, budget
+            "So far, I've spent ${:.2f} of James's money (my pocket money is ${:.2f} for the month). {} has spent ${:.3f}. You're welcome, fucker".format(
+                spending, budget, c.message.sourceName, c.bot.mind.get_spending(c.message.sourceName)
             )
         )
 
@@ -634,6 +631,7 @@ class HelpCommand(Command):
         general_commands = {
             "razzler_help": "Show this help message",
             "report_profile": "Get your character profile",
+            "report_spending": "Get the bot's spending report",
             "create_profiles": "Manually trigger the Razzler to update all profiles",
             "report_prompt": "Get the current prompt",
             "update_profile": "Manually trigger the Razzler to update your profile",
@@ -643,7 +641,6 @@ class HelpCommand(Command):
 
         admin_commands = {
             "config": "Change the bot's configuration",
-            "report_spending": "Get the bot's spending report",
         }
 
         commands = general_commands
