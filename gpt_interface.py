@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
 import openai
+from openai.error import RateLimitError
 import tiktoken
 from modelsinfo import COSTS
 
@@ -124,12 +125,22 @@ class SignalAI:
         if model is None:
             model = self.model
         logger.debug(f"[GPTInterface] Using model: {model}")
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=messages,
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
-        )
+        
+        try:
+            response = openai.ChatCompletion.create(
+                model=model,
+                messages=messages,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+        except RateLimitError:
+            # Fall back on GPT 3.5
+            response = self.create_chat_completion(
+                messages=messages,
+                model="gpt-3.5-turbo",
+                spender=spender,
+            )
+            
         if self.debug:
             logger.debug(f"[GPTInterface] Response: {response}")
         prompt_tokens = response.usage.prompt_tokens
