@@ -70,6 +70,11 @@ class SignalAI:
         }
         self.get_total_cost()
 
+        # Initialise the total cost file
+        if not os.path.exists(self.total_cost_filename):
+            with open(self.total_cost_filename, "w") as f:
+                json.dump({"total_cost": 0.0}, f)
+
     def reset(self):
         self.total_prompt_tokens = 0
         self.total_completion_tokens = 0
@@ -125,7 +130,7 @@ class SignalAI:
         if model is None:
             model = self.model
         logger.debug(f"[GPTInterface] Using model: {model}")
-        
+
         try:
             response = openai.ChatCompletion.create(
                 model=model,
@@ -140,7 +145,7 @@ class SignalAI:
                 model="gpt-3.5-turbo",
                 spender=spender,
             )
-            
+
         if self.debug:
             logger.debug(f"[GPTInterface] Response: {response}")
         prompt_tokens = response.usage.prompt_tokens

@@ -71,9 +71,7 @@ class RestartHandler(FileSystemEventHandler):
 
 
 # Register the openAI token
-with open("openai_api_token.txt", "r") as f:
-    openai_api_token = f.readline().strip()
-openai.api_key = openai_api_token
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
 def main(config: dict, restart_handler: RestartHandler):
@@ -132,6 +130,8 @@ def main(config: dict, restart_handler: RestartHandler):
 
     # Set the bot in the restart handler
     restart_handler.set_bot(bot)
+
+    logger.info("[Main] Starting the bot")
 
     bot.start()
 

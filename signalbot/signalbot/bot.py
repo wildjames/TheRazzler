@@ -72,7 +72,8 @@ class SignalBot:
             config_storage = self.config["storage"]
             self._redis_host = config_storage["redis_host"]
             self._redis_port = config_storage["redis_port"]
-            self.storage = RedisStorage(self._redis_host, self._redis_port)
+            self._redis_password = config_storage.get("redis_password", None)
+            self.storage = RedisStorage(self._redis_host, self._redis_port, self._redis_password)
         except Exception:
             self.storage = InMemoryStorage()
             logger.warning(

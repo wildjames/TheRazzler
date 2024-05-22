@@ -2,7 +2,7 @@
 
 # Check if an argument is provided
 if [ "$#" -ne 1 ]; then
-    echo "Usage: ./send_request.sh <number>"
+    echo "Usage: ./trust_number_command.sh <number>"
     exit 1
 fi
 
@@ -10,4 +10,4 @@ fi
 number=$1
 
 # Send the cURL request
-curl -X PUT -H "Content-Type: application/json" "http://127.0.0.1:8080/v1/identities/+447743992060/trust/${number}" -d '{"trust_all_known_keys": true}'
+curl -X PUT -H "Content-Type: application/json" "http://192.168.0.111:8231/v1/identities/+447808723931/trust/${number}" -d '{"trust_all_known_keys": true}'

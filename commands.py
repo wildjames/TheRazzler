@@ -356,6 +356,7 @@ class RazzlerMindCommand(Command):
                         attach = [image]
                     else:
                         attach = None
+                    logger.info(f"[RazzlerMind]: Response: {response} | Attachement? {attach is not None}")
                     await c.send(response, base64_attachments=attach)
                 except Exception as e:
                     logger.exception("[RazzlerMind] ❗️ Error getting razzle")
@@ -397,15 +398,16 @@ class RazzlerMindCommand(Command):
             response, image = get_razzle(c, image_chance=c.bot.mind.razzler_image_rate)
             if response == "":
                 raise Exception("[RazzlerMind] Razzle returned empty string")
+            logger.info(f"[RazzlerMind] Razzle response: {response}")
             if image:
                 attach = [image]
             else:
                 attach = None
         except:
             logger.exception("[RazzlerMind] Error getting razzle")
-            # await c.send(
-            #     "", base64_attachments=[load_image(kick_sand)]
-            # )
+            await c.send(
+                "", base64_attachments=[load_image(kick_sand)]
+            )
             await c.stop_typing()
             return
 

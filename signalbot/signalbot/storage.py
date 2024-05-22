@@ -42,8 +42,8 @@ class InMemoryStorage(Storage):
 
 
 class RedisStorage(Storage):
-    def __init__(self, host, port):
-        self._redis = redis.Redis(host=host, port=port, db=0)
+    def __init__(self, host, port, password=None):
+        self._redis = redis.Redis(host=host, port=port, db=0, password=password)
 
     def exists(self, key: str) -> bool:
         return self._redis.exists(key)
