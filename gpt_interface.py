@@ -64,9 +64,19 @@ class SignalAI:
     enc: Dict[str, tiktoken.Encoding] = None  # type: ignore
 
     def __post_init__(self):
+        if self.model.startswith("gpt-4"):
+            use_enc = "gpt-4"
+        else:
+            use_enc = self.model
+
+        if self.profile_model.startswith("gpt-4"):
+            use_profile_enc = "gpt-4"
+        else:
+            use_profile_enc = self.profile_model
+
         self.enc = {
-            "voice": tiktoken.encoding_for_model(self.model),
-            "profile": tiktoken.encoding_for_model(self.profile_model),
+            "voice": tiktoken.encoding_for_model(use_enc),
+            "profile": tiktoken.encoding_for_model(use_profile_enc),
         }
         self.get_total_cost()
 
@@ -210,9 +220,10 @@ class SignalAI:
         """
         self.total_prompt_tokens += prompt_tokens
         self.total_completion_tokens += completion_tokens
+        my_cost = COSTS.get(model, {"prompt": 0.0, "completion": 0.0})
         this_cost = (
-            prompt_tokens * COSTS[model]["prompt"]
-            + completion_tokens * COSTS[model]["completion"]
+            prompt_tokens * my_cost["prompt"]
+            + completion_tokens * my_cost["completion"]
         ) / 1000
         return this_cost
 
