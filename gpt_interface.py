@@ -13,6 +13,9 @@ from modelsinfo import COSTS
 logger = logging.getLogger(__name__)
 
 
+DATA_DIR = os.environ.get("DATA_DIR", "/home/data")
+
+
 def clean_filename(filename):
     # Replaces non-alphanumeric characters (except for periods, hyphens and underscores) with an underscore
     filename = re.sub(r"[^a-zA-Z0-9_.-]", "_", filename)
@@ -64,6 +67,11 @@ class SignalAI:
     enc: Dict[str, tiktoken.Encoding] = None  # type: ignore
 
     def __post_init__(self):
+        # All filenames need to be in the DATA_DIR directory
+        self.prompt_filename = os.path.join(DATA_DIR, self.prompt_filename)
+        self.prompt_profile_filename = os.path.join(DATA_DIR, self.prompt_profile_filename)
+        self.total_cost_filename = os.path.join(DATA_DIR, self.total_cost_filename)
+
         if self.model.startswith("gpt-4"):
             use_enc = "gpt-4"
         else:

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import logging
@@ -13,6 +14,9 @@ from .context import Context
 
 
 logger = logging.getLogger(__name__)
+
+
+DATA_DIR = os.environ.get("DATA_DIR", "/home/data")
 
 
 class SignalBot:
@@ -39,7 +43,7 @@ class SignalBot:
         self.user_chats = set()  # populated by .listenUser()
         self.group_chats = {}  # populated by .listenGroup()
 
-        self.contacts_file = config.get("contacts_filename", "contacts.json")
+        self.contacts_file = os.path.join(DATA_DIR, "contacts.json")
         self.target_lookup: dict = {}
         self.load_contacts()
 

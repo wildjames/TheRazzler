@@ -1,6 +1,5 @@
 *.json
 *.csv
-*.txt
 
 openai_api_token.txt
 webhook_secret.txt

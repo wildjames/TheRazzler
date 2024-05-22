@@ -13,6 +13,10 @@ from signalbot.signalbot import Context
 logger = logging.getLogger(__name__)
 
 
+DATA_DIR = os.environ.get("DATA_DIR", "/home/data")
+REPLY_PROMPT = os.path.join(DATA_DIR, "reply_prompt.txt")
+
+
 def interleave(list1, list2):
     newlist = []
     a1 = len(list1)
@@ -213,7 +217,7 @@ def get_reply(c: Context, image_chance: float = 0.0, summoner=None):
     # Get the target
     logger.info("[RazzleReply] Getting the target for the Razzler.")
 
-    with open("reply_prompt.txt", "r") as f:
+    with open(REPLY_PROMPT, "r") as f:
         prompt = f.read()
 
     if random.random() < image_chance:
@@ -353,7 +357,7 @@ def parse_mentions(c: Context, message_string: str) -> str:
 async def create_character_profile(bot, group: str, target: str, model=None):
     """Take a target name and create a character profile for them based on the current chat history."""
     profile = bot.mind.get_profile(group=group, name=target)
-    
+
     if model is None:
         model = bot.mind.profile_model
 

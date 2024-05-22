@@ -72,6 +72,10 @@ class RestartHandler(FileSystemEventHandler):
 
 # Register the openAI token
 openai.api_key = os.environ["OPENAI_API_KEY"]
+# This is where I'll put any files I create
+DATA_DIR = os.environ.get("DATA_DIR", "/home/data")
+if not os.path.isdir(DATA_DIR):
+    os.makedirs(DATA_DIR)
 
 
 def main(config: dict, restart_handler: RestartHandler):
@@ -154,7 +158,8 @@ if __name__ == "__main__":
     observer.start()
 
     try:
-        with open("config.json", "r") as f:
+        config_fname = os.path.join(DATA_DIR, "config.json")
+        with open(config_fname, "r") as f:
             config = json.load(f)
         main(config, event_handler)
 
