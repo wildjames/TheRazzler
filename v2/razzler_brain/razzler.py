@@ -4,6 +4,7 @@ in the outgoing_messages queue."""
 
 import json
 from logging import getLogger
+from typing import Union
 
 import pika
 import redis
@@ -12,6 +13,7 @@ from pika.spec import Basic
 from signal_interface.signal_data_classes import (
     IncomingMessage,
     OutgoingMessage,
+    OutgoingReaction,
 )
 from utils.storage import RedisCredentials
 
@@ -69,23 +71,29 @@ class RazzlerBrain:
 
         # Prepare response message
         if msg.envelope.dataMessage.message:
-            if msg.envelope.dataMessage.message != "ping":
-                return
+            if msg.envelope.dataMessage.message == "ping":
+                logger.info(f"Preparing response to {msg.envelope.sourceName}")
+                response_message = OutgoingMessage(
+                    recipient=msg.envelope.source, message="PONG"
+                )
+            else:
+                response_message = OutgoingReaction(
+                    recipient=msg.envelope.source,
+                    # React with the horny emoji
+                    reaction="🍆",
+                    targetAuthor=msg.envelope.sourceUuid,
+                    timestamp=msg.envelope.timestamp,
+                )
 
-            logger.info(f"Preparing response to {msg.envelope.sourceName}")
-            response_message = OutgoingMessage(
-                recipient=msg.envelope.source, message="PONG"
-            )
+            self.send_response(response_message)
 
-            self.send_text_response(response_message)
-
-    def send_text_response(self, message: OutgoingMessage):
+    def send_response(self, message: Union[OutgoingMessage, OutgoingReaction]):
         """Publish a response message to the outgoing_messages queue."""
-        logger.debug(f"Sending text response: {message}")
+        logger.debug(f"Publishing text response: {message}")
         self.channel.basic_publish(
             exchange="",
             routing_key="outgoing_messages",
             body=message.model_dump_json(),
             properties=pika.BasicProperties(delivery_mode=2),
         )
-        logger.info("Sent ACK response to outgoing_messages queue.")
+        logger.info("Sent response to outgoing_messages queue.")

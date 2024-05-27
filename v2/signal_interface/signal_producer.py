@@ -8,7 +8,11 @@ from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import Basic
 
 from .signal_api import SignalAPI
-from .signal_data_classes import OutgoingMessage, SignalCredentials
+from .signal_data_classes import (
+    OutgoingMessage,
+    OutgoingReaction,
+    SignalCredentials,
+)
 
 logger = getLogger(__name__)
 
@@ -61,12 +65,19 @@ class SignalProducer:
     ):
         logger.info("Received message from RabbitMQ to send.")
         try:
-            outgoing_message = OutgoingMessage(**json.loads(body))
-            asyncio.run(self._process_outgoing_message(outgoing_message))
-            logger.info("Processed and acknowledged message.")
+            # Message is a JSON string. It can conform to either
+            # OutgoingMessage or OutgoingReaction.
+
+            message_dict = json.loads(body)
+            if "reaction" in message_dict:
+                outgoing_reaction = OutgoingReaction(**message_dict)
+                asyncio.run(self._process_outgoing_reaction(outgoing_reaction))
+            else:
+                outgoing_message = OutgoingMessage(**message_dict)
+                asyncio.run(self._process_outgoing_message(outgoing_message))
+
         except Exception as e:
             logger.error(f"Error processing message: {e}")
-            ch.basic_ack(delivery_tag=method.delivery_tag, requeue=True)
 
     async def _process_outgoing_message(self, message: OutgoingMessage):
         """Process and send outgoing messages using the Signal API."""
@@ -77,6 +88,19 @@ class SignalProducer:
             message.recipient, message.message, message.base64_attachments
         )
         logger.info("Message sent successfully.")
+
+    async def _process_outgoing_reaction(self, reaction: OutgoingReaction):
+        """Process and send outgoing reactions using the Signal API."""
+        logger.info(
+            f"Sending reaction to {reaction.recipient}: {reaction.reaction}"
+        )
+        await self.api_client.react(
+            reaction.recipient,
+            reaction.reaction,
+            reaction.targetAuthor,
+            reaction.timestamp,
+        )
+        logger.info("Reaction sent successfully.")
 
 
 def admin_message(

@@ -97,3 +97,10 @@ class OutgoingMessage(BaseModel):
     recipient: str
     message: str
     base64_attachments: List[str] = Field(default_factory=list)
+
+
+class OutgoingReaction(BaseModel):
+    recipient: str
+    reaction: str
+    targetAuthor: str
+    timestamp: int
