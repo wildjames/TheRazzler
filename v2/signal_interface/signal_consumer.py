@@ -1,8 +1,11 @@
 """This scripts should create a bot that gets and stores incoming messages from
 the signal server (use the signal API class provided).
 
-Incoming messages are checked periodically, and added to a rabbitMQ queue for processing by other components.
-Outgoing messages are received from the rabbitMQ queue and sent to the signal server.
+Incoming messages are checked periodically, and added to a rabbitMQ queue for
+processing by other components.
+
+Outgoing messages are received from the rabbitMQ queue and sent to the signal
+server.
 """
 
 import asyncio
@@ -10,13 +13,17 @@ import json
 from logging import getLogger
 from typing import Any, Dict
 
+import redis
 import pika
-from signal_api import SignalAPI
-from signal_data_classes import (
+from pika.adapters.blocking_connection import BlockingChannel
+
+from .signal_api import SignalAPI
+from .signal_data_classes import (
     IncomingMessage,
-    OutgoingMessage,
-    SignalInformation,
+    SignalCredentials,
 )
+from utils.phonebook import PhoneBook
+from utils.storage import load_phonebook, RedisCredentials
 
 logger = getLogger(__name__)
 
@@ -27,12 +34,17 @@ class SignalConsumer:
     """
 
     api_client: SignalAPI
-    signal_info: SignalInformation
+    signal_info: SignalCredentials
     event_loop: asyncio.AbstractEventLoop
+    rabbit_client: pika.BlockingConnection
+    redis_client: redis.Redis
+    channel: BlockingChannel
+    phonebook: PhoneBook
 
     def __init__(
         self,
-        signal_info: SignalInformation,
+        signal_info: SignalCredentials,
+        redis_config: RedisCredentials,
         rabbit_config: pika.ConnectionParameters,
     ):
         logger.info("Initializing SignalConsumer...")
@@ -41,25 +53,17 @@ class SignalConsumer:
         )
         self.signal_info = signal_info
         self.rabbit_client = pika.BlockingConnection(rabbit_config)
+        self.redis_client = redis.Redis(
+            host=redis_config.host,
+            port=redis_config.port,
+            db=redis_config.db,
+            password=redis_config.password,
+        )
 
-        # Handle the contacts list (get contacts, add contacts
-        self._init_contacts()
-
-        # Handle group chat setups (listen and whitelist my groups)
-        self._init_groups()
+        self.phonebook = load_phonebook()
 
         self._init_queue()
         self._init_mq()
-
-    def _init_contacts(self):
-        """This method should initialize the contacts list."""
-        # TODO
-        pass
-
-    def _init_groups(self):
-        """This method handles group chat setups."""
-        # TODO
-        pass
 
     def _init_queue(self):
         logger.info("Initializing scheduler...")
@@ -81,13 +85,6 @@ class SignalConsumer:
         # Create a task to listen for incoming messages
         self.event_loop.create_task(self.listen())
 
-        # Send a message to the admin number that the consumer has started
-        started_message = OutgoingMessage(
-            recipient=self.signal_info.admin_number,
-            message="SignalConsumer started.",
-        )
-        self.event_loop.create_task(self._process_outgoing(started_message))
-
         logger.info("Scheduler started. Running event loop...")
         self.event_loop.run_forever()
         logger.info("Event loop stopped.")
@@ -107,21 +104,21 @@ class SignalConsumer:
 
     async def _process_incoming(self, message: Dict[str, Any]):
         """Process incoming messages."""
-        logger.debug(f"Processing incoming message")
+        logger.debug("Processing incoming message")
 
         # Parse the json payload to an IncomingMessage object
         msg = IncomingMessage(**message)
-        logger.info(f"Converted message: {msg}")
+        logger.debug("Parsed incoming message payload")
 
         # These are messages to ignore - read receipts, typing indicators, etc.
         if msg.envelope.typingMessage:
-            logger.info(
+            logger.debug(
                 f"Typing message received: {msg.envelope.typingMessage.action}"
             )
             return
 
         if msg.envelope.receiptMessage:
-            logger.info(
+            logger.debug(
                 "Receipt message received. Has the message from timestamp"
                 f" {msg.envelope.timestamp} been read?"
                 f" {msg.envelope.receiptMessage.isRead}"
@@ -130,7 +127,7 @@ class SignalConsumer:
 
         # We only care about publishing data messages
         if msg.envelope.dataMessage:
-            logger.debug(f"Data message received")
+            logger.debug("Data message received")
             data = msg.envelope.dataMessage
 
             # If it has an attachement, we need to download it
@@ -156,16 +153,6 @@ class SignalConsumer:
             )
             logger.info(
                 "Added message to the processing queue: Timestamp"
-                f" {msg.envelope.timestamp}"
+                f" {msg.envelope.timestamp} from {msg.envelope.sourceNumber}"
             )
             return
-
-    async def _process_outgoing(self, message: OutgoingMessage):
-        """Process outgoing messages."""
-        logger.info(f"Processing outgoing message: {message}")
-        await self.api_client.send(
-            message.recipient,
-            message.message,
-            message.base64_attachments,
-        )
-        logger.info(f"Sent message: {message.message}")

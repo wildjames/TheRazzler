@@ -108,7 +108,10 @@ class SignalAPI:
         return f"http://{self.signal_service}/v1/reactions/{self.phone_number}"
 
     def _typing_indicator_uri(self):
-        return f"http://{self.signal_service}/v1/typing-indicator/{self.phone_number}"
+        return (
+            f"http://{self.signal_service}/v1/typing-indicator/"
+            "{self.phone_number}"
+        )
 
     def _download_attachment_uri(self, attachment_id: str):
         return f"http://{self.signal_service}/v1/attachments/{attachment_id}"

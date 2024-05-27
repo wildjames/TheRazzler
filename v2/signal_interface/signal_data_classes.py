@@ -8,7 +8,7 @@ class Contact(BaseModel):
     number: str
 
 
-class SignalInformation(BaseModel):
+class SignalCredentials(BaseModel):
     # URL of the signal API server
     signal_service: str
     # My phone number
@@ -16,11 +16,6 @@ class SignalInformation(BaseModel):
     # This is the administrator's phone number. They have special privileges,
     # and receive status updates when appropriate.
     admin_number: str
-    # A list of contacts known to the bot.
-    contacts: List[Contact] = Field(default_factory=list)
-    # A list of groups that the bot is a member of. Will be auto-populated
-    # from the signal server.
-    groups: List[str] = Field(default_factory=list)
 
 
 class ReceiptMessage(BaseModel):

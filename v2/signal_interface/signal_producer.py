@@ -1,13 +1,13 @@
 import asyncio
 import json
 from logging import getLogger
-from typing import Any, Dict
 
 import pika
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import Basic
-from signal_api import SignalAPI
-from signal_data_classes import OutgoingMessage, SignalInformation
+
+from .signal_api import SignalAPI
+from .signal_data_classes import OutgoingMessage, SignalCredentials
 
 logger = getLogger(__name__)
 
@@ -22,10 +22,11 @@ class SignalProducer:
 
     def __init__(
         self,
-        signal_api_config: SignalInformation,
+        signal_api_config: SignalCredentials,
         rabbit_config: pika.ConnectionParameters,
     ):
         logger.info("Initializing SignalProducer...")
+        self.signal_info = signal_api_config
         self.api_client = SignalAPI(
             signal_api_config.signal_service, signal_api_config.phone_number
         )
@@ -34,6 +35,18 @@ class SignalProducer:
 
     def start(self):
         logger.info("Starting SignalProducer...")
+
+        msg = OutgoingMessage(
+            recipient=self.signal_info.admin_number,
+            message="Hello, World!",
+            base64_attachments=[],
+        )
+        self.channel.basic_publish(
+            exchange="",
+            routing_key="outgoing_messages",
+            body=msg.model_dump_json(),
+        )
+
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(
             queue="outgoing_messages",
@@ -69,7 +82,9 @@ class SignalProducer:
 
     async def _process_outgoing_message(self, message: OutgoingMessage):
         """Process and send outgoing messages using the Signal API."""
-        logger.info(f"Sending message to {message.recipient}")
+        logger.info(
+            f"Sending message to {message.recipient}: {message.message}"
+        )
         await self.api_client.send(
             message.recipient, message.message, message.base64_attachments
         )
