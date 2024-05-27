@@ -1,8 +1,8 @@
-import signal
 from logging import DEBUG, INFO, basicConfig, getLogger
 
 import pika
 import yaml
+import threading
 from redis import Redis
 from signal_consumer import SignalConsumer
 from signal_data_classes import SignalInformation
@@ -15,23 +15,42 @@ logger = getLogger(__name__)
 def main(
     signal_login: SignalInformation,
     rabbit_config: pika.ConnectionParameters,
+    num_producers: int = 1,
+    num_consumers: int = 1,
 ):
     logger.info("Starting SignalConsumer...")
 
-    consumer = SignalConsumer(signal_login, rabbit_config)
-    producer = SignalProducer(signal_login, rabbit_config)
+    producers = []
+    consumers = []
 
-    # Catch kill signal (CTRL+C) and stop the consumer
-    def signal_handler(sig, frame):
-        consumer.stop()
-        logger.info("SignalConsumer stopped.")
-        exit(0)
+    for _ in range(num_producers):
+        producer = SignalProducer(signal_login, rabbit_config)
+        producers.append(producer)
 
-    signal.signal(signal.SIGINT, signal_handler)
+    for _ in range(num_consumers):
+        consumer = SignalConsumer(signal_login, rabbit_config)
+        consumers.append(consumer)
 
-    consumer.start()
+    producer_threads = [
+        threading.Thread(target=producer.start, daemon=True, name="producer")
+        for producer in producers
+    ]
+    consumer_threads = [
+        threading.Thread(target=consumer.start, daemon=True, name="consumer")
+        for consumer in consumers
+    ]
 
-    logger.info("SignalConsumer stopped.")
+    for thread in producer_threads:
+        thread.start()
+
+    for thread in consumer_threads:
+        thread.start()
+
+    for thread in producer_threads:
+        thread.join()
+
+    for thread in consumer_threads:
+        thread.join()
 
 
 if __name__ == "__main__":

@@ -59,8 +59,9 @@ class SignalProducer:
         logger.info("Received message from RabbitMQ to send.")
         try:
             outgoing_message = OutgoingMessage(**json.loads(body))
-            asyncio.run(self._process_outgoing_message(outgoing_message))
+            # Acknowledge the message before processing, to prevent duplication
             ch.basic_ack(delivery_tag=method.delivery_tag)
+            asyncio.run(self._process_outgoing_message(outgoing_message))
             logger.info("Processed and acknowledged message.")
         except Exception as e:
             logger.error(f"Error processing message: {e}")
