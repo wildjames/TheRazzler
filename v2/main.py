@@ -18,7 +18,7 @@ def main(
     num_producers: int = 1,
     num_consumers: int = 1,
 ):
-    logger.info("Starting SignalConsumer...")
+    logger.info("Starting up a Razzler...")
 
     producers = []
     consumers = []
@@ -26,7 +26,6 @@ def main(
     for _ in range(num_producers):
         producer = SignalProducer(signal_login, rabbit_config)
         producers.append(producer)
-
     for _ in range(num_consumers):
         consumer = SignalConsumer(signal_login, rabbit_config)
         consumers.append(consumer)
@@ -42,13 +41,11 @@ def main(
 
     for thread in producer_threads:
         thread.start()
-
     for thread in consumer_threads:
         thread.start()
 
     for thread in producer_threads:
         thread.join()
-
     for thread in consumer_threads:
         thread.join()
 
