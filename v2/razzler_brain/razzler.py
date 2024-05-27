@@ -68,7 +68,10 @@ class RazzlerBrain:
         logger.info(f"Received message: {msg}")
 
         # Prepare response message
-        if msg.envelope.dataMessage.message.lower() == "ping":
+        if msg.envelope.dataMessage.message:
+            if msg.envelope.dataMessage.message != "ping":
+                return
+
             logger.info(f"Preparing response to {msg.envelope.sourceName}")
             response_message = OutgoingMessage(
                 recipient=msg.envelope.source, message="PONG"

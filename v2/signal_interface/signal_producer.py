@@ -1,6 +1,7 @@
 import asyncio
 import json
 from logging import getLogger
+from typing import List, Optional
 
 import pika
 from pika.adapters.blocking_connection import BlockingChannel
@@ -36,22 +37,11 @@ class SignalProducer:
     def start(self):
         logger.info("Starting SignalProducer...")
 
-        msg = OutgoingMessage(
-            recipient=self.signal_info.admin_number,
-            message="Hello, World!",
-            base64_attachments=[],
-        )
-        self.channel.basic_publish(
-            exchange="",
-            routing_key="outgoing_messages",
-            body=msg.model_dump_json(),
-        )
-
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(
             queue="outgoing_messages",
             on_message_callback=self._on_message_callback,
-            auto_ack=False,
+            auto_ack=True,
         )
         logger.info("SignalProducer started. Waiting for messages...")
         self.channel.start_consuming()
@@ -72,8 +62,6 @@ class SignalProducer:
         logger.info("Received message from RabbitMQ to send.")
         try:
             outgoing_message = OutgoingMessage(**json.loads(body))
-            # Acknowledge the message before processing, to prevent duplication
-            ch.basic_ack(delivery_tag=method.delivery_tag)
             asyncio.run(self._process_outgoing_message(outgoing_message))
             logger.info("Processed and acknowledged message.")
         except Exception as e:
@@ -89,3 +77,23 @@ class SignalProducer:
             message.recipient, message.message, message.base64_attachments
         )
         logger.info("Message sent successfully.")
+
+
+def admin_message(
+    producer: SignalProducer,
+    message: str,
+    attachments: Optional[List[str]] = None,
+):
+    """Send a message manually using the producer."""
+
+    msg = OutgoingMessage(
+        recipient=producer.signal_info.admin_number,
+        message=message,
+        base64_attachments=attachments if attachments else [],
+    )
+    producer.channel.basic_publish(
+        exchange="",
+        routing_key="outgoing_messages",
+        body=msg.model_dump_json(),
+    )
+    logger.info("Admin message sent.")

@@ -6,7 +6,7 @@ import yaml
 from razzler_brain.razzler import RazzlerBrain
 from signal_interface.signal_consumer import SignalConsumer
 from signal_interface.signal_data_classes import SignalCredentials
-from signal_interface.signal_producer import SignalProducer
+from signal_interface.signal_producer import SignalProducer, admin_message
 from utils.storage import RedisCredentials
 
 basicConfig(level=INFO)
@@ -37,6 +37,8 @@ def main(
     for _ in range(num_brains):
         brain = RazzlerBrain(redis_config, rabbit_config)
         brains.append(brain)
+
+    admin_message(producers[0], "Starting the Razzler")
 
     producer_threads = [
         threading.Thread(target=producer.start, daemon=True, name="producer")
