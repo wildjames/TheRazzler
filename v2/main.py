@@ -4,7 +4,9 @@ from logging import DEBUG, INFO, basicConfig, getLogger
 import pika
 import yaml
 from redis import Redis
-from signal_consumer import SignalConsumer, SignalInformation
+from signal_consumer import SignalConsumer
+from signal_data_classes import SignalInformation
+from signal_producer import SignalProducer
 
 basicConfig(level=INFO)
 logger = getLogger(__name__)
@@ -12,12 +14,12 @@ logger = getLogger(__name__)
 
 def main(
     signal_login: SignalInformation,
-    redis_conn: Redis,
-    rabbit_conn: pika.BlockingConnection,
+    rabbit_config: pika.ConnectionParameters,
 ):
     logger.info("Starting SignalConsumer...")
 
-    consumer = SignalConsumer(signal_login, redis_conn, rabbit_conn)
+    consumer = SignalConsumer(signal_login, rabbit_config)
+    producer = SignalProducer(signal_login, rabbit_config)
 
     # Catch kill signal (CTRL+C) and stop the consumer
     def signal_handler(sig, frame):
@@ -53,8 +55,6 @@ if __name__ == "__main__":
         rabbit_config["credentials"] = pika.PlainCredentials(
             **rabbit_config["credentials"]
         )
-    rabbit_conn = pika.BlockingConnection(
-        pika.ConnectionParameters(**rabbit_config)
-    )
+    rabbit_config = pika.ConnectionParameters(**rabbit_config)
 
-    main(signal_login, redis_conn, rabbit_conn)
+    main(signal_login, rabbit_config)

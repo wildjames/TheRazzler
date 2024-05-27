@@ -11,10 +11,8 @@ from logging import getLogger
 from typing import Any, Dict
 
 import pika
-from pika import BlockingConnection
-from redis import Redis
 from signal_api import SignalAPI
-from signal_consumer_classes import (
+from signal_data_classes import (
     IncomingMessage,
     OutgoingMessage,
     SignalInformation,
@@ -35,16 +33,14 @@ class SignalConsumer:
     def __init__(
         self,
         signal_info: SignalInformation,
-        redis_client: Redis,
-        rabbit_client: BlockingConnection,
+        rabbit_config: pika.ConnectionParameters,
     ):
         logger.info("Initializing SignalConsumer...")
         self.api_client = SignalAPI(
             signal_info.signal_service, signal_info.phone_number
         )
         self.signal_info = signal_info
-        self.redis_client = redis_client
-        self.rabbit_client = rabbit_client
+        self.rabbit_client = pika.BlockingConnection(rabbit_config)
 
         # Handle the contacts list (get contacts, add contacts
         self._init_contacts()
