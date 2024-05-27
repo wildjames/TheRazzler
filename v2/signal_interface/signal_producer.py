@@ -97,7 +97,7 @@ class SignalProducer:
         await self.api_client.react(
             reaction.recipient,
             reaction.reaction,
-            reaction.targetAuthor,
+            reaction.target_uuid,
             reaction.timestamp,
         )
         logger.info("Reaction sent successfully.")

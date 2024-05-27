@@ -4,12 +4,13 @@ in the outgoing_messages queue."""
 
 import json
 from logging import getLogger
-from typing import Union
+from typing import List, Union
 
 import pika
 import redis
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import Basic
+from pydantic import BaseModel
 from signal_interface.signal_data_classes import (
     IncomingMessage,
     OutgoingMessage,
@@ -17,14 +18,24 @@ from signal_interface.signal_data_classes import (
 )
 from utils.storage import RedisCredentials
 
+from .commands.base_command import CommandHandler
+from .commands.registry import COMMAND_REGISTRY
+
 logger = getLogger(__name__)
 
 
+class RazzlerBrainConfig(BaseModel):
+    commands: List[str]
+
+
 class RazzlerBrain:
+    commands: List[CommandHandler]
+
     def __init__(
         self,
         redis_config: RedisCredentials,
         rabbit_config: pika.ConnectionParameters,
+        brain_config: RazzlerBrainConfig,
     ):
         self.rabbit_client = pika.BlockingConnection(rabbit_config)
         self.channel = self.rabbit_client.channel()
@@ -34,6 +45,12 @@ class RazzlerBrain:
             db=redis_config.db,
             password=redis_config.password,
         )
+
+        # Register the commands with the brain
+        self.commands = []
+        for command in brain_config.commands:
+            logger.info(f"Registering command: {command}")
+            self.commands.append(COMMAND_REGISTRY[command]())
 
         # Ensure the queue exists
         self.channel.queue_declare(queue="incoming_messages", durable=True)
@@ -69,23 +86,11 @@ class RazzlerBrain:
         msg = IncomingMessage(**message_data)
         logger.info(f"Received message: {msg}")
 
-        # Prepare response message
-        if msg.envelope.dataMessage.message:
-            if msg.envelope.dataMessage.message == "ping":
-                logger.info(f"Preparing response to {msg.envelope.sourceName}")
-                response_message = OutgoingMessage(
-                    recipient=msg.envelope.source, message="PONG"
-                )
-            else:
-                response_message = OutgoingReaction(
-                    recipient=msg.envelope.source,
-                    # React with the horny emoji
-                    reaction="🍆",
-                    targetAuthor=msg.envelope.sourceUuid,
-                    timestamp=msg.envelope.timestamp,
-                )
-
-            self.send_response(response_message)
+        # Loop over commands. If a command can handle the message, run it.
+        # Executes ALL commands able to handle a message, sequentially.
+        for command in self.commands:
+            if command.can_handle(msg):
+                command.handle(msg, self.channel)
 
     def send_response(self, message: Union[OutgoingMessage, OutgoingReaction]):
         """Publish a response message to the outgoing_messages queue."""

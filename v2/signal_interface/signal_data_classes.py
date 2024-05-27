@@ -102,5 +102,5 @@ class OutgoingMessage(BaseModel):
 class OutgoingReaction(BaseModel):
     recipient: str
     reaction: str
-    targetAuthor: str
+    target_uuid: str
     timestamp: int
