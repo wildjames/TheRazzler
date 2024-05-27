@@ -4,9 +4,10 @@ import pika
 import yaml
 import threading
 from redis import Redis
-from signal_consumer import SignalConsumer
-from signal_data_classes import SignalInformation
-from signal_producer import SignalProducer
+
+from signal_interface.signal_consumer import SignalConsumer
+from signal_interface.signal_data_classes import SignalInformation
+from signal_interface.signal_producer import SignalProducer
 
 basicConfig(level=INFO)
 logger = getLogger(__name__)
