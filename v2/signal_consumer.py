@@ -12,6 +12,9 @@ from typing import Any, Dict, List
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from redis import Redis
+import pika
+from pika import BlockingConnection, PlainCredentials
+from pika.exceptions import AMQPConnectionError
 
 from signal_api import SignalAPI
 from signal_message_classes import IncomingMessage, OutgoingMessage
@@ -50,13 +53,19 @@ class SignalConsumer:
     signal_info: SignalInformation
     event_loop: asyncio.AbstractEventLoop
 
-    def __init__(self, signal_info: SignalInformation, redis_client: Redis):
+    def __init__(
+        self,
+        signal_info: SignalInformation,
+        redis_client: Redis,
+        rabbit_client: BlockingConnection,
+    ):
         logger.info("Initializing SignalConsumer...")
         self.api_client = SignalAPI(
             signal_info.signal_service, signal_info.phone_number
         )
         self.signal_info = signal_info
         self.redis_client = redis_client
+        self.rabbit_client = rabbit_client
 
         # Handle the contacts list (get contacts, add contacts
         self._init_contacts()
@@ -65,6 +74,7 @@ class SignalConsumer:
         self._init_groups()
 
         self._init_queue()
+        self._init_mq()
 
     def _init_contacts(self):
         """This method should initialize the contacts list."""
@@ -81,6 +91,15 @@ class SignalConsumer:
         self.event_loop = asyncio.get_event_loop()
         self._asyncio_queue = asyncio.Queue()
         logger.info("Scheduler initialized.")
+
+    def _init_mq(self):
+        """Initialize RabbitMQ connection and declare the queue."""
+        try:
+            self.channel = self.rabbit_client.channel()
+            self.channel.queue_declare(queue="incoming_messages", durable=True)
+            logger.info("Connected to RabbitMQ and declared the queue.")
+        except AMQPConnectionError as error:
+            logger.error(f"Failed to connect to RabbitMQ: {error}")
 
     def start(self):
         logger.info(
@@ -170,6 +189,18 @@ class SignalConsumer:
 
             # Add the message to the processing queue
             logger.warn("📩 I need to add this message to the queue")
+            serialized_message = msg.model_dump_json()
+            self.channel.basic_publish(
+                exchange="",
+                routing_key="incoming_messages",
+                body=serialized_message,
+                # make message persistent
+                properties=pika.BasicProperties(delivery_mode=2),
+            )
+            logger.info(
+                "Added message to the queue: Timestamp"
+                f" {msg.envelope.timestamp}"
+            )
             return
 
     async def _process_outgoing(self, message: OutgoingMessage):

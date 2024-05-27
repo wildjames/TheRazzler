@@ -1,19 +1,23 @@
-from logging import DEBUG, basicConfig, getLogger
 import signal
+from logging import DEBUG, basicConfig, getLogger
 
+import pika
 import yaml
 from redis import Redis
-
 from signal_consumer import SignalConsumer, SignalInformation
 
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)
 
 
-def main(signal_login: SignalInformation, redis_conn: Redis):
+def main(
+    signal_login: SignalInformation,
+    redis_conn: Redis,
+    rabbit_conn: pika.BlockingConnection,
+):
     logger.info("Starting SignalConsumer...")
 
-    consumer = SignalConsumer(signal_login, redis_conn)
+    consumer = SignalConsumer(signal_login, redis_conn, rabbit_conn)
 
     # Catch kill signal (CTRL+C) and stop the consumer
     def signal_handler(sig, frame):
@@ -43,4 +47,14 @@ if __name__ == "__main__":
         exit(1)
     logger.info(f"Successfully connected to Redis!")
 
-    main(signal_login, redis_conn)
+    # Connect to rabbit
+    rabbit_config = config["rabbitmq"]
+    if "credentials" in rabbit_config:
+        rabbit_config["credentials"] = pika.PlainCredentials(
+            **rabbit_config["credentials"]
+        )
+    rabbit_conn = pika.BlockingConnection(
+        pika.ConnectionParameters(**rabbit_config)
+    )
+
+    main(signal_login, redis_conn, rabbit_conn)
