@@ -61,7 +61,7 @@ class RazzlerBrain:
         self.channel.basic_consume(
             queue="incoming_messages",
             on_message_callback=self._process_incoming_message,
-            auto_ack=True,
+            auto_ack=False,
         )
         logger.info(
             "RazzlerBrain started consuming on incoming_messages queue."
@@ -92,6 +92,8 @@ class RazzlerBrain:
             if command.can_handle(msg):
                 command.handle(msg, self.channel)
 
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+
     def send_response(self, message: Union[OutgoingMessage, OutgoingReaction]):
         """Publish a response message to the outgoing_messages queue."""
         logger.debug(f"Publishing text response: {message}")
@@ -101,4 +103,4 @@ class RazzlerBrain:
             body=message.model_dump_json(),
             properties=pika.BasicProperties(delivery_mode=2),
         )
-        logger.info("Sent response to outgoing_messages queue.")
+        logger.debug("Sent response to outgoing_messages queue.")

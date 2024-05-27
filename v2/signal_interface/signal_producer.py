@@ -41,11 +41,11 @@ class SignalProducer:
     def start(self):
         logger.info("Starting SignalProducer...")
 
-        self.channel.basic_qos(prefetch_count=1)
+        self.channel.basic_qos(prefetch_count=1, global_qos=True)
         self.channel.basic_consume(
             queue="outgoing_messages",
             on_message_callback=self._on_message_callback,
-            auto_ack=True,
+            auto_ack=False,
         )
         logger.info("SignalProducer started. Waiting for messages...")
         self.channel.start_consuming()
@@ -78,6 +78,8 @@ class SignalProducer:
 
         except Exception as e:
             logger.error(f"Error processing message: {e}")
+        finally:
+            ch.basic_ack(delivery_tag=method.delivery_tag)
 
     async def _process_outgoing_message(self, message: OutgoingMessage):
         """Process and send outgoing messages using the Signal API."""

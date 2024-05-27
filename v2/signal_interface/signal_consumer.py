@@ -86,7 +86,8 @@ class SignalConsumer:
         self.event_loop.create_task(self.listen())
 
         logger.info("Scheduler started. Running event loop...")
-        self.event_loop.run_forever()
+        if not self.event_loop.is_running():
+            self.event_loop.run_forever()
         logger.info("Event loop stopped.")
 
     def stop(self):
