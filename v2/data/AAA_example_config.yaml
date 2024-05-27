@@ -1,0 +1,18 @@
+general:
+  num_consumers: 1
+  num_producers: 1
+signal:
+  signal_service: localhost:8231
+  phone_number: "+441234567890"
+  admin_number: "+441234567890"
+redis:
+  host: localhost
+  port: 6379
+  password: password
+  db: 0
+rabbitmq:
+  host: localhost
+  port: 5672
+  credentials:
+    username: guest
+    password: guest
