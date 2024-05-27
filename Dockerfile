@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application except the 'data' directory
 COPY . /app
 RUN rm -rf /app/data
+RUN rm -rf /app/v2
 
 # Command to run your application
 CMD ["python", "main.py"]

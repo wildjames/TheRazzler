@@ -9,6 +9,7 @@ from command_utils import (
     get_razzle,
     get_reply,
     parse_mentions,
+    DATA_DIR
 )
 from gpt_interface import create_chat_message
 from signalbot.signalbot import Command, Context, triggered
@@ -261,9 +262,10 @@ class RazzlerMindCommand(Command):
 
         # Randomly change state
         if random.random() < c.bot.mind.niceness:
-            c.bot.mind.prompt_filename = "nice.txt"
+            new_prompt = "nice.txt"
         else:
-            c.bot.mind.prompt_filename = "naughty.txt"
+            new_prompt = "naughty.txt"
+        c.bot.mind.prompt_filename = os.path.join(DATA_DIR, new_prompt)
         logger.info(
             f"[NaughtyNice] Current prompt filename: {c.bot.mind.prompt_filename}"
         )

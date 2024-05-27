@@ -322,7 +322,7 @@ def parse_mentions(c: Context, message_string: str) -> str:
     # Parse mentions into names
     if len(c.message.mentions):
         logger.info(
-            "[ParseMentions] This message has some mention in it: {c.message.mentions}"
+            f"[ParseMentions] This message has some mention in it: {c.message.mentions}"
         )
 
         mentions = sorted(c.message.mentions, key=lambda m: m["start"])
