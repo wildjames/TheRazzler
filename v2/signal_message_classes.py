@@ -1,9 +1,9 @@
-from dataclasses import dataclass, field
 from typing import List, Optional
 
+from pydantic import BaseModel, Field
 
-@dataclass
-class ReceiptMessage:
+
+class ReceiptMessage(BaseModel):
     when: int
     isDelivery: bool
     isRead: bool
@@ -11,14 +11,12 @@ class ReceiptMessage:
     timestamps: List[int]
 
 
-@dataclass
-class TypingMessage:
+class TypingMessage(BaseModel):
     action: str
     timestamp: int
 
 
-@dataclass
-class Reaction:
+class Reaction(BaseModel):
     emoji: str
     targetAuthor: str
     targetAuthorNumber: str
@@ -27,8 +25,7 @@ class Reaction:
     isRemove: bool
 
 
-@dataclass
-class Mention:
+class Mention(BaseModel):
     name: str
     number: str
     uuid: str
@@ -36,28 +33,26 @@ class Mention:
     length: int
 
 
-@dataclass
-class GroupInfo:
+class GroupInfo(BaseModel):
     groupId: str
     type: str
 
 
-@dataclass
-class Attachment:
+class Attachment(BaseModel):
     contentType: str
-    fileName: str
+    filename: str
     id: str
     size: int
     width: int
     height: int
     caption: Optional[str] = None
     uploadTimestamp: Optional[int] = None
+    base64: Optional[str] = None
 
 
-@dataclass
-class DataMessage:
+class DataMessage(BaseModel):
     timestamp: int
-    message: Optional[str]
+    message: Optional[str] = None
     expiresInSeconds: int
     viewOnce: bool
     attachments: Optional[List[Attachment]] = None
@@ -66,8 +61,7 @@ class DataMessage:
     groupInfo: Optional[GroupInfo] = None
 
 
-@dataclass
-class Envelope:
+class Envelope(BaseModel):
     source: str
     sourceNumber: str
     sourceUuid: str
@@ -79,20 +73,12 @@ class Envelope:
     dataMessage: Optional[DataMessage] = None
 
 
-@dataclass
-class MessagePayload:
+class IncomingMessage(BaseModel):
     envelope: Envelope
     account: str
 
 
-@dataclass
-class IncomingMessage:
-    label: str
-    payload: MessagePayload
-
-
-@dataclass
-class OutgoingMessage:
+class OutgoingMessage(BaseModel):
     recipient: str
     message: str
-    base64_attachments: List[str] = field(default_factory=list)
+    base64_attachments: List[str] = Field(default_factory=list)

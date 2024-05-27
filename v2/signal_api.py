@@ -39,6 +39,12 @@ class SignalAPI:
     async def react(
         self, recipient: str, reaction: str, target_author: str, timestamp: int
     ) -> aiohttp.ClientResponse:
+        """Arguments:
+        recipient: The UUID of the recipient
+        reaction: The reaction emoji
+        target_author: The UUID of the author of the message
+        timestamp: The timestamp of the message to react to
+        """
         uri = self._react_rest_uri()
         payload = {
             "recipient": recipient,
@@ -83,6 +89,15 @@ class SignalAPI:
         ):
             raise StopTypingError
 
+    async def download_attachment(self, attachment_id: str) -> bytes:
+        """Returns the base64 encoded attachment."""
+        uri = self._download_attachment_uri(attachment_id)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(uri) as resp:
+                resp.raise_for_status()
+                # The API returns the base64 encoded attachment
+                return await resp.read()
+
     def _receive_ws_uri(self):
         return f"ws://{self.signal_service}/v1/receive/{self.phone_number}"
 
@@ -94,6 +109,9 @@ class SignalAPI:
 
     def _typing_indicator_uri(self):
         return f"http://{self.signal_service}/v1/typing-indicator/{self.phone_number}"
+
+    def _download_attachment_uri(self, attachment_id: str):
+        return f"http://{self.signal_service}/v1/attachments/{attachment_id}"
 
 
 class ReceiveMessagesError(Exception):
