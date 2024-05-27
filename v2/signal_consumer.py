@@ -1,47 +1,26 @@
 """This scripts should create a bot that gets and stores incoming messages from
 the signal server (use the signal API class provided).
 
-Incoming messages are checked periodically, and stored in a redis queue.
+Incoming messages are checked periodically, and added to a rabbitMQ queue for processing by other components.
+Outgoing messages are received from the rabbitMQ queue and sent to the signal server.
 """
 
 import asyncio
 import json
-from dataclasses import dataclass, field
 from logging import getLogger
-from typing import Any, Dict, List
+from typing import Any, Dict
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from redis import Redis
 import pika
-from pika import BlockingConnection, PlainCredentials
-from pika.exceptions import AMQPConnectionError
-
+from pika import BlockingConnection
+from redis import Redis
 from signal_api import SignalAPI
-from signal_message_classes import IncomingMessage, OutgoingMessage
+from signal_consumer_classes import (
+    IncomingMessage,
+    OutgoingMessage,
+    SignalInformation,
+)
 
 logger = getLogger(__name__)
-
-
-@dataclass
-class Contact:
-    name: str
-    number: str
-
-
-@dataclass
-class SignalInformation:
-    # URL of the signal API server
-    signal_service: str
-    # My phone number
-    phone_number: str
-    # This is the administrator's phone number. They have special privileges,
-    # and receive status updates when appropriate.
-    admin_number: str
-    # A list of contacts known to the bot.
-    contacts: List[Contact] = field(default_factory=list)
-    # A list of groups that the bot is a member of. Will be auto-populated
-    # from the signal server.
-    groups: List[str] = field(default_factory=list)
 
 
 class SignalConsumer:
@@ -94,12 +73,10 @@ class SignalConsumer:
 
     def _init_mq(self):
         """Initialize RabbitMQ connection and declare the queue."""
-        try:
-            self.channel = self.rabbit_client.channel()
-            self.channel.queue_declare(queue="incoming_messages", durable=True)
-            logger.info("Connected to RabbitMQ and declared the queue.")
-        except AMQPConnectionError as error:
-            logger.error(f"Failed to connect to RabbitMQ: {error}")
+        self.channel = self.rabbit_client.channel()
+        self.channel.queue_declare(queue="incoming_messages", durable=True)
+        self.channel.queue_declare(queue="outgoing_messages", durable=True)
+        logger.info("Connected to RabbitMQ and declared the queues.")
 
     def start(self):
         logger.info(
@@ -108,6 +85,7 @@ class SignalConsumer:
         # Create a task to listen for incoming messages
         self.event_loop.create_task(self.listen())
 
+        # Send a message to the admin number that the consumer has started
         started_message = OutgoingMessage(
             recipient=self.signal_info.admin_number,
             message="SignalConsumer started.",
@@ -139,6 +117,7 @@ class SignalConsumer:
         msg = IncomingMessage(**message)
         logger.info(f"Converted message: {msg}")
 
+        # These are messages to ignore - read receipts, typing indicators, etc.
         if msg.envelope.typingMessage:
             logger.info(
                 f"Typing message received: {msg.envelope.typingMessage.action}"
@@ -147,21 +126,16 @@ class SignalConsumer:
 
         if msg.envelope.receiptMessage:
             logger.info(
-                "Receipt message received. Has the message been read?"
+                "Receipt message received. Has the message from timestamp"
+                f" {msg.envelope.timestamp} been read?"
                 f" {msg.envelope.receiptMessage.isRead}"
             )
             return
 
+        # We only care about publishing data messages
         if msg.envelope.dataMessage:
             logger.debug(f"Data message received")
             data = msg.envelope.dataMessage
-
-            # Do we have a reaction?
-            if data.reaction:
-                logger.info(
-                    f"Reaction received: {data.reaction} @ {data.message}"
-                )
-                return
 
             # If it has an attachement, we need to download it
             if data.attachments:
@@ -175,20 +149,7 @@ class SignalConsumer:
                     )
                     logger.debug(f"Downloaded attachment: {attachment.id}")
 
-            # Do we have a message?
-            if data.message:
-                logger.info(f"Text message received: {data.message}")
-
-                resp = await self.api_client.react(
-                    recipient=msg.envelope.sourceUuid,
-                    reaction="👍",
-                    target_author=msg.envelope.sourceUuid,
-                    timestamp=msg.envelope.timestamp,
-                )
-                logger.debug(f"Reaction response: {resp}")
-
             # Add the message to the processing queue
-            logger.warn("📩 I need to add this message to the queue")
             serialized_message = msg.model_dump_json()
             self.channel.basic_publish(
                 exchange="",
@@ -198,7 +159,7 @@ class SignalConsumer:
                 properties=pika.BasicProperties(delivery_mode=2),
             )
             logger.info(
-                "Added message to the queue: Timestamp"
+                "Added message to the processing queue: Timestamp"
                 f" {msg.envelope.timestamp}"
             )
             return

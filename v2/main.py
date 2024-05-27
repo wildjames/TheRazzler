@@ -1,12 +1,12 @@
 import signal
-from logging import DEBUG, basicConfig, getLogger
+from logging import DEBUG, INFO, basicConfig, getLogger
 
 import pika
 import yaml
 from redis import Redis
 from signal_consumer import SignalConsumer, SignalInformation
 
-basicConfig(level=DEBUG)
+basicConfig(level=INFO)
 logger = getLogger(__name__)
 
 
