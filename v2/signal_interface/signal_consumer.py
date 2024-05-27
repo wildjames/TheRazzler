@@ -144,6 +144,7 @@ class SignalConsumer:
                     logger.debug(f"Downloaded attachment: {attachment.id}")
 
             # Add the message to the processing queue
+            # TODO: Check that this message is not already in the queue
             serialized_message = msg.model_dump_json()
             self.channel.basic_publish(
                 exchange="",
