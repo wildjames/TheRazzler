@@ -3,9 +3,7 @@ import json
 from logging import getLogger
 from typing import List, Optional
 
-import pika
-from pika.adapters.blocking_connection import BlockingChannel
-from pika.spec import Basic
+import aio_pika
 
 from .signal_api import SignalAPI
 from .signal_data_classes import (
@@ -23,63 +21,68 @@ class SignalProducer:
     """
 
     api_client: SignalAPI
-    rabbit_client: pika.BlockingConnection
 
     def __init__(
         self,
         signal_api_config: SignalCredentials,
-        rabbit_config: pika.ConnectionParameters,
+        rabbit_config: dict,
     ):
         logger.info("Initializing SignalProducer...")
         self.signal_info = signal_api_config
         self.api_client = SignalAPI(
             signal_api_config.signal_service, signal_api_config.phone_number
         )
-        self.rabbit_client = pika.BlockingConnection(rabbit_config)
-        self.channel = self.rabbit_client.channel()
+        self.rabbit_config = rabbit_config
+        self.connection = None
 
-    def start(self):
+    def get_rabbitmq_connection(self):
+        return aio_pika.connect_robust(**self.rabbit_config)
+
+    async def _init_mq(self):
+        """Asynchronously initialize RabbitMQ connection and channel."""
+        self.connection = await self.get_rabbitmq_connection()
+
+        async with self.connection:
+            self.channel = await self.connection.channel()
+            await self.channel.set_qos(prefetch_count=1)
+            # No need to declare exchange if using the default exchange
+            await self.channel.declare_queue("outgoing_messages", durable=True)
+
+    async def start(self):
         logger.info("Starting SignalProducer...")
+        await self._init_mq()
+        await self.consume_messages()
 
-        self.channel.basic_qos(prefetch_count=1, global_qos=True)
-        self.channel.basic_consume(
-            queue="outgoing_messages",
-            on_message_callback=self._on_message_callback,
-            auto_ack=False,
-        )
-        logger.info("SignalProducer started. Waiting for messages...")
-        self.channel.start_consuming()
-
-    def stop(self):
+    async def stop(self):
         logger.info("Stopping SignalProducer...")
-        self.channel.stop_consuming()
-        self.rabbit_client.close()
+        await self.connection.close()
         logger.info("SignalProducer stopped.")
 
-    def _on_message_callback(
-        self,
-        ch: BlockingChannel,
-        method: Basic.Deliver,
-        properties: pika.BasicProperties,
-        body: bytes,
-    ):
-        logger.info("Received message from RabbitMQ to send.")
-        try:
-            # Message is a JSON string. It can conform to either
-            # OutgoingMessage or OutgoingReaction.
+    async def consume_messages(self):
+        """Consume messages from RabbitMQ and process them."""
+        logger.info("Consuming messages from RabbitMQ...")
+        self.connection = await self.get_rabbitmq_connection()
+        async with self.connection:
+            channel = await self.connection.channel()
+            queue = await channel.declare_queue(
+                "outgoing_messages", durable=True
+            )
+            await queue.consume(self._process_message)
+            logger.info("Consuming messages...")
+            await asyncio.Future()
 
-            message_dict = json.loads(body)
-            if "reaction" in message_dict:
-                outgoing_reaction = OutgoingReaction(**message_dict)
-                asyncio.run(self._process_outgoing_reaction(outgoing_reaction))
-            else:
-                outgoing_message = OutgoingMessage(**message_dict)
-                asyncio.run(self._process_outgoing_message(outgoing_message))
-
-        except Exception as e:
-            logger.error(f"Error processing message: {e}")
-        finally:
-            ch.basic_ack(delivery_tag=method.delivery_tag)
+    async def _process_message(self, message: aio_pika.IncomingMessage):
+        async with message.process():
+            try:
+                message_dict = json.loads(message.body)
+                if "reaction" in message_dict:
+                    outgoing_reaction = OutgoingReaction(**message_dict)
+                    await self._process_outgoing_reaction(outgoing_reaction)
+                else:
+                    outgoing_message = OutgoingMessage(**message_dict)
+                    await self._process_outgoing_message(outgoing_message)
+            except Exception as e:
+                logger.error(f"Error processing message: {e}")
 
     async def _process_outgoing_message(self, message: OutgoingMessage):
         """Process and send outgoing messages using the Signal API."""
@@ -105,21 +108,25 @@ class SignalProducer:
         logger.info("Reaction sent successfully.")
 
 
-def admin_message(
+async def admin_message(
     producer: SignalProducer,
     message: str,
     attachments: Optional[List[str]] = None,
 ):
     """Send a message manually using the producer."""
-
     msg = OutgoingMessage(
         recipient=producer.signal_info.admin_number,
         message=message,
         base64_attachments=attachments if attachments else [],
     )
-    producer.channel.basic_publish(
-        exchange="",
-        routing_key="outgoing_messages",
-        body=msg.model_dump_json(),
-    )
+    connection = await aio_pika.connect_robust(**producer.rabbit_config)
+    async with connection:
+        channel = await connection.channel()
+        await channel.default_exchange.publish(
+            aio_pika.Message(
+                body=json.dumps(msg.__dict__).encode(),
+                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+            ),
+            routing_key="outgoing_messages",
+        )
     logger.info("Admin message sent.")

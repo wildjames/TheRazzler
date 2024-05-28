@@ -1,4 +1,5 @@
-from typing import AsyncGenerator, Any
+from typing import Any, AsyncGenerator
+
 import aiohttp
 import websockets
 

@@ -1,5 +1,7 @@
+import asyncio
 import threading
 from logging import INFO, basicConfig, getLogger
+from typing import List
 
 import pika
 import yaml
@@ -22,19 +24,19 @@ class GeneralConfig(BaseModel):
 
 def main(
     signal_login: SignalCredentials,
-    rabbit_config: pika.ConnectionParameters,
+    rabbit_config: dict,
     redis_config: RedisCredentials,
     brain_config: RazzlerBrainConfig,
     general_config: GeneralConfig,
 ):
     logger.info("Starting up a Razzler...")
 
-    producers = []
+    producers: List[SignalProducer] = []
     for _ in range(general_config.num_producers):
         producer = SignalProducer(signal_login, rabbit_config)
         producers.append(producer)
 
-    consumers = []
+    consumers: List[SignalConsumer] = []
     for _ in range(general_config.num_consumers):
         consumer = SignalConsumer(signal_login, redis_config, rabbit_config)
         consumers.append(consumer)
@@ -48,18 +50,31 @@ def main(
         )
         brains.append(brain)
 
-    admin_message(producers[0], "Starting the Razzler")
+    if general_config.num_producers:
+        asyncio.run(admin_message(producers[0], "Starting the Razzler"))
 
     producer_threads = [
-        threading.Thread(target=producer.start, daemon=True, name="producer")
+        threading.Thread(
+            target=asyncio.run,
+            args=(producer.start(),),
+            daemon=True,
+        )
         for producer in producers
     ]
+    # Consumer start methods are async
     consumer_threads = [
-        threading.Thread(target=consumer.start, daemon=True, name="consumer")
+        threading.Thread(
+            target=asyncio.run,
+            args=(consumer.start(),),
+            daemon=True,
+        )
         for consumer in consumers
     ]
     brain_threads = [
-        threading.Thread(target=brain.start, daemon=True, name="brain")
+        threading.Thread(
+            target=brain.start,
+            daemon=True,
+        )
         for brain in brains
     ]
 
@@ -93,11 +108,6 @@ if __name__ in "__main__":
 
     # Connect to rabbit
     rabbit_config = config["rabbitmq"]
-    if "credentials" in rabbit_config:
-        rabbit_config["credentials"] = pika.PlainCredentials(
-            **rabbit_config["credentials"]
-        )
-    rabbit_config = pika.ConnectionParameters(**rabbit_config)
 
     # Load the brain configuration
     brain_config = RazzlerBrainConfig(**config["razzler_brain"])
