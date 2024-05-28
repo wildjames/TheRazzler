@@ -4,6 +4,9 @@ from logging import getLogger
 from typing import List, Optional
 
 import aio_pika
+import redis
+
+from utils.storage import RedisCredentials
 
 from .signal_api import SignalAPI
 from .signal_data_classes import (
@@ -26,6 +29,7 @@ class SignalProducer:
         self,
         signal_api_config: SignalCredentials,
         rabbit_config: dict,
+        redis_config: RedisCredentials,
     ):
         logger.info("Initializing SignalProducer...")
         self.signal_info = signal_api_config
@@ -34,6 +38,8 @@ class SignalProducer:
         )
         self.rabbit_config = rabbit_config
         self.connection = None
+
+        self.redis_client = redis.Redis(**redis_config.model_dump())
 
     def __del__(self):
         self.stop()
@@ -91,7 +97,8 @@ class SignalProducer:
                 logger.error(f"Error processing message: {e}")
 
     async def _process_outgoing_message(self, message: OutgoingMessage):
-        """Process and send outgoing messages using the Signal API."""
+        """Process and send outgoing messages using the Signal API.
+        Also push the outgoing message to the message history redis cache"""
         logger.info(
             f"Sending message to {message.recipient}: {message.message}"
         )
@@ -99,6 +106,13 @@ class SignalProducer:
             message.recipient, message.message, message.base64_attachments
         )
         logger.info("Message sent successfully.")
+
+        # Place the message in the message history list
+        self.redis_client.lpush("message_history", message.model_dump_json())
+        # Ensure the message history cache doesn't grow too large
+        self.redis_client.ltrim(
+            "message_history", 0, self.signal_info.message_history_length
+        )
 
     async def _process_outgoing_reaction(self, reaction: OutgoingReaction):
         """Process and send outgoing reactions using the Signal API."""

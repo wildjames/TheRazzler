@@ -53,12 +53,7 @@ class SignalConsumer:
         )
         self.signal_info = signal_info
         self.rabbit_config = rabbit_config
-        self.redis_client = redis.Redis(
-            host=redis_config.host,
-            port=redis_config.port,
-            db=redis_config.db,
-            password=redis_config.password,
-        )
+        self.redis_client = redis.Redis(**redis_config.model_dump())
 
         # RabbitMQ connection
         self.connection = None
@@ -66,7 +61,9 @@ class SignalConsumer:
         # Set up the phonebook
         if load_phonebook() == PhoneBook():
             with load_file_lock("phonebook.json") as f:
+                f.seek(0)
                 f.write(PhoneBook().model_dump_json())
+                f.truncate()
 
         logger.info("SignalConsumer initialized.")
 
@@ -88,6 +85,7 @@ class SignalConsumer:
             # Write the updated phonebook back to the file
             f.seek(0)
             f.write(pb_string)
+            f.truncate()
 
     def get_rabbitmq_connection(self):
         return aio_pika.connect_robust(**self.rabbit_config)
@@ -151,6 +149,9 @@ class SignalConsumer:
 
     async def _process_incoming(self, message: Dict[str, Any]):
         """Process incoming messages."""
+        # TODO: This method needs to also dumps json-encoded incoming messages
+        # in the message history Redis cache.
+
         logger.debug("Processing incoming message")
 
         # Parse the json payload to an IncomingMessage object
@@ -186,9 +187,11 @@ class SignalConsumer:
                 # Write the updated phonebook back to the file
                 f.seek(0)
                 f.write(phonebook.model_dump_json())
+                f.truncate()
+
             logger.info(f"Updated phonebook contact: {msg.envelope.source}")
 
-        # We only care about publishing data messages
+        # DataMessages contain actual message content.
         if msg.envelope.dataMessage:
             logger.debug("Data message received")
             data = msg.envelope.dataMessage
@@ -208,6 +211,13 @@ class SignalConsumer:
                         attachment_bytes
                     ).decode("utf-8")
                     logger.debug(f"Downloaded attachment: {attachment.id}")
+
+            # Place the message in the message history list
+            self.redis_client.lpush("message_history", msg.model_dump_json())
+            # Ensure the message history cache doesn't grow too large
+            self.redis_client.ltrim(
+                "message_history", 0, self.signal_info.message_history_length
+            )
 
         # Add the message to the processing queue
         await self._publish_message(msg)

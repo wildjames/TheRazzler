@@ -117,7 +117,9 @@ class GPTInterface:
 
             logger.debug(f"Usage updated: {usage}")
 
+            f.seek(0)
             json.dump(usage, f)
+            f.truncate()
 
     def compute_costs(self):
         """Compute the costs of the models."""

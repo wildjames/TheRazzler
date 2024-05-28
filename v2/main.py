@@ -34,7 +34,7 @@ def main(config: Config):
 
     producers: List[SignalProducer] = []
     for _ in range(config.general.num_producers):
-        producer = SignalProducer(config.signal, config.rabbitmq)
+        producer = SignalProducer(config.signal, config.rabbitmq, config.redis)
         producers.append(producer)
 
     consumers: List[SignalConsumer] = []

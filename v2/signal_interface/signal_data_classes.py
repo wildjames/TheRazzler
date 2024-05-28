@@ -11,6 +11,8 @@ class SignalCredentials(BaseModel):
     # This is the administrator's phone number. They have special privileges,
     # and receive status updates when appropriate.
     admin_number: str
+    # How many messages in the message history to preserve in the cache
+    message_history_length: int = 100
 
 
 class ReceiptMessage(BaseModel):
