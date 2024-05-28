@@ -59,7 +59,7 @@ class Attachment(BaseModel):
     uploadTimestamp: Optional[int] = None
     # The data is fetched, and the incoming bytes are converted to a base64
     # encoded string.
-    data: Optional[str] = None
+    data: Optional[str] = Field(None, repr=False)
 
 
 class DataMessage(BaseModel):
