@@ -9,20 +9,18 @@ server.
 """
 
 import asyncio
+import base64
 import json
 from logging import getLogger
 from typing import Any, Dict
 
-import redis
 import aio_pika
+import redis
+from utils.phonebook import PhoneBook
+from utils.storage import RedisCredentials, load_phonebook
 
 from .signal_api import SignalAPI
-from .signal_data_classes import (
-    IncomingMessage,
-    SignalCredentials,
-)
-from utils.phonebook import PhoneBook
-from utils.storage import load_phonebook, RedisCredentials
+from .signal_data_classes import IncomingMessage, SignalCredentials
 
 logger = getLogger(__name__)
 
@@ -131,7 +129,13 @@ class SignalConsumer:
         logger.debug("Processing incoming message")
 
         # Parse the json payload to an IncomingMessage object
-        msg = IncomingMessage(**message)
+        try:
+            msg = IncomingMessage(**message)
+        except Exception as e:
+            logger.error(
+                f"Error parsing incoming message: {e}. Message: {message}"
+            )
+            return
         logger.debug("Parsed incoming message payload")
 
         # These are messages to ignore - read receipts, typing indicators, etc.
@@ -159,11 +163,15 @@ class SignalConsumer:
                 logger.info("Message has attachments.")
                 for attachment in data.attachments:
                     logger.info(f"Downloading attachment: {attachment.id}")
-                    attachment.base64 = (
+                    attachment_bytes = (
                         await self.api_client.download_attachment(
                             attachment.id
                         )
                     )
+                    # convert the bytes to b64 for storage
+                    attachment.data = base64.b64encode(
+                        attachment_bytes
+                    ).decode("utf-8")
                     logger.debug(f"Downloaded attachment: {attachment.id}")
 
             # Add the message to the processing queue

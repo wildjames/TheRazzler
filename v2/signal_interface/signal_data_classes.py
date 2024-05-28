@@ -3,11 +3,6 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
-class Contact(BaseModel):
-    name: str
-    number: str
-
-
 class SignalCredentials(BaseModel):
     # URL of the signal API server
     signal_service: str
@@ -62,7 +57,9 @@ class Attachment(BaseModel):
     height: int
     caption: Optional[str] = None
     uploadTimestamp: Optional[int] = None
-    base64: Optional[str] = None
+    # The data is fetched, and the incoming bytes are converted to a base64
+    # encoded string.
+    data: Optional[str] = None
 
 
 class DataMessage(BaseModel):
