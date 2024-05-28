@@ -26,7 +26,7 @@ def save_phonebook(phonebook: PhoneBook):
     logger.debug("Saving phonebook to disk...")
     fname = os.path.join(DATA_DIR, "phonebook.json")
     with open(fname, "w") as f:
-        f.write(phonebook.model_dump_json(indent=4))
+        f.write(phonebook.model_dump_json())
 
 
 @contextmanager
