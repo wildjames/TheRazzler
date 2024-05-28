@@ -91,7 +91,8 @@ class PhoneBook(BaseModel):
 
                 return updated
 
-        # If no contact matches by UUID or number, create a new one if name or number is provided
+        # If no contact matches by UUID or number, create a new one if name or
+        # number is provided
         if name or number:
             new_contact = Contact(
                 uuid=uuid, name=name, number=number, profile=profile

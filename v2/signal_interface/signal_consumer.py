@@ -10,7 +10,6 @@ server.
 
 import asyncio
 import base64
-from contextlib import contextmanager
 import json
 from logging import getLogger
 from typing import Any, Dict
@@ -18,7 +17,11 @@ from typing import Any, Dict
 import aio_pika
 import redis
 from utils.phonebook import PhoneBook
-from utils.storage import RedisCredentials, load_phonebook, save_phonebook
+from utils.storage import (
+    RedisCredentials,
+    get_phonebook_lock,
+    load_phonebook,
+)
 
 from .signal_api import SignalAPI
 from .signal_data_classes import IncomingMessage, SignalCredentials
@@ -57,8 +60,6 @@ class SignalConsumer:
             password=redis_config.password,
         )
 
-        self.phonebook = load_phonebook()
-
         # RabbitMQ connection
         self.connection = None
 
@@ -67,21 +68,12 @@ class SignalConsumer:
     def __del__(self):
         self.stop()
 
-    @contextmanager
-    def get_phonebook_lock(self):
-        """Context manager for managing the phonebook resource."""
-        try:
-            self.phonebook = load_phonebook()
-            yield self.phonebook
-        finally:
-            save_phonebook(self.phonebook)
-
     async def update_groups(self):
         """Update the groups in the phonebook.
         Fetches from signal a list of currently participating groups, and adds
         them to the phonebook."""
         groups = await self.api_client.get_groups()
-        with self.get_phonebook_lock() as phonebook:
+        with get_phonebook_lock() as phonebook:
             for group in groups:
                 logger.info(f"Adding group to phonebook: {group}")
                 phonebook.add_group(group)
@@ -90,7 +82,8 @@ class SignalConsumer:
         return aio_pika.connect_robust(**self.rabbit_config)
 
     async def _init_mq(self):
-        """Initialize RabbitMQ connection and declare the queue asynchronously."""
+        """Initialize RabbitMQ connection and declare the queue
+        asynchronously."""
         logger.info("Initializing RabbitMQ connection...")
         self.connection = await self.get_rabbitmq_connection()
 
@@ -160,17 +153,24 @@ class SignalConsumer:
         logger.debug("Parsed incoming message payload")
 
         # We got a message, which may contain information about a contact
-        # that we don't have yet. Update the phonebook
-        with self.get_phonebook_lock() as phonebook:
-            is_updated = phonebook.update_contact(
-                msg.envelope.sourceUuid,
-                msg.envelope.sourceNumber,
-                msg.envelope.sourceName,
-            )
-            if is_updated:
-                logger.info(
-                    f"Updated phonebook contact: {msg.envelope.source}"
+        # that we don't have yet.
+        # First, check if the contact information is new to me
+        phonebook = load_phonebook()
+        is_updated = phonebook.update_contact(
+            msg.envelope.sourceUuid,
+            msg.envelope.sourceNumber,
+            msg.envelope.sourceName,
+        )
+        if is_updated:
+            # If it is, then get a lock on the file and update the phonebook
+            # properly
+            with get_phonebook_lock() as phonebook:
+                phonebook.update_contact(
+                    msg.envelope.sourceUuid,
+                    msg.envelope.sourceNumber,
+                    msg.envelope.sourceName,
                 )
+            logger.info(f"Updated phonebook contact: {msg.envelope.source}")
 
         # We only care about publishing data messages
         if msg.envelope.dataMessage:

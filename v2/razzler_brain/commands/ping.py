@@ -1,7 +1,5 @@
 from logging import getLogger
 
-from pika.adapters.blocking_connection import BlockingChannel
-
 from .base_command import CommandHandler, IncomingMessage, OutgoingMessage
 
 logger = getLogger(__name__)

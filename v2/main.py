@@ -3,7 +3,6 @@ import threading
 from logging import INFO, basicConfig, getLogger
 from typing import List
 
-import pika
 import yaml
 from pydantic import BaseModel
 from razzler_brain.razzler import RazzlerBrain, RazzlerBrainConfig

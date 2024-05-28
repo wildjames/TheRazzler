@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import json
 import os
 from logging import getLogger
@@ -26,6 +27,25 @@ def save_phonebook(phonebook: PhoneBook):
     fname = os.path.join(DATA_DIR, "phonebook.json")
     with open(fname, "w") as f:
         f.write(phonebook.model_dump_json(indent=4))
+
+
+@contextmanager
+def get_phonebook_lock():
+    """Get a lock for the phonebook."""
+
+    logger.debug("Waiting for phonebook lock to be released...")
+    while os.path.exists(os.path.join(DATA_DIR, "phonebook.lock")):
+        pass
+    logger.debug("Phonebook lock acquired.")
+
+    with open(os.path.join(DATA_DIR, "phonebook.lock"), "w") as f:
+        f.write("locked")
+        phonebook = load_phonebook()
+        yield phonebook
+
+    save_phonebook(phonebook)
+    os.remove(os.path.join(DATA_DIR, "phonebook.lock"))
+    logger.debug("Phonebook lock released.")
 
 
 def load_phonebook() -> PhoneBook:

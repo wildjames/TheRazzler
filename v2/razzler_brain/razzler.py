@@ -5,16 +5,12 @@ in the outgoing_messages queue."""
 import asyncio
 import json
 from logging import getLogger
-from typing import List, Union
+from typing import List
 
 import aio_pika
 import redis
 from pydantic import BaseModel
-from signal_interface.signal_data_classes import (
-    IncomingMessage,
-    OutgoingMessage,
-    OutgoingReaction,
-)
+from signal_interface.signal_data_classes import IncomingMessage
 from utils.storage import RedisCredentials
 
 from .commands.base_command import CommandHandler
