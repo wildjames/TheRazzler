@@ -186,6 +186,12 @@ class RazzlerBrain:
 
                 logger.debug(f"Handling message with {command}")
                 for response in command.handle(msg):
+                    # If the command returns None, there's nothing to do.
+                    # Go to the next response.
+                    if response is None:
+                        logger.info("Command yielded None")
+                        continue
+
                     logger.debug(f"Command produced message: {response}")
 
                     # In the specific case of the command yielding an incoming

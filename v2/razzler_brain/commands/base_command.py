@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Iterator, Union
+from typing import Iterator, Optional, Union
 
 from signal_interface.signal_data_classes import (
     IncomingMessage,
@@ -29,6 +29,8 @@ class CommandHandler(ABC):
     @abstractmethod
     def handle(
         self, message: IncomingMessage
-    ) -> Iterator[Union[OutgoingMessage, OutgoingReaction, IncomingMessage]]:
+    ) -> Iterator[
+        Optional[Union[OutgoingMessage, OutgoingReaction, IncomingMessage]]
+    ]:
         """Handle the incoming message and perform actions."""
         pass

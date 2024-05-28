@@ -2,7 +2,7 @@ import json
 import random
 import re
 from logging import getLogger
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import openai
 from openai.resources.chat.completions import ChatCompletionMessageParam
@@ -26,10 +26,14 @@ class OpenAIConfig(BaseModel):
     fast_model: str = "gpt-3.5-turbo"
     quality_model: str = "gpt-3.5-turbo"
     vision_model: str = "gpt-4o"
+    image_model: str = "dall-e-2"
     chat_completion_kwargs: Dict[str, Union[str, int]] = Field(
         default_factory=dict
     )
     vision_completion_kwargs: Dict[str, Union[str, int]] = Field(
+        default_factory=dict
+    )
+    image_generation_kwargs: Dict[str, Union[str, int]] = Field(
         default_factory=dict
     )
 
@@ -114,7 +118,7 @@ class GPTInterface:
             messages = [describe_command]
 
         image_message = self.create_image_message(
-            image_format, b64_image, caption
+            [(image_format, b64_image)], caption
         )
         messages.append(image_message)
         logger.info(f"Getting image description image. Type: {image_format}")
@@ -148,14 +152,11 @@ class GPTInterface:
             )
             messages = [describe_command]
 
-        image_messages = [
-            self.create_image_message(image_format, b64_image, caption)
-            for image_format, b64_image in images
-        ]
+        messages.append(self.create_image_message(images, caption))
 
         response: ChatCompletion = self.llm.chat.completions.create(
             model=self.openai_config.vision_model,
-            messages=messages + image_messages,
+            messages=messages,
             **self.openai_config.vision_completion_kwargs,
         )
 
@@ -166,7 +167,7 @@ class GPTInterface:
         return chosen_response.message.content
 
     def create_image_message(
-        self, image_format: str, b64_image: str, image_caption: str = ""
+        self, images: Iterator[Tuple[str, str]], image_caption: str = ""
     ) -> ChatCompletionMessageParam:
         """
         Create a chat message with the given image format and base64 image.
@@ -186,15 +187,33 @@ class GPTInterface:
                     "type": "text",
                     "text": image_caption,
                 },
+            ],
+        }
+
+        for image_format, b64_image in images:
+            message["content"] += (
                 {
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:{image_format};base64,{b64_image}",
+                        "detail": "low",
                     },
                 },
-            ],
-        }
+            )
+
         return message
+
+    def create_image_response(self, prompt: str) -> List[str]:
+        """Use the image generation model to create an image"""
+        response = self.llm.images.generate(
+            model=self.openai_config.image_model,
+            prompt=prompt,
+            response_format="b64_json",
+            **self.openai_config.image_generation_kwargs,
+        )
+
+        images = [r.b64_json for r in response.data]
+        return images
 
     def update_costs(self, response: ChatCompletion):
         """Update the costs of the models. Syncs the usage with the file."""

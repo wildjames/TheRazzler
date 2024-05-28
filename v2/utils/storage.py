@@ -39,6 +39,10 @@ def save_file(fname: str, data: str):
     """Save a file to disk."""
     fname = os.path.join(DATA_DIR, fname)
     logger.debug(f"Saving data to {fname}: {data}")
+
+    if not os.path.exists(os.path.dirname(fname)):
+        os.makedirs(os.path.dirname(fname))
+
     with open(fname, "w") as f:
         f.write(data)
 
