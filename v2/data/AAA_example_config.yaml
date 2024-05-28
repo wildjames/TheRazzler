@@ -1,8 +1,13 @@
 general:
   num_consumers: 1
   num_producers: 1
+  num_brains: 1
+razzler_brain:
+  commands:
+    - ping
+    - react
 signal:
-  signal_service: localhost:8231
+  signal_service: localhost:port
   phone_number: "+441234567890"
   admin_number: "+441234567890"
 redis:
@@ -13,6 +18,5 @@ redis:
 rabbitmq:
   host: localhost
   port: 5672
-  credentials:
-    username: guest
-    password: guest
+  login: guest
+  password: guest
