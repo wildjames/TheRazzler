@@ -7,6 +7,9 @@ logger = getLogger(__name__)
 
 class ReactCommandHandler(CommandHandler):
     def can_handle(self, message: IncomingMessage) -> bool:
+        if not message.envelope.dataMessage:
+            return False
+
         return message.envelope.dataMessage.message == "react"
 
     def handle(self, message: IncomingMessage) -> OutgoingReaction:

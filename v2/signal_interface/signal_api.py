@@ -1,4 +1,4 @@
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Dict
 
 import aiohttp
 import websockets
@@ -12,6 +12,13 @@ class SignalAPI:
     ):
         self.signal_service = signal_service
         self.phone_number = phone_number
+
+    async def get_groups(self) -> Dict[str, Any]:
+        uri = self._get_groups_uri()
+        async with aiohttp.ClientSession() as session:
+            resp = await session.get(uri)
+            resp.raise_for_status()
+            return await resp.json()
 
     async def receive(self) -> AsyncGenerator[Any, Any]:
         uri = self._receive_ws_uri()
@@ -116,6 +123,9 @@ class SignalAPI:
 
     def _download_attachment_uri(self, attachment_id: str):
         return f"http://{self.signal_service}/v1/attachments/{attachment_id}"
+
+    def _get_groups_uri(self):
+        return f"http://{self.signal_service}/v1/groups/{self.phone_number}"
 
 
 class ReceiveMessagesError(Exception):

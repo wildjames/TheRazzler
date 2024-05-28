@@ -10,6 +10,7 @@ server.
 
 import asyncio
 import base64
+from contextlib import contextmanager
 import json
 from logging import getLogger
 from typing import Any, Dict
@@ -17,7 +18,7 @@ from typing import Any, Dict
 import aio_pika
 import redis
 from utils.phonebook import PhoneBook
-from utils.storage import RedisCredentials, load_phonebook
+from utils.storage import RedisCredentials, load_phonebook, save_phonebook
 
 from .signal_api import SignalAPI
 from .signal_data_classes import IncomingMessage, SignalCredentials
@@ -66,6 +67,25 @@ class SignalConsumer:
     def __del__(self):
         self.stop()
 
+    @contextmanager
+    def get_phonebook_lock(self):
+        """Context manager for managing the phonebook resource."""
+        try:
+            self.phonebook = load_phonebook()
+            yield self.phonebook
+        finally:
+            save_phonebook(self.phonebook)
+
+    async def update_groups(self):
+        """Update the groups in the phonebook.
+        Fetches from signal a list of currently participating groups, and adds
+        them to the phonebook."""
+        groups = await self.api_client.get_groups()
+        with self.get_phonebook_lock() as phonebook:
+            for group in groups:
+                logger.info(f"Adding group to phonebook: {group}")
+                phonebook.add_group(group)
+
     def get_rabbitmq_connection(self):
         return aio_pika.connect_robust(**self.rabbit_config)
 
@@ -85,6 +105,7 @@ class SignalConsumer:
             f"Starting SignalConsumer for {self.signal_info.phone_number}..."
         )
         await self._init_mq()
+        await self.update_groups()
         await self.listen()
 
     async def stop(self):
@@ -138,20 +159,18 @@ class SignalConsumer:
             return
         logger.debug("Parsed incoming message payload")
 
-        # These are messages to ignore - read receipts, typing indicators, etc.
-        if msg.envelope.typingMessage:
-            logger.debug(
-                f"Typing message received: {msg.envelope.typingMessage.action}"
+        # We got a message, which may contain information about a contact
+        # that we don't have yet. Update the phonebook
+        with self.get_phonebook_lock() as phonebook:
+            is_updated = phonebook.update_contact(
+                msg.envelope.sourceUuid,
+                msg.envelope.sourceNumber,
+                msg.envelope.sourceName,
             )
-            return
-
-        if msg.envelope.receiptMessage:
-            logger.debug(
-                "Receipt message received. Has the message from timestamp"
-                f" {msg.envelope.timestamp} been read?"
-                f" {msg.envelope.receiptMessage.isRead}"
-            )
-            return
+            if is_updated:
+                logger.info(
+                    f"Updated phonebook contact: {msg.envelope.source}"
+                )
 
         # We only care about publishing data messages
         if msg.envelope.dataMessage:
@@ -174,5 +193,5 @@ class SignalConsumer:
                     ).decode("utf-8")
                     logger.debug(f"Downloaded attachment: {attachment.id}")
 
-            # Add the message to the processing queue
-            await self._publish_message(msg)
+        # Add the message to the processing queue
+        await self._publish_message(msg)
