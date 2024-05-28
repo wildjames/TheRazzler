@@ -1,8 +1,8 @@
-from contextlib import contextmanager
 import json
 import os
+from contextlib import contextmanager
 from logging import getLogger
-from typing import Optional
+from typing import IO, Any, Generator, Optional
 
 from pydantic import BaseModel
 
@@ -21,31 +21,51 @@ if not os.path.isdir(DATA_DIR):
     raise NotADirectoryError(f"{DATA_DIR} is not a directory")
 
 
-def save_phonebook(phonebook: PhoneBook):
-    """Dump the phonebook to a file."""
-    logger.debug("Saving phonebook to disk...")
-    fname = os.path.join(DATA_DIR, "phonebook.json")
+def load_file(fname: str) -> Optional[str]:
+    """Load a file from disk. If the file does not exist, returns None."""
+    fname = os.path.join(DATA_DIR, fname)
+    logger.debug(f"Loading file from {fname}")
+    if os.path.isfile(fname):
+        with open(fname, "r") as f:
+            return f.read()
+
+    if not os.path.isdir(fname):
+        return None
+
+    raise FileNotFoundError(f"File {fname} not found.")
+
+
+def save_file(fname: str, data: str):
+    """Save a file to disk."""
+    fname = os.path.join(DATA_DIR, fname)
+    logger.debug(f"Saving data to {fname}: {data}")
     with open(fname, "w") as f:
-        f.write(phonebook.model_dump_json())
+        f.write(data)
 
 
 @contextmanager
-def get_phonebook_lock():
-    """Get a lock for the phonebook."""
+def load_file_lock(fname, mode="r+") -> Generator[IO, None, None]:
+    """Get a lock for a file."""
+    lockfile = os.path.join(DATA_DIR, f"{fname}.lock")
+    fname = os.path.join(DATA_DIR, fname)
 
-    logger.debug("Waiting for phonebook lock to be released...")
-    while os.path.exists(os.path.join(DATA_DIR, "phonebook.lock")):
-        pass
-    logger.debug("Phonebook lock acquired.")
+    if os.path.exists(lockfile):
+        logger.debug(f"Waiting for lock on {fname} to be released...")
+        while os.path.exists(lockfile):
+            pass
+    logger.debug(f"Lock on {fname} acquired.")
 
-    with open(os.path.join(DATA_DIR, "phonebook.lock"), "w") as f:
+    # If the file doesn't exist yet, create it
+    if not os.path.exists(fname):
+        open(fname, "w").close()
+
+    with open(lockfile, "w") as f:
         f.write("locked")
-        phonebook = load_phonebook()
-        yield phonebook
+        with open(fname, mode) as f:
+            yield f
 
-    save_phonebook(phonebook)
-    os.remove(os.path.join(DATA_DIR, "phonebook.lock"))
-    logger.debug("Phonebook lock released.")
+    os.remove(lockfile)
+    logger.debug(f"Lock on {fname} released.")
 
 
 def load_phonebook() -> PhoneBook:

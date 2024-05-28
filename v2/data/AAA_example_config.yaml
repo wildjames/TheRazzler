@@ -2,19 +2,30 @@ general:
   num_consumers: 1
   num_producers: 1
   num_brains: 1
+
 razzler_brain:
   commands:
     - ping
     - react
+    - summon
+
+openai:
+  fast_model: gpt-3.5-turbo
+  quality_model: gpt-3.5-turbo
+  temperature: 0.0
+  max_tokens: 400
+
 signal:
   signal_service: localhost:port
   phone_number: "+441234567890"
   admin_number: "+441234567890"
+
 redis:
   host: localhost
   port: 6379
   password: password
   db: 0
+
 rabbitmq:
   host: localhost
   port: 5672

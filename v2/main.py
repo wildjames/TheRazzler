@@ -9,7 +9,7 @@ from razzler_brain.razzler import RazzlerBrain, RazzlerBrainConfig
 from signal_interface.signal_consumer import SignalConsumer
 from signal_interface.signal_data_classes import SignalCredentials
 from signal_interface.signal_producer import SignalProducer, admin_message
-from utils.storage import RedisCredentials
+from utils.storage import RedisCredentials, load_file
 
 basicConfig(level=INFO)
 logger = getLogger(__name__)
@@ -21,35 +21,37 @@ class GeneralConfig(BaseModel):
     num_brains: int = 1
 
 
-def main(
-    signal_login: SignalCredentials,
-    rabbit_config: dict,
-    redis_config: RedisCredentials,
-    brain_config: RazzlerBrainConfig,
-    general_config: GeneralConfig,
-):
+class Config(BaseModel):
+    signal: SignalCredentials
+    redis: RedisCredentials
+    rabbitmq: dict
+    razzler_brain: RazzlerBrainConfig
+    general: GeneralConfig
+
+
+def main(config: Config):
     logger.info("Starting up a Razzler...")
 
     producers: List[SignalProducer] = []
-    for _ in range(general_config.num_producers):
-        producer = SignalProducer(signal_login, rabbit_config)
+    for _ in range(config.general.num_producers):
+        producer = SignalProducer(config.signal, config.rabbitmq)
         producers.append(producer)
 
     consumers: List[SignalConsumer] = []
-    for _ in range(general_config.num_consumers):
-        consumer = SignalConsumer(signal_login, redis_config, rabbit_config)
+    for _ in range(config.general.num_consumers):
+        consumer = SignalConsumer(config.signal, config.redis, config.rabbitmq)
         consumers.append(consumer)
 
     brains: List[RazzlerBrain] = []
-    for _ in range(general_config.num_brains):
+    for _ in range(config.general.num_brains):
         brain = RazzlerBrain(
-            redis_config,
-            rabbit_config,
-            brain_config,
+            config.redis,
+            config.rabbitmq,
+            config.razzler_brain,
         )
         brains.append(brain)
 
-    if general_config.num_producers:
+    if config.general.num_producers:
         asyncio.run(admin_message(producers[0], "Starting the Razzler"))
 
     producer_threads = [
@@ -94,27 +96,8 @@ def main(
 
 
 if __name__ in "__main__":
-    config_fname = "config.yaml"
+    # Load the configuration from the data directory
+    config = yaml.safe_load(load_file("config.yaml"))
+    config = Config(**config)
 
-    with open(config_fname, "r") as f:
-        config = yaml.safe_load(f)
-
-    # Load the signal configuration
-    signal_login = SignalCredentials(**config["signal"])
-    logger.info("Signal login information loaded.")
-
-    # Redis is easy
-    redis_config = RedisCredentials(**config["redis"])
-
-    # Connect to rabbit
-    rabbit_config = config["rabbitmq"]
-
-    # Load the brain configuration
-    brain_config = RazzlerBrainConfig(**config["razzler_brain"])
-
-    # Load the general configuration (runners)
-    general_config = GeneralConfig(**config["general"])
-
-    main(
-        signal_login, rabbit_config, redis_config, brain_config, general_config
-    )
+    main(config)

@@ -19,7 +19,7 @@ import redis
 from utils.phonebook import PhoneBook
 from utils.storage import (
     RedisCredentials,
-    get_phonebook_lock,
+    load_file_lock,
     load_phonebook,
 )
 
@@ -63,6 +63,11 @@ class SignalConsumer:
         # RabbitMQ connection
         self.connection = None
 
+        # Set up the phonebook
+        if load_phonebook() == PhoneBook():
+            with load_file_lock("phonebook.json") as f:
+                f.write(PhoneBook().model_dump_json())
+
         logger.info("SignalConsumer initialized.")
 
     def __del__(self):
@@ -73,10 +78,16 @@ class SignalConsumer:
         Fetches from signal a list of currently participating groups, and adds
         them to the phonebook."""
         groups = await self.api_client.get_groups()
-        with get_phonebook_lock() as phonebook:
+        with load_file_lock("phonebook.json") as f:
+            phonebook = PhoneBook(**json.load(f))
             for group in groups:
                 logger.info(f"Adding group to phonebook: {group}")
                 phonebook.add_group(group)
+            pb_string = phonebook.model_dump_json()
+
+            # Write the updated phonebook back to the file
+            f.seek(0)
+            f.write(pb_string)
 
     def get_rabbitmq_connection(self):
         return aio_pika.connect_robust(**self.rabbit_config)
@@ -164,12 +175,17 @@ class SignalConsumer:
         if is_updated:
             # If it is, then get a lock on the file and update the phonebook
             # properly
-            with get_phonebook_lock() as phonebook:
+            with load_file_lock("phonebook.json") as f:
+                phonebook = PhoneBook(**json.load(f))
                 phonebook.update_contact(
                     msg.envelope.sourceUuid,
                     msg.envelope.sourceNumber,
                     msg.envelope.sourceName,
                 )
+
+                # Write the updated phonebook back to the file
+                f.seek(0)
+                f.write(phonebook.model_dump_json())
             logger.info(f"Updated phonebook contact: {msg.envelope.source}")
 
         # We only care about publishing data messages

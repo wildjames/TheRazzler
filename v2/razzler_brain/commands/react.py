@@ -1,6 +1,6 @@
-from .base_command import CommandHandler, IncomingMessage, OutgoingReaction
-
 from logging import getLogger
+
+from .base_command import CommandHandler, IncomingMessage, OutgoingReaction
 
 logger = getLogger(__name__)
 
