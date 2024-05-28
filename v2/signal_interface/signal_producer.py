@@ -61,7 +61,10 @@ class SignalProducer:
     async def consume_messages(self):
         """Consume messages from RabbitMQ and process them."""
         logger.info("Consuming messages from RabbitMQ...")
-        self.connection = await self.get_rabbitmq_connection()
+
+        if not self.connection or self.connection.is_closed:
+            self.connection = await self.get_rabbitmq_connection()
+
         async with self.connection:
             channel = await self.connection.channel()
             queue = await channel.declare_queue(

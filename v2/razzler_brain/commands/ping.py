@@ -11,10 +11,9 @@ class PingCommandHandler(CommandHandler):
     def can_handle(self, message: IncomingMessage) -> bool:
         return message.envelope.dataMessage.message == "ping"
 
-    def handle(self, message: IncomingMessage, channel: BlockingChannel):
+    def handle(self, message: IncomingMessage) -> OutgoingMessage:
         logger.info("Handling ping command")
         response_message = OutgoingMessage(
             recipient=message.envelope.source, message="PONG"
         )
-        self.publish_message(response_message, channel)
-
+        return response_message

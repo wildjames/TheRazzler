@@ -9,7 +9,7 @@ class ReactCommandHandler(CommandHandler):
     def can_handle(self, message: IncomingMessage) -> bool:
         return message.envelope.dataMessage.message == "react"
 
-    def handle(self, message: IncomingMessage, channel):
+    def handle(self, message: IncomingMessage) -> OutgoingReaction:
         logger.info("Handling react command")
         response_message = OutgoingReaction(
             recipient=message.envelope.source,
@@ -17,4 +17,4 @@ class ReactCommandHandler(CommandHandler):
             target_uuid=message.envelope.sourceUuid,
             timestamp=message.envelope.timestamp,
         )
-        self.publish_message(response_message, channel)
+        return response_message

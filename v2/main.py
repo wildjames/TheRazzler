@@ -41,7 +41,7 @@ def main(
         consumer = SignalConsumer(signal_login, redis_config, rabbit_config)
         consumers.append(consumer)
 
-    brains = []
+    brains: List[RazzlerBrain] = []
     for _ in range(general_config.num_brains):
         brain = RazzlerBrain(
             redis_config,
@@ -72,7 +72,8 @@ def main(
     ]
     brain_threads = [
         threading.Thread(
-            target=brain.start,
+            target=asyncio.run,
+            args=(brain.start(),),
             daemon=True,
         )
         for brain in brains

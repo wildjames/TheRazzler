@@ -101,7 +101,7 @@ class SignalConsumer:
 
     async def _publish_message(self, msg: IncomingMessage):
         """Serialize and publish messages to RabbitMQ."""
-        logger.info(f"Publishing a message to RabbitMQ: {msg}")
+        logger.info(f"Publishing an incoming message to RabbitMQ: {msg}")
         serialized_message = msg.model_dump_json()
 
         # Reconnect if the connection is closed

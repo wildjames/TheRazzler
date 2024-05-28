@@ -2,14 +2,13 @@
 decides how to respond to them. It then sends the responses back to the queue
 in the outgoing_messages queue."""
 
+import asyncio
 import json
 from logging import getLogger
 from typing import List, Union
 
-import pika
+import aio_pika
 import redis
-from pika.adapters.blocking_connection import BlockingChannel
-from pika.spec import Basic
 from pydantic import BaseModel
 from signal_interface.signal_data_classes import (
     IncomingMessage,
@@ -34,11 +33,10 @@ class RazzlerBrain:
     def __init__(
         self,
         redis_config: RedisCredentials,
-        rabbit_config: pika.ConnectionParameters,
+        rabbit_config: dict,
         brain_config: RazzlerBrainConfig,
     ):
-        self.rabbit_client = pika.BlockingConnection(rabbit_config)
-        self.channel = self.rabbit_client.channel()
+        self.rabbit_config = rabbit_config
         self.redis_client = redis.Redis(
             host=redis_config.host,
             port=redis_config.port,
@@ -52,55 +50,69 @@ class RazzlerBrain:
             logger.info(f"Registering command: {command}")
             self.commands.append(COMMAND_REGISTRY[command]())
 
-        # Ensure the queue exists
-        self.channel.queue_declare(queue="incoming_messages", durable=True)
-        self.channel.queue_declare(queue="outgoing_messages", durable=True)
+    def get_rabbitmq_connection(self):
+        return aio_pika.connect_robust(**self.rabbit_config)
 
-    def start(self):
+    async def _init_mq(self):
+        """Asynchronously initialize RabbitMQ connection and channel."""
+        self.connection = await self.get_rabbitmq_connection()
+
+        async with self.connection:
+            self.channel = await self.connection.channel()
+            await self.channel.set_qos(prefetch_count=1)
+            await self.channel.declare_queue("incoming_messages", durable=True)
+            await self.channel.declare_queue("outgoing_messages", durable=True)
+
+    async def start(self):
         """Start consuming messages from RabbitMQ."""
-        self.channel.basic_consume(
-            queue="incoming_messages",
-            on_message_callback=self._process_incoming_message,
-            auto_ack=False,
-        )
-        logger.info(
-            "RazzlerBrain started consuming on incoming_messages queue."
-        )
-        self.channel.start_consuming()
+        logger.info("Starting RazzlerBrain...")
+        await self._init_mq()
+        await self.consume_messages()
 
     def stop(self):
         """Stop the RabbitMQ consumer."""
-        self.rabbit_client.close()
+        self.connection.close()
         logger.info("RabbitMQ connection closed.")
 
-    def _process_incoming_message(
+    async def consume_messages(self):
+        """Consume messages from RabbitMQ and process them."""
+        logger.info("Consuming messages from RabbitMQ...")
+
+        if not self.connection or self.connection.is_closed:
+            self.connection = await self.get_rabbitmq_connection()
+
+        async with self.connection:
+            self.channel = await self.connection.channel()
+            queue = await self.channel.declare_queue(
+                "incoming_messages", durable=True
+            )
+            await queue.consume(self._process_incoming_message)
+            logger.info("Consuming messages...")
+            await asyncio.Future()
+
+    async def _process_incoming_message(
         self,
-        ch: BlockingChannel,
-        method: Basic.Deliver,
-        properties: pika.BasicProperties,
-        body: bytes,
+        message: aio_pika.IncomingMessage,
     ):
         logger.info("Processing incoming message...")
+        async with message.process():
+            logger.info("Processing incoming message...")
 
-        message_data = json.loads(body.decode())
-        msg = IncomingMessage(**message_data)
-        logger.info(f"Received message: {msg}")
+            message_data = json.loads(message.body.decode())
+            msg = IncomingMessage(**message_data)
+            logger.info(f"Received message: {msg}")
 
-        # Loop over commands. If a command can handle the message, run it.
-        # Executes ALL commands able to handle a message, sequentially.
-        for command in self.commands:
-            if command.can_handle(msg):
-                command.handle(msg, self.channel)
-
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-
-    def send_response(self, message: Union[OutgoingMessage, OutgoingReaction]):
-        """Publish a response message to the outgoing_messages queue."""
-        logger.debug(f"Publishing text response: {message}")
-        self.channel.basic_publish(
-            exchange="",
-            routing_key="outgoing_messages",
-            body=message.model_dump_json(),
-            properties=pika.BasicProperties(delivery_mode=2),
-        )
-        logger.debug("Sent response to outgoing_messages queue.")
+            # Loop over commands. If a command can handle the message, run it.
+            # Executes ALL commands able to handle a message, sequentially.
+            for command in self.commands:
+                if command.can_handle(msg):
+                    logger.debug(f"Handling message with {command}")
+                    response = command.handle(msg)
+                    logger.debug(f"Command produced message: {response}")
+                    await self.channel.default_exchange.publish(
+                        aio_pika.Message(
+                            body=response.model_dump_json().encode(),
+                            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                        ),
+                        routing_key="outgoing_messages",
+                    )
