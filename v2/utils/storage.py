@@ -2,7 +2,7 @@ import json
 import os
 from contextlib import contextmanager
 from logging import getLogger
-from typing import IO, Any, Generator, Optional
+from typing import IO, Generator, Optional
 
 from pydantic import BaseModel
 

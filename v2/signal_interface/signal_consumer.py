@@ -9,7 +9,6 @@ server.
 """
 
 import asyncio
-import base64
 import json
 from logging import getLogger
 from typing import Any, Dict

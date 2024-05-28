@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Iterator, Union, Optional
+from typing import Iterator, Union
 
 from ai_interface.llm import GPTInterface
 

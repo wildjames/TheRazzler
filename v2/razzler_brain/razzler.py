@@ -115,8 +115,8 @@ class RazzlerBrain:
             message = json.loads(message_str)
             if message["envelope"].get("timestamp", None) == timestamp:
                 logger.info(
-                    f"Found the original message - removing it"
-                    f" from the message history"
+                    "Found the original message - removing it "
+                    "from the message history"
                 )
                 # Remove the original message from the message history
                 self.redis_client.lrem(

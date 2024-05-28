@@ -9,13 +9,14 @@ from openai.resources.chat.completions import ChatCompletionMessageParam
 from openai.types.chat.chat_completion import Choice, ChatCompletion
 from pydantic import BaseModel, Field
 import yaml
-from utils.storage import load_file, load_file_lock, save_file
+from utils.storage import load_file, load_file_lock
 
 logger = getLogger(__name__)
 
 
 def clean_filename(filename):
-    # Replaces non-alphanumeric characters (except for periods, hyphens and underscores) with an underscore
+    # Replaces non-alphanumeric characters (except for periods, hyphens and
+    # underscores) with an underscore
     filename = re.sub(r"[^a-zA-Z0-9_.-]", "_", filename)
     # Replaces any remaining forward slashes with an underscore
     filename = filename.replace("/", "_")
@@ -95,7 +96,8 @@ class GPTInterface:
         Create a chat message with the given role and content.
 
         Args:
-        role (str): The role of the message sender, e.g., "system", "user", or "assistant".
+        role (str): The role of the message sender, e.g., "system", "user", or
+            "assistant".
         content (str): The content of the message.
 
         Returns:
