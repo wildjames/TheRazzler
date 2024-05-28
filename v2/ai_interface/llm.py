@@ -2,7 +2,7 @@ import json
 import random
 import re
 from logging import getLogger
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import openai
 from openai.resources.chat.completions import ChatCompletionMessageParam
@@ -25,7 +25,11 @@ def clean_filename(filename):
 class OpenAIConfig(BaseModel):
     fast_model: str = "gpt-3.5-turbo"
     quality_model: str = "gpt-3.5-turbo"
+    vision_model: str = "gpt-4o"
     chat_completion_kwargs: Dict[str, Union[str, int]] = Field(
+        default_factory=dict
+    )
+    vision_completion_kwargs: Dict[str, Union[str, int]] = Field(
         default_factory=dict
     )
 
@@ -95,8 +99,107 @@ class GPTInterface:
         """
         return {"role": role, "content": content}
 
+    def get_image_description(
+        self, image_format: str, b64_image: str, caption: Optional[str] = None
+    ) -> str:
+        # If we have no caption, we need to prompt the model to describe the
+        # image. Otherwise, we pass the caption along with the images.
+        if caption in ["", None]:
+            caption = "Describe the image you see."
+            messages = []
+        else:
+            describe_command = self.create_chat_message(
+                "system", "Describe the images you see."
+            )
+            messages = [describe_command]
+
+        image_message = self.create_image_message(
+            image_format, b64_image, caption
+        )
+        messages.append(image_message)
+        logger.info(f"Getting image description image. Type: {image_format}")
+        logger.debug(f"Image Data: {image_message}")
+
+        response: ChatCompletion = self.llm.chat.completions.create(
+            model=self.openai_config.vision_model,
+            messages=messages,
+            **self.openai_config.vision_completion_kwargs,
+        )
+
+        self.update_costs(response)
+
+        chosen_response: Choice = random.choice(response.choices)
+
+        return chosen_response.message.content
+
+    def get_multiple_image_description(
+        self, images: List[Tuple[str, str]], caption: Optional[str] = None
+    ) -> str:
+        """Describe a series of images. The images should be a list of tuples,
+        where each tuple contains the image format and base64-encoded image
+        in that order.
+        """
+        if caption in ["", None]:
+            caption = "Describe the images you see."
+            messages = []
+        else:
+            describe_command = self.create_chat_message(
+                "system", "Describe the images you see."
+            )
+            messages = [describe_command]
+
+        image_messages = [
+            self.create_image_message(image_format, b64_image, caption)
+            for image_format, b64_image in images
+        ]
+
+        response: ChatCompletion = self.llm.chat.completions.create(
+            model=self.openai_config.vision_model,
+            messages=messages + image_messages,
+            **self.openai_config.vision_completion_kwargs,
+        )
+
+        self.update_costs(response)
+
+        chosen_response: Choice = random.choice(response.choices)
+
+        return chosen_response.message.content
+
+    def create_image_message(
+        self, image_format: str, b64_image: str, image_caption: str = ""
+    ) -> ChatCompletionMessageParam:
+        """
+        Create a chat message with the given image format and base64 image.
+
+        Args:
+        image_format (str): The format of the image, e.g., "image/jpeg" or
+            "image/png".
+        b64_image (str): The base64-encoded image.
+
+        Returns:
+        dict: A message for the chat API containing the image.
+        """
+        message = {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": image_caption,
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{image_format};base64,{b64_image}",
+                    },
+                },
+            ],
+        }
+        return message
+
     def update_costs(self, response: ChatCompletion):
-        """Update the costs of the models."""
+        """Update the costs of the models. Syncs the usage with the file."""
+        logger.info(f"Updating costs from message: {response}")
+
         with load_file_lock("llm_usage.json") as f:
             usage_str = f.read()
             if not usage_str:

@@ -91,6 +91,75 @@ class RazzlerBrain:
             logger.info("Consuming messages...")
             await asyncio.Future()
 
+    def replace_message_in_history(
+        self,
+        original_message: IncomingMessage,
+        new_message: IncomingMessage,
+    ):
+        """Given an original message and a new message, replace the original
+        message in the message history with the new message.
+
+        Matches based on timestamp of the message."""
+
+        logger.info(f"Replacing message with {new_message}")
+
+        # Get the index of the original message in the
+        # message history
+        length = self.redis_client.llen("message_history")
+        logger.info(f"Message history length: {length}")
+
+        timestamp = original_message.envelope.timestamp
+
+        for i in range(length):
+            message_str = self.redis_client.lindex("message_history", i)
+            message = json.loads(message_str)
+            if message["envelope"].get("timestamp", None) == timestamp:
+                logger.info(
+                    f"Found the original message - removing it"
+                    f" from the message history"
+                )
+                # Remove the original message from the message history
+                self.redis_client.lrem(
+                    "message_history",
+                    0,
+                    message_str,
+                )
+                break
+        else:
+            # Default to the front of the list
+            logger.info("Original message not found in the message history")
+            i = 0
+
+        # Push the new message into the message history
+        length = self.redis_client.llen("message_history")
+
+        # If the list is empty, push the new message to the front
+        if length == 0:
+            self.redis_client.lpush(
+                "message_history",
+                new_message.model_dump_json(),
+            )
+            logger.info("Pushed new message into message history")
+            return
+
+        # If the list has changed since we started, and the index is now
+        # out of bounds, push the new message to the end of the list
+        if i >= length:
+            self.redis_client.rpush(
+                "message_history",
+                new_message.model_dump_json(),
+            )
+            logger.info("Pushed new message into message history")
+            return
+
+        # Otherwise, set the new message at the index of the original message
+        self.redis_client.lset(
+            "message_history",
+            i,
+            new_message.model_dump_json(),
+        )
+        logger.info("Pushed new message into message history")
+
     async def _process_incoming_message(
         self,
         message: aio_pika.IncomingMessage,
@@ -111,10 +180,26 @@ class RazzlerBrain:
             # Loop over commands. If a command can handle the message, run it.
             # Executes ALL commands able to handle a message, sequentially.
             for command in self.commands:
-                if command.can_handle(msg):
-                    logger.debug(f"Handling message with {command}")
-                    response = command.handle(msg)
+                if not command.can_handle(msg):
+                    logger.debug(f"Skipping command {command}")
+                    continue
+
+                logger.debug(f"Handling message with {command}")
+                for response in command.handle(msg):
                     logger.debug(f"Command produced message: {response}")
+
+                    # In the specific case of the command yielding an incoming
+                    # message, it is a replacement for the message that was
+                    # processed. We need to remove the original message from
+                    # the message history with it, if it's not been done
+                    # already, then push the new message into its place
+                    # NOTE: This is SLOW!
+                    if isinstance(response, IncomingMessage):
+                        self.replace_message_in_history(msg, response)
+
+                        # We don't publish the incoming message to the queue
+                        # since it's a replacement for the original message
+                        continue
 
                     # Publish the outgoing message to the queue
                     await self.channel.default_exchange.publish(

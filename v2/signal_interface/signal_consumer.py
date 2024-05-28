@@ -206,10 +206,11 @@ class SignalConsumer:
                             attachment.id
                         )
                     )
+                    local_filename = f"attachments/{attachment.id}"
+                    with load_file_lock(local_filename, "wb") as f:
+                        f.write(attachment_bytes)
                     # convert the bytes to b64 for storage
-                    attachment.data = base64.b64encode(
-                        attachment_bytes
-                    ).decode("utf-8")
+                    attachment.data = local_filename
                     logger.debug(f"Downloaded attachment: {attachment.id}")
 
             # Place the message in the message history list

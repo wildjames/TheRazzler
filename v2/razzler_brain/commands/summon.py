@@ -1,8 +1,9 @@
 from logging import getLogger
+from typing import Iterator
 
-from .base_command import CommandHandler, IncomingMessage, OutgoingMessage
 from ai_interface.llm import GPTInterface
 
+from .base_command import CommandHandler, IncomingMessage, OutgoingMessage
 
 logger = getLogger(__name__)
 
@@ -14,7 +15,7 @@ class SummonCommandHandler(CommandHandler):
 
         return message.envelope.dataMessage.message == "summon"
 
-    def handle(self, message: IncomingMessage) -> OutgoingMessage:
+    def handle(self, message: IncomingMessage) -> Iterator[OutgoingMessage]:
         logger.info("Handling summon command")
 
         gpt = GPTInterface()
@@ -32,4 +33,4 @@ class SummonCommandHandler(CommandHandler):
             recipient=self.get_recipient(message), message=response
         )
 
-        return response_message
+        yield response_message

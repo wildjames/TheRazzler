@@ -1,3 +1,6 @@
 *.yaml
 *.json
 *.csv
+*.txt
+
+data/

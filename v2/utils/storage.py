@@ -21,12 +21,12 @@ if not os.path.isdir(DATA_DIR):
     raise NotADirectoryError(f"{DATA_DIR} is not a directory")
 
 
-def load_file(fname: str) -> Optional[str]:
+def load_file(fname: str, mode="r") -> Optional[str]:
     """Load a file from disk. If the file does not exist, returns None."""
     fname = os.path.join(DATA_DIR, fname)
     logger.debug(f"Loading file from {fname}")
     if os.path.isfile(fname):
-        with open(fname, "r") as f:
+        with open(fname, mode) as f:
             return f.read()
 
     if not os.path.isdir(fname):
@@ -54,6 +54,10 @@ def load_file_lock(fname, mode="r+") -> Generator[IO, None, None]:
         while os.path.exists(lockfile):
             pass
     logger.debug(f"Lock on {fname} acquired.")
+
+    # Check that the directory we're using exists
+    if not os.path.exists(os.path.dirname(fname)):
+        os.makedirs(os.path.dirname(fname))
 
     # If the file doesn't exist yet, create it
     if not os.path.exists(fname):

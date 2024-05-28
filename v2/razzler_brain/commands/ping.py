@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import Iterator
 
 from .base_command import CommandHandler, IncomingMessage, OutgoingMessage
 
@@ -12,9 +13,9 @@ class PingCommandHandler(CommandHandler):
 
         return message.envelope.dataMessage.message == "ping"
 
-    def handle(self, message: IncomingMessage) -> OutgoingMessage:
+    def handle(self, message: IncomingMessage) -> Iterator[OutgoingMessage]:
         logger.info("Handling ping command")
         response_message = OutgoingMessage(
             recipient=self.get_recipient(message), message="PONG"
         )
-        return response_message
+        yield response_message

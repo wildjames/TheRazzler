@@ -51,17 +51,17 @@ class GroupInfo(BaseModel):
 
 
 class Attachment(BaseModel):
-    contentType: str
-    filename: str
     id: str
-    size: int
-    width: int
-    height: int
+    contentType: str
+    filename: Optional[str]
+    size: Optional[int] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
     caption: Optional[str] = None
     uploadTimestamp: Optional[int] = None
     # The data is fetched, and the incoming bytes are converted to a base64
     # encoded string.
-    data: Optional[str] = Field(None, repr=False)
+    data: Optional[str] = None
 
 
 class DataMessage(BaseModel):

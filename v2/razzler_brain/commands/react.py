@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import Iterator
 
 from .base_command import CommandHandler, IncomingMessage, OutgoingReaction
 
@@ -12,7 +13,7 @@ class ReactCommandHandler(CommandHandler):
 
         return message.envelope.dataMessage.message == "react"
 
-    def handle(self, message: IncomingMessage) -> OutgoingReaction:
+    def handle(self, message: IncomingMessage) -> Iterator[OutgoingReaction]:
         logger.info("Handling react command")
         response_message = OutgoingReaction(
             recipient=message.envelope.source,
@@ -20,4 +21,4 @@ class ReactCommandHandler(CommandHandler):
             target_uuid=message.envelope.sourceUuid,
             timestamp=message.envelope.timestamp,
         )
-        return response_message
+        yield response_message
