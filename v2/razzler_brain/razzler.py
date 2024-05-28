@@ -50,6 +50,9 @@ class RazzlerBrain:
             logger.info(f"Registering command: {command}")
             self.commands.append(COMMAND_REGISTRY[command]())
 
+    def __del__(self):
+        self.stop()
+
     def get_rabbitmq_connection(self):
         return aio_pika.connect_robust(**self.rabbit_config)
 
@@ -78,9 +81,11 @@ class RazzlerBrain:
         """Consume messages from RabbitMQ and process them."""
         logger.info("Consuming messages from RabbitMQ...")
 
+        # Reopen the connection, if necessary
         if not self.connection or self.connection.is_closed:
             self.connection = await self.get_rabbitmq_connection()
 
+        # Open a channel and consume incoming messages
         async with self.connection:
             self.channel = await self.connection.channel()
             queue = await self.channel.declare_queue(
@@ -94,11 +99,16 @@ class RazzlerBrain:
         self,
         message: aio_pika.IncomingMessage,
     ):
+        # This method is called for each incoming message.
+        # Here, we can assume the connection is open and the channel is
+        # available, since it is called from the consume_messages method.
+
         logger.info("Processing incoming message...")
         async with message.process():
-            logger.info("Processing incoming message...")
 
+            # RabbitMQ messages are bytes, so we need to decode them
             message_data = json.loads(message.body.decode())
+            # And parse into the IncomingMessage model
             msg = IncomingMessage(**message_data)
             logger.info(f"Received message: {msg}")
 
@@ -109,6 +119,8 @@ class RazzlerBrain:
                     logger.debug(f"Handling message with {command}")
                     response = command.handle(msg)
                     logger.debug(f"Command produced message: {response}")
+
+                    # Publish the outgoing message to the queue
                     await self.channel.default_exchange.publish(
                         aio_pika.Message(
                             body=response.model_dump_json().encode(),

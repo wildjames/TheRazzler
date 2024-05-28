@@ -35,6 +35,9 @@ class SignalProducer:
         self.rabbit_config = rabbit_config
         self.connection = None
 
+    def __del__(self):
+        self.stop()
+
     def get_rabbitmq_connection(self):
         return aio_pika.connect_robust(**self.rabbit_config)
 

@@ -65,6 +65,9 @@ class SignalConsumer:
 
         logger.info("SignalConsumer initialized.")
 
+    def __del__(self):
+        self.stop()
+
     def get_rabbitmq_connection(self):
         return aio_pika.connect_robust(**self.rabbit_config)
 
