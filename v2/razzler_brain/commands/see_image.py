@@ -49,11 +49,10 @@ class SeeImageCommandHandler(CommandHandler):
 
         started_looking = OutgoingReaction(
             recipient=self.get_recipient(message),
-            reaction="👀",
+            reaction="🕵️",
             target_uuid=message.envelope.sourceUuid,
             timestamp=message.envelope.timestamp,
         )
-
         yield started_looking
 
         gpt = GPTInterface()
@@ -97,13 +96,14 @@ class SeeImageCommandHandler(CommandHandler):
 
         finished_looking = OutgoingReaction(
             recipient=self.get_recipient(message),
-            reaction="👍",
+            reaction="👁️",
             target_uuid=message.envelope.sourceUuid,
             timestamp=message.envelope.timestamp,
         )
-
         yield finished_looking
 
+        # Replace the message containing the image, with a message containing a
+        # description of the image
         parsed_message = message.model_copy()
         if not message_text:
             message_text = ""
@@ -111,12 +111,11 @@ class SeeImageCommandHandler(CommandHandler):
             f"This message contains an image. Image description: {response}"
         )
         message_text = " | ".join([message_text, img_description])
-
         parsed_message.envelope.dataMessage.message = message_text
         yield parsed_message
 
+        # Send the interpreted image description
         response_message = OutgoingMessage(
             recipient=self.get_recipient(message), message=response
         )
-
         yield response_message
