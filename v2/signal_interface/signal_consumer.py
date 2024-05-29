@@ -212,6 +212,8 @@ class SignalConsumer:
                     attachment.data = local_filename
                     logger.debug(f"Downloaded attachment: {attachment.id}")
 
+            # TODO: Parse mentions in the message body, into contact names.
+
             # Place the message in the message history list
             self.redis_client.lpush("message_history", msg.model_dump_json())
             # Ensure the message history cache doesn't grow too large

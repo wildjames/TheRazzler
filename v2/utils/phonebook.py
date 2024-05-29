@@ -17,7 +17,7 @@ class Group(BaseModel):
     name: str
     id: str
     internal_id: str
-    members: List[Contact]
+    members: List[str]
     blocked: bool
     pending_invites: List[str]
     pending_requests: List[str]
@@ -111,7 +111,7 @@ class PhoneBook(BaseModel):
         that matches any of its fields with the given identifier.
         """
         for contact in self.contacts:
-            if identifier in contact:
+            if identifier in [contact.uuid, contact.number]:
                 return contact
 
     def add_group(self, group: Dict[str, str | List[str]]):
@@ -134,7 +134,6 @@ class PhoneBook(BaseModel):
 
             members.append(contact)
 
-        group["members"] = members
         parsed_group = Group(**group)
 
         self.groups[parsed_group.internal_id] = parsed_group
