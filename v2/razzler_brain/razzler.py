@@ -302,7 +302,9 @@ class RazzlerBrain:
             # Loop over commands. If a command can handle the message, run it.
             # Executes ALL commands able to handle a message, sequentially.
             for command in self.commands:
-                if not command.can_handle(msg):
+                if not command.can_handle(
+                    msg, self.redis_client, self.brain_config
+                ):
                     logger.debug(f"Skipping command {command}")
                     continue
 

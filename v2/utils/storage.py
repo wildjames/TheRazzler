@@ -23,6 +23,12 @@ if not os.path.isdir(DATA_DIR):
 
 def load_file(fname: str, mode="r") -> Optional[str]:
     """Load a file from disk. If the file does not exist, returns None."""
+    # Don't allow loading files for writing
+    if "w" in mode or "a" in mode:
+        raise ValueError(
+            "Cannot load a file for writing. Use `load_file_lock` instead."
+        )
+
     fname = os.path.join(DATA_DIR, fname)
     logger.debug(f"Loading file from {fname}")
     if os.path.isfile(fname):

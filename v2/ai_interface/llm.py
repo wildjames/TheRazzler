@@ -2,14 +2,15 @@ import json
 import random
 import re
 from logging import getLogger
-from typing import Dict, Iterator, List, Optional, Tuple, Union
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import openai
 import yaml
 from openai.resources.chat.completions import ChatCompletionMessageParam
 from openai.types.chat.chat_completion import ChatCompletion, Choice
-from pydantic import BaseModel, Field
 from utils.storage import load_file, load_file_lock
+
+from .dataclasses import OpenAIConfig
 
 logger = getLogger(__name__)
 
@@ -21,22 +22,6 @@ def clean_filename(filename):
     # Replaces any remaining forward slashes with an underscore
     filename = filename.replace("/", "_")
     return filename
-
-
-class OpenAIConfig(BaseModel):
-    fast_model: str = "gpt-3.5-turbo"
-    quality_model: str = "gpt-3.5-turbo"
-    vision_model: str = "gpt-4o"
-    image_model: str = "dall-e-3"
-    chat_completion_kwargs: Dict[str, Union[str, int]] = Field(
-        default_factory=dict
-    )
-    vision_completion_kwargs: Dict[str, Union[str, int]] = Field(
-        default_factory=dict
-    )
-    image_generation_kwargs: Dict[str, Union[str, int]] = Field(
-        default_factory=dict
-    )
 
 
 class GPTInterface:

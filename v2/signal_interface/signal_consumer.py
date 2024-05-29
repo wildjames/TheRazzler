@@ -16,11 +16,7 @@ from typing import Any, Dict
 import aio_pika
 import redis
 from utils.phonebook import PhoneBook
-from utils.storage import (
-    RedisCredentials,
-    load_file_lock,
-    load_phonebook,
-)
+from utils.storage import RedisCredentials, load_file_lock, load_phonebook
 
 from .signal_api import SignalAPI
 from .signal_data_classes import IncomingMessage, SignalCredentials
@@ -186,6 +182,11 @@ class SignalConsumer:
                 f.truncate()
 
             logger.info(f"Updated phonebook contact: {msg.envelope.source}")
+
+        # Dont publish message reciepts to the queue
+        if msg.envelope.receiptMessage:
+            logger.debug("Receipt message received")
+            return
 
         # DataMessages contain actual message content.
         if msg.envelope.dataMessage:
