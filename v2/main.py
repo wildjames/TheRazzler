@@ -4,29 +4,14 @@ from logging import INFO, basicConfig, getLogger
 from typing import List
 
 import yaml
-from pydantic import BaseModel
-from razzler_brain.razzler import RazzlerBrain, RazzlerBrainConfig
+from razzler_brain.razzler import RazzlerBrain
 from signal_interface.signal_consumer import SignalConsumer
-from signal_interface.signal_data_classes import SignalCredentials
 from signal_interface.signal_producer import SignalProducer, admin_message
-from utils.storage import RedisCredentials, load_file
+from utils.storage import load_file
+from utils.datastructures import Config
 
 basicConfig(level=INFO)
 logger = getLogger(__name__)
-
-
-class GeneralConfig(BaseModel):
-    num_producers: int = 1
-    num_consumers: int = 1
-    num_brains: int = 1
-
-
-class Config(BaseModel):
-    signal: SignalCredentials
-    redis: RedisCredentials
-    rabbitmq: dict
-    razzler_brain: RazzlerBrainConfig
-    general: GeneralConfig
 
 
 def main(config: Config):

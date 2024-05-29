@@ -5,10 +5,10 @@ from logging import getLogger
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import openai
-from openai.resources.chat.completions import ChatCompletionMessageParam
-from openai.types.chat.chat_completion import Choice, ChatCompletion
-from pydantic import BaseModel, Field
 import yaml
+from openai.resources.chat.completions import ChatCompletionMessageParam
+from openai.types.chat.chat_completion import ChatCompletion, Choice
+from pydantic import BaseModel, Field
 from utils.storage import load_file, load_file_lock
 
 logger = getLogger(__name__)
@@ -27,7 +27,7 @@ class OpenAIConfig(BaseModel):
     fast_model: str = "gpt-3.5-turbo"
     quality_model: str = "gpt-3.5-turbo"
     vision_model: str = "gpt-4o"
-    image_model: str = "dall-e-2"
+    image_model: str = "dall-e-3"
     chat_completion_kwargs: Dict[str, Union[str, int]] = Field(
         default_factory=dict
     )
@@ -198,7 +198,7 @@ class GPTInterface:
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:{image_format};base64,{b64_image}",
-                        "detail": "low",
+                        # "detail": "low",
                     },
                 },
             )

@@ -10,8 +10,11 @@ from typing import List
 import aio_pika
 import redis
 from pydantic import BaseModel
-from signal_interface.signal_data_classes import IncomingMessage
-from utils.storage import RedisCredentials
+from signal_interface.signal_data_classes import (
+    IncomingMessage,
+    OutgoingReaction,
+)
+from utils.storage import RedisCredentials, load_file, load_file_lock
 
 from .commands.base_command import CommandHandler
 from .commands.registry import COMMAND_REGISTRY
@@ -21,10 +24,12 @@ logger = getLogger(__name__)
 
 class RazzlerBrainConfig(BaseModel):
     commands: List[str]
+    admins: List[str]
 
 
 class RazzlerBrain:
     commands: List[CommandHandler]
+    whitelist_file = "whitelisted_groups.json"
 
     def __init__(
         self,
@@ -32,6 +37,7 @@ class RazzlerBrain:
         rabbit_config: dict,
         brain_config: RazzlerBrainConfig,
     ):
+        self.brain_config = brain_config
         self.rabbit_config = rabbit_config
         self.redis_client = redis.Redis(
             host=redis_config.host,
@@ -45,6 +51,23 @@ class RazzlerBrain:
         for command in brain_config.commands:
             logger.info(f"Registering command: {command}")
             self.commands.append(COMMAND_REGISTRY[command]())
+
+        # Check for any whitelisted groups
+        whitelisted_groups = load_file(self.whitelist_file)
+        if whitelisted_groups:
+            whitelisted_groups = json.loads(whitelisted_groups)
+        else:
+            whitelisted_groups = []
+            with load_file_lock(self.whitelist_file) as f:
+                json.dump(whitelisted_groups, f)
+
+        logger.info(
+            "Starting the Razzler with the following groups whitelisted:"
+            f" {whitelisted_groups}"
+        )
+        # If we have any, add them to the Redis set
+        if whitelisted_groups:
+            self.redis_client.sadd("whitelisted_groups", *whitelisted_groups)
 
     def __del__(self):
         self.stop()
@@ -160,6 +183,91 @@ class RazzlerBrain:
         )
         logger.info("Pushed new message into message history")
 
+    async def acknowledge_message(
+        self, message: IncomingMessage, emoji: str = "👍"
+    ):
+        """Just acknowledge the message by reacting to it"""
+        # Publish a reaction to the message to acknowledge the whitelist
+        reaction = OutgoingReaction(
+            recipient=CommandHandler.get_recipient(message),
+            reaction=emoji,
+            target_uuid=message.envelope.sourceUuid,
+            timestamp=message.envelope.timestamp,
+        )
+
+        # Publish the outgoing message to the queue
+        await self.channel.default_exchange.publish(
+            aio_pika.Message(
+                body=reaction.model_dump_json().encode(),
+                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+            ),
+            routing_key="outgoing_messages",
+        )
+
+    async def is_group_whitelisted(self, message: IncomingMessage) -> bool:
+        """Check if a group is whitelisted for processing. If a message is not
+        from a group, it is whitelisted by default.
+
+        Whitelist a group for processing.
+
+        To whitelist a group, an admin has to send the following message in it:
+            !whitelist
+        """
+
+        logger.info("Checking if this group needs to be whitelisted...")
+        # Check that the message is a group message
+        try:
+            gid = message.envelope.dataMessage.groupInfo.groupId
+        except AttributeError:
+            logger.info("Cannot whitelist group; message is not from a group")
+            # All direct messages are whitelisted
+            return True
+
+        # Check that this message is from an admin
+        if message.envelope.sourceNumber not in self.brain_config.admins:
+            logger.info("Cannot whitelist group; message is not from an admin")
+            await self.acknowledge_message(message, "🚫")
+            return self.redis_client.sismember("whitelisted_groups", gid)
+
+        # Check if the message content is the whitelist command
+        if not message.envelope.dataMessage.message:
+            logger.info("Message has no text content.")
+            return self.redis_client.sismember("whitelisted_groups", gid)
+
+        msg = message.envelope.dataMessage.message
+        if not msg in ["!whitelist", "!blacklist"]:
+            # This is a normal message.
+            return self.redis_client.sismember("whitelisted_groups", gid)
+
+        match msg:
+            case "!whitelist":
+                # Whitelist the group
+                logger.info(f"Whitelisting group {gid}")
+                self.redis_client.sadd("whitelisted_groups", gid)
+                with load_file_lock(self.whitelist_file) as f:
+                    whitelisted_groups: List[str] = json.load(f)
+                    whitelisted_groups.append(gid)
+                    f.seek(0)
+                    json.dump(whitelisted_groups, f)
+                    f.truncate()
+
+            case "!blacklist":
+                # Blacklist the group
+                logger.info(f"Blacklisting group {gid}")
+                self.redis_client.srem("whitelisted_groups", gid)
+                with load_file_lock(self.whitelist_file) as f:
+                    whitelisted_groups: List[str] = json.load(f)
+                    whitelisted_groups.remove(gid)
+                    f.seek(0)
+                    json.dump(whitelisted_groups, f)
+                    f.truncate()
+
+            case _:
+                raise ValueError(f"Invalid message content: {msg}")
+
+        await self.acknowledge_message(message)
+        return msg == "!whitelist"
+
     async def _process_incoming_message(
         self,
         message: aio_pika.IncomingMessage,
@@ -176,6 +284,12 @@ class RazzlerBrain:
             # And parse into the IncomingMessage model
             msg = IncomingMessage(**message_data)
             logger.info(f"Received message: {msg}")
+
+            # If the message is from a group, check that it's whitelisted
+            if not await self.is_group_whitelisted(msg):
+                gid = msg.envelope.dataMessage.groupInfo.groupId
+                logger.info(f"Skipping message from group {gid}")
+                return
 
             # Loop over commands. If a command can handle the message, run it.
             # Executes ALL commands able to handle a message, sequentially.

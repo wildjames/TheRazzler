@@ -11,7 +11,9 @@ from utils.storage import load_phonebook
 
 # This needs to be parsable by Pydantic
 class CommandHandler(ABC):
-    def get_recipient(self, message: IncomingMessage) -> str:
+
+    @staticmethod
+    def get_recipient(message: IncomingMessage) -> str:
         """The sender can be either a single user, or a group."""
         if message.envelope.dataMessage:
             if message.envelope.dataMessage.groupInfo:

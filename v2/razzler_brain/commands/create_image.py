@@ -18,7 +18,10 @@ class CreateImageCommandHandler(CommandHandler):
         if not message.envelope.dataMessage:
             return False
 
-        return message.envelope.dataMessage.message == "dream"
+        if not isinstance(message.envelope.dataMessage.message, str):
+            return False
+
+        return message.envelope.dataMessage.message.startswith("dream")
 
     def handle(
         self, message: IncomingMessage
@@ -34,7 +37,11 @@ class CreateImageCommandHandler(CommandHandler):
         yield reaction_message
 
         gpt = GPTInterface()
-        created_images = gpt.create_image_response("Make a dream for me.")
+        # Trim of the "dream" part of the message
+        prompt = message.envelope.dataMessage.message[5:]
+        if not prompt:
+            prompt = "hyper-real picture of a robot screaming into the void"
+        created_images = gpt.create_image_response(prompt)
 
         reply_message = OutgoingMessage(
             recipient=self.get_recipient(message),
