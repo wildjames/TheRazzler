@@ -7,8 +7,8 @@ import yaml
 from razzler_brain.razzler import RazzlerBrain
 from signal_interface.signal_consumer import SignalConsumer
 from signal_interface.signal_producer import SignalProducer
-from utils.storage import load_file
 from utils.datastructures import Config
+from utils.storage import load_file
 
 basicConfig(level=INFO)
 logger = getLogger(__name__)
