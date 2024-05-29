@@ -22,7 +22,10 @@ class ReactCommandHandler(CommandHandler):
         if not message.envelope.dataMessage:
             return False
 
-        return message.envelope.dataMessage.message == "react"
+        if not isinstance(message.envelope.dataMessage.message, str):
+            return False
+
+        return message.envelope.dataMessage.message.lower() == "react"
 
     def handle(
         self,

@@ -32,7 +32,7 @@ class CreateImageCommandHandler(CommandHandler):
         if not isinstance(message.envelope.dataMessage.message, str):
             return False
 
-        return message.envelope.dataMessage.message.startswith("dream")
+        return message.envelope.dataMessage.message.lower().startswith("dream")
 
     def handle(
         self,

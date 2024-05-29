@@ -37,47 +37,12 @@ class InsultCommandHandler(CommandHandler):
         if not mentions:
             return False
 
+        # Check if there are any image attachments.
+        # If there are, we don't want to handle this message
+        if message.envelope.dataMessage.attachments:
+            return False
+
         return mentions[0].number == config.razzler_phone_number
-
-    def get_chat_history(
-        self, cache_key: str, redis_connection: redis.Redis, gpt: GPTInterface
-    ) -> List[str]:
-        # Get the message history list from redis
-        history = redis_connection.lrange(cache_key, 0, -1)
-
-        messages = []
-
-        # Parse the messages into something the AI can understand
-        for msg_str in history:
-            msg_dict = json.loads(msg_str)
-            # Parse the message into the appropriate type
-            models = [IncomingMessage, OutgoingMessage, OutgoingReaction]
-            for model in models:
-                try:
-                    msg = model(**msg_dict)
-                    break
-                except:
-                    pass
-            else:
-                logger.error(f"Could not parse message: {msg_str}")
-
-            msg_out = ""
-            match msg:
-                case IncomingMessage():
-                    msg_out = (
-                        f"{msg.envelope.sourceName}:"
-                        f" {msg.envelope.dataMessage.message}"
-                    )
-                    messages.append(gpt.create_chat_message("user", msg_out))
-
-                case OutgoingMessage():
-                    msg_out = f"Razzler: {msg.message}"
-                    messages.append(gpt.create_chat_message("system", msg_out))
-
-                case _:
-                    continue
-
-        return messages
 
     def handle(
         self,

@@ -62,8 +62,8 @@ class GPTInterface:
                 raise ValueError(f"Invalid model: {model}")
 
         response: ChatCompletion = self.llm.chat.completions.create(
-            model=use_model,
             messages=messages,
+            model=use_model,
             # Pass in the kwargs from the config file
             **self.openai_config.chat_completion_kwargs,
         )
@@ -91,29 +91,30 @@ class GPTInterface:
         return {"role": role, "content": content}
 
     def get_image_description(
-        self, image_format: str, b64_image: str, caption: Optional[str] = None
+        self,
+        image_format: str,
+        b64_image: str,
+        caption: Optional[str] = None,
+        gpt_messages: Optional[List[str]] = None,
     ) -> str:
+        if gpt_messages is None:
+            gpt_messages = []
+
         # If we have no caption, we need to prompt the model to describe the
         # image. Otherwise, we pass the caption along with the images.
         if caption in ["", None]:
             caption = "Describe the image you see."
-            messages = []
-        else:
-            describe_command = self.create_chat_message(
-                "system", "Describe the images you see."
-            )
-            messages = [describe_command]
 
         image_message = self.create_image_message(
             [(image_format, b64_image)], caption
         )
-        messages.append(image_message)
+        gpt_messages.append(image_message)
         logger.info(f"Getting image description image. Type: {image_format}")
         logger.debug(f"Image Data: {image_message}")
 
         response: ChatCompletion = self.llm.chat.completions.create(
+            messages=gpt_messages,
             model=self.openai_config.vision_model,
-            messages=messages,
             **self.openai_config.vision_completion_kwargs,
         )
 
@@ -124,26 +125,26 @@ class GPTInterface:
         return chosen_response.message.content
 
     def get_multiple_image_description(
-        self, images: List[Tuple[str, str]], caption: Optional[str] = None
+        self,
+        images: List[Tuple[str, str]],
+        caption: Optional[str] = None,
+        gpt_messages: Optional[List[str]] = None,
     ) -> str:
         """Describe a series of images. The images should be a list of tuples,
         where each tuple contains the image format and base64-encoded image
         in that order.
         """
+        if gpt_messages is None:
+            gpt_messages = []
+
         if caption in ["", None]:
             caption = "Describe the images you see."
-            messages = []
-        else:
-            describe_command = self.create_chat_message(
-                "system", "Describe the images you see."
-            )
-            messages = [describe_command]
 
-        messages.append(self.create_image_message(images, caption))
+        gpt_messages.append(self.create_image_message(images, caption))
 
         response: ChatCompletion = self.llm.chat.completions.create(
+            messages=gpt_messages,
             model=self.openai_config.vision_model,
-            messages=messages,
             **self.openai_config.vision_completion_kwargs,
         )
 

@@ -61,60 +61,45 @@ class SeeImageCommandHandler(CommandHandler):
     ) -> Iterator[Union[OutgoingReaction, OutgoingMessage, IncomingMessage]]:
         logger.info("Digesting an image message")
 
-        started_looking = OutgoingReaction(
+        yield OutgoingReaction(
             recipient=self.get_recipient(message),
             reaction="🕵️",
             target_uuid=message.envelope.sourceUuid,
             timestamp=message.envelope.timestamp,
         )
-        yield started_looking
 
         gpt = GPTInterface()
-
         message_text = message.envelope.dataMessage.message
 
         try:
-            if len(message.envelope.dataMessage.attachments) == 1:
-                b64_image = image_to_base64(
-                    message.envelope.dataMessage.attachments[0].data
-                )
-                fmt = message.envelope.dataMessage.attachments[0].contentType
-                response = gpt.get_image_description(
-                    image_format=fmt,
-                    b64_image=b64_image,
-                    caption=message_text,
-                )
-            else:
-                images = []
-                for attachment in message.envelope.dataMessage.attachments:
-                    b64_image = image_to_base64(attachment.data)
-                    images.append(
-                        (
-                            attachment.contentType,
-                            b64_image,
-                        )
+            images = []
+            for attachment in message.envelope.dataMessage.attachments:
+                b64_image = image_to_base64(attachment.data)
+                images.append(
+                    (
+                        attachment.contentType,
+                        b64_image,
                     )
-                response = gpt.get_multiple_image_description(
-                    images, caption=message_text
                 )
+            response = gpt.get_multiple_image_description(
+                images, caption=message_text
+            )
         except Exception as e:
-            failed_looking = OutgoingReaction(
+            # give back the failed looking reaction, then terminate the command
+            yield OutgoingReaction(
                 recipient=self.get_recipient(message),
                 reaction="😢",
                 target_uuid=message.envelope.sourceUuid,
                 timestamp=message.envelope.timestamp,
             )
-            # give back the failed looking reaction, then terminate the command
-            yield failed_looking
             raise e
 
-        finished_looking = OutgoingReaction(
+        yield OutgoingReaction(
             recipient=self.get_recipient(message),
             reaction="👁️",
             target_uuid=message.envelope.sourceUuid,
             timestamp=message.envelope.timestamp,
         )
-        yield finished_looking
 
         # Replace the message containing the image, with a message containing a
         # description of the image
@@ -129,6 +114,7 @@ class SeeImageCommandHandler(CommandHandler):
         yield parsed_message
 
         # Check to see if the Razzler is the only element of the mentions list
+        reply = False
         if message.envelope.dataMessage.mentions:
             if len(message.envelope.dataMessage.mentions) == 1:
                 mention = message.envelope.dataMessage.mentions[0].number
@@ -138,8 +124,41 @@ class SeeImageCommandHandler(CommandHandler):
                         "The razzler was tagged. Posting the message"
                         " description"
                     )
-                    # Send the interpreted image description
-                    response_message = OutgoingMessage(
-                        recipient=self.get_recipient(message), message=response
-                    )
-                    yield response_message
+                    reply = True
+
+        if not reply:
+            return
+
+        yield OutgoingReaction(
+            recipient=self.get_recipient(message),
+            reaction="🗣️",
+            target_uuid=message.envelope.sourceUuid,
+            timestamp=message.envelope.timestamp,
+        )
+
+        personality_text = load_file("personality.txt")
+        if not personality_text:
+            logger.error("Personality prompt not found")
+            return
+        logger.info("Personality prompt found")
+
+        gpt_messages = self.get_chat_history(
+            f"message_history:{message.get_recipient()}",
+            redis_connection,
+            gpt,
+        )
+        gpt_messages.append(
+            gpt.create_chat_message("system", personality_text.strip())
+        )
+
+        try:
+            response = gpt.get_multiple_image_description(
+                images, caption=message_text, gpt_messages=gpt_messages
+            )
+        except Exception as e:
+            logger.error(f"Error creating message: {e}")
+            return
+
+        yield OutgoingMessage(
+            recipient=self.get_recipient(message), message=response
+        )

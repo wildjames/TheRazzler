@@ -15,11 +15,15 @@ from typing import Any, Dict
 
 import aio_pika
 import redis
-from utils.phonebook import PhoneBook
+from utils.phonebook import Group, PhoneBook
 from utils.storage import RedisCredentials, load_file_lock, load_phonebook
 
 from .signal_api import SignalAPI
-from .signal_data_classes import IncomingMessage, SignalCredentials
+from .signal_data_classes import (
+    DataMessage,
+    IncomingMessage,
+    SignalCredentials,
+)
 
 logger = getLogger(__name__)
 
@@ -59,6 +63,8 @@ class SignalConsumer:
                 f.seek(0)
                 f.write(PhoneBook().model_dump_json())
                 f.truncate()
+
+        self.phonebook = load_phonebook()
 
         logger.info("SignalConsumer initialized.")
 
@@ -142,29 +148,19 @@ class SignalConsumer:
                     f" {msg.envelope.sourceNumber}"
                 )
 
-    async def _process_incoming(self, message: Dict[str, Any]):
-        """Process incoming messages."""
-        logger.debug("Processing incoming message")
-
-        # Parse the json payload to an IncomingMessage object
-        try:
-            msg = IncomingMessage(**message)
-        except Exception as e:
-            logger.error(
-                f"Error parsing incoming message: {e}. Message: {message}"
-            )
-            return
-        logger.debug("Parsed incoming message payload")
+    def update_contact_info(self, msg: IncomingMessage):
+        """Incoming messages contain data on contacts. This function updates
+        the phonebook with the contact information."""
 
         # We got a message, which may contain information about a contact
         # that we don't have yet.
         # First, check if the contact information is new to me
-        phonebook = load_phonebook()
-        is_updated = phonebook.update_contact(
+        is_updated = self.phonebook.update_contact(
             msg.envelope.sourceUuid,
             msg.envelope.sourceNumber,
             msg.envelope.sourceName,
         )
+
         if is_updated:
             # If it is, then get a lock on the file and update the phonebook
             # properly
@@ -181,7 +177,56 @@ class SignalConsumer:
                 f.write(phonebook.model_dump_json())
                 f.truncate()
 
+            self.phonebook = phonebook
             logger.info(f"Updated phonebook contact: {msg.envelope.source}")
+
+    async def download_attachments(self, data: DataMessage):
+        """Download attachments from the message, to local storage."""
+
+        for attachment in data.attachments:
+            logger.info(f"Downloading attachment: {attachment.id}")
+            attachment_bytes = await self.api_client.download_attachment(
+                attachment.id
+            )
+
+            local_filename = f"attachments/{attachment.id}"
+            with load_file_lock(local_filename, "wb") as f:
+                f.write(attachment_bytes)
+
+            # convert the bytes to b64 for storage
+            attachment.data = local_filename
+            logger.debug(f"Downloaded attachment: {attachment.id}")
+
+    def add_message_to_history(self, msg: IncomingMessage):
+        """Add the message to the message history redis cache.
+
+        The key is formatted like this: message_history:<recipient>
+        where recipient is the phone number of the recipient of the message,
+        or the group ID if it is a group message.
+        """
+
+        msg_cache = f"message_history:{msg.get_recipient()}"
+        self.redis_client.lpush(msg_cache, msg.model_dump_json())
+        # Ensure the message history cache doesn't grow too large
+        self.redis_client.ltrim(
+            msg_cache, 0, self.signal_info.message_history_length
+        )
+
+    async def _process_incoming(self, message: Dict[str, Any]):
+        """Process incoming messages."""
+        logger.debug("Processing incoming message")
+
+        # Parse the json payload to an IncomingMessage object
+        try:
+            msg = IncomingMessage(**message)
+        except Exception as e:
+            logger.error(
+                f"Error parsing incoming message: {e}. Message: {message}"
+            )
+            return
+        logger.debug("Parsed incoming message payload")
+
+        self.update_contact_info(msg)
 
         # Dont publish message reciepts to the queue
         if msg.envelope.receiptMessage:
@@ -193,32 +238,21 @@ class SignalConsumer:
             logger.debug("Data message received")
             data = msg.envelope.dataMessage
 
+            # Is this a new group?
+            if data.groupInfo:
+                if self.phonebook.groups.get(data.groupInfo.groupId) is None:
+                    logger.info("New group detected. Updating phonebook.")
+                    await self.update_groups()
+
             # If it has an attachement, we need to download it
             if data.attachments:
                 logger.info("Message has attachments.")
-                for attachment in data.attachments:
-                    logger.info(f"Downloading attachment: {attachment.id}")
-                    attachment_bytes = (
-                        await self.api_client.download_attachment(
-                            attachment.id
-                        )
-                    )
-                    local_filename = f"attachments/{attachment.id}"
-                    with load_file_lock(local_filename, "wb") as f:
-                        f.write(attachment_bytes)
-                    # convert the bytes to b64 for storage
-                    attachment.data = local_filename
-                    logger.debug(f"Downloaded attachment: {attachment.id}")
+                self.download_attachments(data)
 
             # TODO: Parse mentions in the message body, into contact names.
 
             # Place the message in the message history list
-            msg_cache = f"message_history:{msg.get_recipient()}"
-            self.redis_client.lpush(msg_cache, msg.model_dump_json())
-            # Ensure the message history cache doesn't grow too large
-            self.redis_client.ltrim(
-                msg_cache, 0, self.signal_info.message_history_length
-            )
+            self.add_message_to_history(msg)
 
         # Add the message to the processing queue
         await self._publish_message(msg)

@@ -25,7 +25,10 @@ class SummonCommandHandler(CommandHandler):
         if not message.envelope.dataMessage:
             return False
 
-        return message.envelope.dataMessage.message == "summon"
+        if not isinstance(message.envelope.dataMessage.message, str):
+            return False
+
+        return message.envelope.dataMessage.message.lower() == "summon"
 
     def handle(
         self,

@@ -23,7 +23,10 @@ class PingCommandHandler(CommandHandler):
         if not message.envelope.dataMessage:
             return False
 
-        return message.envelope.dataMessage.message == "ping"
+        if not isinstance(message.envelope.dataMessage.message, str):
+            return False
+
+        return message.envelope.dataMessage.message.lower() == "ping"
 
     def handle(
         self,
