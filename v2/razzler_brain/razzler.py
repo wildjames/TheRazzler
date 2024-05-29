@@ -235,7 +235,7 @@ class RazzlerBrain:
             return self.redis_client.sismember("whitelisted_groups", gid)
 
         msg = message.envelope.dataMessage.message
-        if not msg in ["!whitelist", "!blacklist"]:
+        if msg not in ["!whitelist", "!blacklist"]:
             # This is a normal message.
             return self.redis_client.sismember("whitelisted_groups", gid)
 

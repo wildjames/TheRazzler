@@ -36,17 +36,30 @@ class CreateImageCommandHandler(CommandHandler):
         )
         yield reaction_message
 
-        gpt = GPTInterface()
-        # Trim of the "dream" part of the message
-        prompt = message.envelope.dataMessage.message[5:]
-        if not prompt:
-            prompt = "hyper-real picture of a robot screaming into the void"
-        created_images = gpt.create_image_response(prompt)
+        try:
+            gpt = GPTInterface()
+            # Trim of the "dream" part of the message
+            prompt = message.envelope.dataMessage.message[5:]
+            if not prompt:
+                prompt = (
+                    "hyper-real picture of a robot screaming into the void"
+                )
+            prompt = prompt.strip()
+            created_images = gpt.create_image_response(prompt)
 
-        reply_message = OutgoingMessage(
-            recipient=self.get_recipient(message),
-            message="Here is your dream.",
-            base64_attachments=created_images,
-        )
+            reply_message = OutgoingMessage(
+                recipient=self.get_recipient(message),
+                message="Here is your dream.",
+                base64_attachments=created_images,
+            )
 
-        yield reply_message
+            yield reply_message
+
+        except Exception as e:
+            logger.error(f"Error creating image: {e}")
+            yield OutgoingReaction(
+                recipient=self.get_recipient(message),
+                reaction="😢",
+                target_uuid=message.envelope.sourceUuid,
+                timestamp=message.envelope.timestamp,
+            )
