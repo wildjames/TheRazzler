@@ -1,12 +1,12 @@
 import asyncio
-import threading
+import multiprocessing
 from logging import INFO, basicConfig, getLogger
 from typing import List
 
 import yaml
 from razzler_brain.razzler import RazzlerBrain
 from signal_interface.signal_consumer import SignalConsumer
-from signal_interface.signal_producer import SignalProducer, admin_message
+from signal_interface.signal_producer import SignalProducer
 from utils.storage import load_file
 from utils.datastructures import Config
 
@@ -14,73 +14,65 @@ basicConfig(level=INFO)
 logger = getLogger(__name__)
 
 
+def run_asyncio_coroutine(coroutine_func, *args):
+    asyncio.run(coroutine_func(*args))
+
+
 def main(config: Config):
-    logger.info("Starting up a Razzler...")
+    logger.info("Starting up Razzler components in separate processes...")
 
-    producers: List[SignalProducer] = []
-    for _ in range(config.general.num_producers):
-        producer = SignalProducer(config.signal, config.rabbitmq, config.redis)
-        producers.append(producer)
+    # Initialize producers
+    producers: List[SignalProducer] = [
+        SignalProducer(config.signal, config.rabbitmq, config.redis)
+        for _ in range(config.general.num_producers)
+    ]
 
-    consumers: List[SignalConsumer] = []
-    for _ in range(config.general.num_consumers):
-        consumer = SignalConsumer(config.signal, config.redis, config.rabbitmq)
-        consumers.append(consumer)
+    # Initialize consumers
+    consumers: List[SignalConsumer] = [
+        SignalConsumer(config.signal, config.redis, config.rabbitmq)
+        for _ in range(config.general.num_consumers)
+    ]
 
-    brains: List[RazzlerBrain] = []
-    for _ in range(config.general.num_brains):
-        brain = RazzlerBrain(
-            config.redis,
-            config.rabbitmq,
-            config.razzler_brain,
-        )
-        brains.append(brain)
+    # Initialize brains
+    brains: List[RazzlerBrain] = [
+        RazzlerBrain(config.redis, config.rabbitmq, config.razzler_brain)
+        for _ in range(config.general.num_brains)
+    ]
 
-    # if config.general.num_producers:
-    #     asyncio.run(admin_message(producers[0], "Starting the Razzler"))
-
-    producer_threads = [
-        threading.Thread(
-            target=asyncio.run,
-            args=(producer.start(),),
-            daemon=True,
+    # Create processes for producers
+    producer_processes = [
+        multiprocessing.Process(
+            target=run_asyncio_coroutine, args=(producer.start,)
         )
         for producer in producers
     ]
-    # Consumer start methods are async
-    consumer_threads = [
-        threading.Thread(
-            target=asyncio.run,
-            args=(consumer.start(),),
-            daemon=True,
+
+    # Create processes for consumers
+    consumer_processes = [
+        multiprocessing.Process(
+            target=run_asyncio_coroutine, args=(consumer.start,)
         )
         for consumer in consumers
     ]
-    brain_threads = [
-        threading.Thread(
-            target=asyncio.run,
-            args=(brain.start(),),
-            daemon=True,
+
+    # Create processes for brains
+    brain_processes = [
+        multiprocessing.Process(
+            target=run_asyncio_coroutine, args=(brain.start,)
         )
         for brain in brains
     ]
 
-    for thread in producer_threads:
-        thread.start()
-    for thread in consumer_threads:
-        thread.start()
-    for thread in brain_threads:
-        thread.start()
+    # Start all processes
+    for process in producer_processes + consumer_processes + brain_processes:
+        process.start()
 
-    for thread in producer_threads:
-        thread.join()
-    for thread in consumer_threads:
-        thread.join()
-    for thread in brain_threads:
-        thread.join()
+    # Wait for all processes to complete
+    for process in producer_processes + consumer_processes + brain_processes:
+        process.join()
 
 
-if __name__ in "__main__":
+if __name__ == "__main__":
     # Load the configuration from the data directory
     config = yaml.safe_load(load_file("config.yaml"))
     config = Config(**config)

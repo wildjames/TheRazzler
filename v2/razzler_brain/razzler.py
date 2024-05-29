@@ -88,8 +88,9 @@ class RazzlerBrain:
 
     def stop(self):
         """Stop the RabbitMQ consumer."""
-        self.connection.close()
-        logger.info("RabbitMQ connection closed.")
+        if self.connection:
+            self.connection.close()
+            logger.info("RabbitMQ connection closed.")
 
     async def consume_messages(self):
         """Consume messages from RabbitMQ and process them."""
