@@ -247,7 +247,7 @@ class SignalConsumer:
             # If it has an attachement, we need to download it
             if data.attachments:
                 logger.info("Message has attachments.")
-                self.download_attachments(data)
+                await self.download_attachments(data)
 
             # TODO: Parse mentions in the message body, into contact names.
 

@@ -36,8 +36,8 @@ def main(config: Config):
         )
         brains.append(brain)
 
-    if config.general.num_producers:
-        asyncio.run(admin_message(producers[0], "Starting the Razzler"))
+    # if config.general.num_producers:
+    #     asyncio.run(admin_message(producers[0], "Starting the Razzler"))
 
     producer_threads = [
         threading.Thread(

@@ -17,7 +17,7 @@ from .base_command import (
 logger = getLogger(__name__)
 
 
-class InsultCommandHandler(CommandHandler):
+class ReplyCommandHandler(CommandHandler):
     insult_filename = "insult.txt"
 
     def can_handle(
@@ -87,7 +87,7 @@ class InsultCommandHandler(CommandHandler):
                 f"Creating chat completion with {len(messages)} messages"
             )
 
-            response = gpt.create_chat_completion("quality", messages)
+            response = gpt.generate_chat_completion("quality", messages)
 
         except Exception as e:
             logger.error(f"Error creating message: {e}")

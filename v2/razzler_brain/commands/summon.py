@@ -40,7 +40,7 @@ class SummonCommandHandler(CommandHandler):
 
         try:
             gpt = GPTInterface()
-            response = gpt.create_chat_completion(
+            response = gpt.generate_chat_completion(
                 model="fast",
                 messages=[
                     gpt.create_chat_message(

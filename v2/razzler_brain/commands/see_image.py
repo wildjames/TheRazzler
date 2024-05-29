@@ -81,7 +81,7 @@ class SeeImageCommandHandler(CommandHandler):
                         b64_image,
                     )
                 )
-            response = gpt.get_multiple_image_description(
+            response = gpt.generate_images_response(
                 images, caption=message_text
             )
         except Exception as e:
@@ -152,7 +152,7 @@ class SeeImageCommandHandler(CommandHandler):
         )
 
         try:
-            response = gpt.get_multiple_image_description(
+            response = gpt.generate_images_response(
                 images, caption=message_text, gpt_messages=gpt_messages
             )
         except Exception as e:

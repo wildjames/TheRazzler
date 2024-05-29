@@ -1,5 +1,5 @@
 from .create_image import CreateImageCommandHandler
-from .insult import InsultCommandHandler
+from .reply import ReplyCommandHandler
 from .ping import PingCommandHandler
 from .react import ReactCommandHandler
 from .see_image import SeeImageCommandHandler
@@ -11,5 +11,5 @@ COMMAND_REGISTRY = {
     "summon": SummonCommandHandler,
     "see_image": SeeImageCommandHandler,
     "create_image": CreateImageCommandHandler,
-    "insult": InsultCommandHandler,
+    "reply": ReplyCommandHandler,
 }

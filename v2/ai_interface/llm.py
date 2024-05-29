@@ -48,7 +48,7 @@ class GPTInterface:
         self.total_prompt_tokens = {}
         self.total_completion_tokens = {}
 
-    def create_chat_completion(
+    def generate_chat_completion(
         self,
         model: str,
         messages: List[str],
@@ -60,6 +60,10 @@ class GPTInterface:
                 use_model = self.openai_config.quality_model
             case _:
                 raise ValueError(f"Invalid model: {model}")
+
+        logger.info(f"Creating chat completion with {len(messages)} messages")
+        for m in messages:
+            logger.info(m)
 
         response: ChatCompletion = self.llm.chat.completions.create(
             messages=messages,
@@ -90,41 +94,7 @@ class GPTInterface:
         """
         return {"role": role, "content": content}
 
-    def get_image_description(
-        self,
-        image_format: str,
-        b64_image: str,
-        caption: Optional[str] = None,
-        gpt_messages: Optional[List[str]] = None,
-    ) -> str:
-        if gpt_messages is None:
-            gpt_messages = []
-
-        # If we have no caption, we need to prompt the model to describe the
-        # image. Otherwise, we pass the caption along with the images.
-        if caption in ["", None]:
-            caption = "Describe the image you see."
-
-        image_message = self.create_image_message(
-            [(image_format, b64_image)], caption
-        )
-        gpt_messages.append(image_message)
-        logger.info(f"Getting image description image. Type: {image_format}")
-        logger.debug(f"Image Data: {image_message}")
-
-        response: ChatCompletion = self.llm.chat.completions.create(
-            messages=gpt_messages,
-            model=self.openai_config.vision_model,
-            **self.openai_config.vision_completion_kwargs,
-        )
-
-        self.update_costs(response)
-
-        chosen_response: Choice = random.choice(response.choices)
-
-        return chosen_response.message.content
-
-    def get_multiple_image_description(
+    def generate_images_response(
         self,
         images: List[Tuple[str, str]],
         caption: Optional[str] = None,

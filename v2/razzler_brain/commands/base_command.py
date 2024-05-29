@@ -25,6 +25,8 @@ class CommandHandler(ABC):
     ) -> List[str]:
         # Get the message history list from redis
         history = redis_connection.lrange(cache_key, 0, -1)
+        # This is in reverse order, so we need to reverse it
+        history.reverse()
 
         messages = []
 
@@ -53,7 +55,9 @@ class CommandHandler(ABC):
 
                 case OutgoingMessage():
                     msg_out = f"Razzler: {msg.message}"
-                    messages.append(gpt.create_chat_message("system", msg_out))
+                    messages.append(
+                        gpt.create_chat_message("assistant", msg_out)
+                    )
 
                 case _:
                     continue
