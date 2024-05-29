@@ -88,6 +88,9 @@ class ReplyCommandHandler(CommandHandler):
             )
 
             response = gpt.generate_chat_completion("quality", messages)
+            if response.lower().startswith("razzler:"):
+                response = response[8:]
+            response = response.strip()
 
         except Exception as e:
             logger.error(f"Error creating message: {e}")
