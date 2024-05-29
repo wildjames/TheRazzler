@@ -126,24 +126,37 @@ class RazzlerBrain:
 
         logger.info(f"Replacing message with {new_message}")
 
+        timestamp = original_message.envelope.timestamp
+        chat = original_message.get_recipient()
+
+        msg_cache = f"message_history:{chat}"
+
         # Get the index of the original message in the
         # message history
-        length = self.redis_client.llen("message_history")
+        length = self.redis_client.llen(msg_cache)
         logger.info(f"Message history length: {length}")
 
-        timestamp = original_message.envelope.timestamp
-
         for i in range(length):
-            message_str = self.redis_client.lindex("message_history", i)
+            message_str = self.redis_client.lindex(msg_cache, i)
             message = json.loads(message_str)
-            if message["envelope"].get("timestamp", None) == timestamp:
+
+            # If the message is of type IncomingMessage, instatiate it
+            if "envelope" in message:
+                message = IncomingMessage(**message)
+            else:
+                # If the message is not of type IncomingMessage, skip it
+                continue
+
+            # Try and parse the message for a timestamp
+            fetched_timestamp = message.envelope.timestamp
+            if fetched_timestamp == timestamp:
                 logger.info(
                     "Found the original message - removing it "
                     "from the message history"
                 )
                 # Remove the original message from the message history
                 self.redis_client.lrem(
-                    "message_history",
+                    msg_cache,
                     0,
                     message_str,
                 )
@@ -154,12 +167,12 @@ class RazzlerBrain:
             i = 0
 
         # Push the new message into the message history
-        length = self.redis_client.llen("message_history")
+        length = self.redis_client.llen(msg_cache)
 
         # If the list is empty, push the new message to the front
         if length == 0:
             self.redis_client.lpush(
-                "message_history",
+                msg_cache,
                 new_message.model_dump_json(),
             )
             logger.info("Pushed new message into message history")
@@ -169,7 +182,7 @@ class RazzlerBrain:
         # out of bounds, push the new message to the end of the list
         if i >= length:
             self.redis_client.rpush(
-                "message_history",
+                msg_cache,
                 new_message.model_dump_json(),
             )
             logger.info("Pushed new message into message history")
@@ -177,7 +190,7 @@ class RazzlerBrain:
 
         # Otherwise, set the new message at the index of the original message
         self.redis_client.lset(
-            "message_history",
+            msg_cache,
             i,
             new_message.model_dump_json(),
         )
@@ -213,6 +226,7 @@ class RazzlerBrain:
         To whitelist a group, an admin has to send the following message in it:
             !whitelist
         """
+        wl_key = "whitelisted_groups"
 
         logger.info("Checking if this group needs to be whitelisted...")
         # Check that the message is a group message
@@ -226,24 +240,23 @@ class RazzlerBrain:
         # Check that this message is from an admin
         if message.envelope.sourceNumber not in self.brain_config.admins:
             logger.info("Cannot whitelist group; message is not from an admin")
-            await self.acknowledge_message(message, "🚫")
-            return self.redis_client.sismember("whitelisted_groups", gid)
+            return self.redis_client.sismember(wl_key, gid)
 
         # Check if the message content is the whitelist command
         if not message.envelope.dataMessage.message:
             logger.info("Message has no text content.")
-            return self.redis_client.sismember("whitelisted_groups", gid)
+            return self.redis_client.sismember(wl_key, gid)
 
         msg = message.envelope.dataMessage.message
         if msg not in ["!whitelist", "!blacklist"]:
             # This is a normal message.
-            return self.redis_client.sismember("whitelisted_groups", gid)
+            return self.redis_client.sismember(wl_key, gid)
 
         match msg:
             case "!whitelist":
                 # Whitelist the group
                 logger.info(f"Whitelisting group {gid}")
-                self.redis_client.sadd("whitelisted_groups", gid)
+                self.redis_client.sadd(wl_key, gid)
                 with load_file_lock(self.whitelist_file) as f:
                     whitelisted_groups: List[str] = json.load(f)
                     whitelisted_groups.append(gid)
@@ -254,7 +267,7 @@ class RazzlerBrain:
             case "!blacklist":
                 # Blacklist the group
                 logger.info(f"Blacklisting group {gid}")
-                self.redis_client.srem("whitelisted_groups", gid)
+                self.redis_client.srem(wl_key, gid)
                 with load_file_lock(self.whitelist_file) as f:
                     whitelisted_groups: List[str] = json.load(f)
                     whitelisted_groups.remove(gid)

@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
+from utils.storage import load_phonebook
 
 
 class SignalCredentials(BaseModel):
@@ -90,6 +91,15 @@ class Envelope(BaseModel):
 class IncomingMessage(BaseModel):
     envelope: Envelope
     account: str
+
+    def get_recipient(self) -> str:
+        if self.envelope.dataMessage:
+            if self.envelope.dataMessage.groupInfo:
+                gid = self.envelope.dataMessage.groupInfo.groupId
+                phonebook = load_phonebook()
+                return phonebook.get_group_internal_id(gid)
+
+        return self.envelope.source
 
 
 class OutgoingMessage(BaseModel):

@@ -108,10 +108,11 @@ class SignalProducer:
         logger.info("Message sent successfully.")
 
         # Place the message in the message history list
-        self.redis_client.lpush("message_history", message.model_dump_json())
+        cache_key = f"message_history:{message.recipient}"
+        self.redis_client.lpush(cache_key, message.model_dump_json())
         # Ensure the message history cache doesn't grow too large
         self.redis_client.ltrim(
-            "message_history", 0, self.signal_info.message_history_length
+            cache_key, 0, self.signal_info.message_history_length
         )
 
     async def _process_outgoing_reaction(self, reaction: OutgoingReaction):

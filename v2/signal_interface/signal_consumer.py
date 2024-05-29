@@ -212,10 +212,11 @@ class SignalConsumer:
             # TODO: Parse mentions in the message body, into contact names.
 
             # Place the message in the message history list
-            self.redis_client.lpush("message_history", msg.model_dump_json())
+            msg_cache = f"message_history:{msg.get_recipient()}"
+            self.redis_client.lpush(msg_cache, msg.model_dump_json())
             # Ensure the message history cache doesn't grow too large
             self.redis_client.ltrim(
-                "message_history", 0, self.signal_info.message_history_length
+                msg_cache, 0, self.signal_info.message_history_length
             )
 
         # Add the message to the processing queue
