@@ -148,9 +148,6 @@ class SignalConsumer:
 
     async def _process_incoming(self, message: Dict[str, Any]):
         """Process incoming messages."""
-        # TODO: This method needs to also dumps json-encoded incoming messages
-        # in the message history Redis cache.
-
         logger.debug("Processing incoming message")
 
         # Parse the json payload to an IncomingMessage object
