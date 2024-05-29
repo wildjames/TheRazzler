@@ -1,8 +1,10 @@
 from logging import getLogger
-from typing import Iterator
+from typing import Iterator, Optional
 
+import redis
 from ai_interface.llm import GPTInterface
 
+from ..dataclasses import RazzlerBrainConfig
 from .base_command import (
     CommandHandler,
     IncomingMessage,
@@ -14,13 +16,23 @@ logger = getLogger(__name__)
 
 
 class SummonCommandHandler(CommandHandler):
-    def can_handle(self, message: IncomingMessage) -> bool:
+    def can_handle(
+        self,
+        message: IncomingMessage,
+        redis_connection: Optional[redis.Redis] = None,
+        config: Optional[RazzlerBrainConfig] = None,
+    ) -> bool:
         if not message.envelope.dataMessage:
             return False
 
         return message.envelope.dataMessage.message == "summon"
 
-    def handle(self, message: IncomingMessage) -> Iterator[OutgoingMessage]:
+    def handle(
+        self,
+        message: IncomingMessage,
+        redis_connection: Optional[redis.Redis] = None,
+        config: Optional[RazzlerBrainConfig] = None,
+    ) -> Iterator[OutgoingMessage]:
         logger.info("Handling summon command")
 
         try:

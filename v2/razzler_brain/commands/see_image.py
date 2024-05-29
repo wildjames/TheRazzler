@@ -1,10 +1,12 @@
 import base64
 from logging import getLogger
-from typing import Iterator, Union
+from typing import Iterator, Optional, Union
 
+import redis
 from ai_interface.llm import GPTInterface
 from utils.storage import load_file
 
+from ..dataclasses import RazzlerBrainConfig
 from .base_command import (
     CommandHandler,
     IncomingMessage,
@@ -29,7 +31,16 @@ def image_to_base64(file_path):
 
 
 class SeeImageCommandHandler(CommandHandler):
-    def can_handle(self, message: IncomingMessage) -> bool:
+
+    def can_handle(
+        self,
+        message: IncomingMessage,
+        redis_connection: Optional[redis.Redis] = None,
+        config: Optional[RazzlerBrainConfig] = None,
+    ) -> bool:
+        if not isinstance(message, IncomingMessage):
+            return False
+
         if not message.envelope.dataMessage:
             return False
 
@@ -43,7 +54,10 @@ class SeeImageCommandHandler(CommandHandler):
         return False
 
     def handle(
-        self, message: IncomingMessage
+        self,
+        message: IncomingMessage,
+        redis_connection: Optional[redis.Redis] = None,
+        config: Optional[RazzlerBrainConfig] = None,
     ) -> Iterator[Union[OutgoingReaction, OutgoingMessage, IncomingMessage]]:
         logger.info("Digesting an image message")
 
@@ -114,8 +128,18 @@ class SeeImageCommandHandler(CommandHandler):
         parsed_message.envelope.dataMessage.message = message_text
         yield parsed_message
 
-        # Send the interpreted image description
-        response_message = OutgoingMessage(
-            recipient=self.get_recipient(message), message=response
-        )
-        yield response_message
+        # Check to see if the Razzler is the only element of the mentions list
+        if message.envelope.dataMessage.mentions:
+            if len(message.envelope.dataMessage.mentions) == 1:
+                mention = message.envelope.dataMessage.mentions[0].number
+                logger.info(f"Mentioned: {mention}")
+                if mention == config.razzler_phone_number:
+                    logger.info(
+                        "The razzler was tagged. Posting the message"
+                        " description"
+                    )
+                    # Send the interpreted image description
+                    response_message = OutgoingMessage(
+                        recipient=self.get_recipient(message), message=response
+                    )
+                    yield response_message

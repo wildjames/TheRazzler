@@ -1,12 +1,15 @@
 from abc import ABC, abstractmethod
 from typing import Iterator, Optional, Union
 
+import redis
 from signal_interface.signal_data_classes import (
     IncomingMessage,
     OutgoingMessage,
     OutgoingReaction,
 )
 from utils.storage import load_phonebook
+
+from ..dataclasses import RazzlerBrainConfig
 
 
 # This needs to be parsable by Pydantic
@@ -24,13 +27,21 @@ class CommandHandler(ABC):
         return message.envelope.source
 
     @abstractmethod
-    def can_handle(self, message: IncomingMessage) -> bool:
+    def can_handle(
+        self,
+        message: IncomingMessage,
+        redis_connection: Optional[redis.Redis] = None,
+        config: Optional[RazzlerBrainConfig] = None,
+    ) -> bool:
         """Check if the command can handle the given message."""
         pass
 
     @abstractmethod
     def handle(
-        self, message: IncomingMessage
+        self,
+        message: IncomingMessage,
+        redis_connection: Optional[redis.Redis] = None,
+        config: Optional[RazzlerBrainConfig] = None,
     ) -> Iterator[
         Optional[Union[OutgoingMessage, OutgoingReaction, IncomingMessage]]
     ]:

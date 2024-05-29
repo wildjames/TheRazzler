@@ -1,8 +1,10 @@
 from logging import getLogger
-from typing import Iterator, Union
+from typing import Iterator, Optional, Union
 
+import redis
 from ai_interface.llm import GPTInterface
 
+from ..dataclasses import RazzlerBrainConfig
 from .base_command import (
     CommandHandler,
     IncomingMessage,
@@ -14,7 +16,16 @@ logger = getLogger(__name__)
 
 
 class CreateImageCommandHandler(CommandHandler):
-    def can_handle(self, message: IncomingMessage) -> bool:
+
+    def can_handle(
+        self,
+        message: IncomingMessage,
+        redis_connection: Optional[redis.Redis] = None,
+        config: Optional[RazzlerBrainConfig] = None,
+    ) -> bool:
+        if not isinstance(message, IncomingMessage):
+            return False
+
         if not message.envelope.dataMessage:
             return False
 
@@ -24,7 +35,10 @@ class CreateImageCommandHandler(CommandHandler):
         return message.envelope.dataMessage.message.startswith("dream")
 
     def handle(
-        self, message: IncomingMessage
+        self,
+        message: IncomingMessage,
+        redis_connection: Optional[redis.Redis] = None,
+        config: Optional[RazzlerBrainConfig] = None,
     ) -> Iterator[Union[OutgoingMessage, OutgoingReaction]]:
         logger.info("Handling create image command")
 

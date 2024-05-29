@@ -9,7 +9,6 @@ from typing import List
 
 import aio_pika
 import redis
-from pydantic import BaseModel
 from signal_interface.signal_data_classes import (
     IncomingMessage,
     OutgoingReaction,
@@ -18,13 +17,9 @@ from utils.storage import RedisCredentials, load_file, load_file_lock
 
 from .commands.base_command import CommandHandler
 from .commands.registry import COMMAND_REGISTRY
+from .dataclasses import RazzlerBrainConfig
 
 logger = getLogger(__name__)
-
-
-class RazzlerBrainConfig(BaseModel):
-    commands: List[str]
-    admins: List[str]
 
 
 class RazzlerBrain:
@@ -312,7 +307,9 @@ class RazzlerBrain:
                     continue
 
                 logger.debug(f"Handling message with {command}")
-                for response in command.handle(msg):
+                for response in command.handle(
+                    msg, self.redis_client, self.brain_config
+                ):
                     # If the command returns None, there's nothing to do.
                     # Go to the next response.
                     if response is None:
