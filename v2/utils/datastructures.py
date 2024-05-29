@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from razzler_brain.razzler import RazzlerBrainConfig
-from signal_interface.signal_data_classes import SignalCredentials
+from signal_interface.dataclasses import SignalCredentials
 from utils.storage import RedisCredentials
 
 

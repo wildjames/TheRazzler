@@ -9,7 +9,7 @@ from typing import List
 
 import aio_pika
 import redis
-from signal_interface.signal_data_classes import (
+from signal_interface.dataclasses import (
     IncomingMessage,
     OutgoingReaction,
 )

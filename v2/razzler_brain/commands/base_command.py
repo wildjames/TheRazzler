@@ -5,7 +5,7 @@ from typing import Iterator, List, Optional, Union
 
 import redis
 from ai_interface.llm import GPTInterface
-from signal_interface.signal_data_classes import (
+from signal_interface.dataclasses import (
     IncomingMessage,
     OutgoingMessage,
     OutgoingReaction,

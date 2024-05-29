@@ -19,7 +19,8 @@ from utils.phonebook import Group, PhoneBook
 from utils.storage import RedisCredentials, load_file_lock, load_phonebook
 
 from .signal_api import SignalAPI
-from .signal_data_classes import (
+from .dataclasses import (
+    MENTION_CHAR,
     DataMessage,
     IncomingMessage,
     SignalCredentials,
@@ -249,7 +250,21 @@ class SignalConsumer:
                 logger.info("Message has attachments.")
                 await self.download_attachments(data)
 
-            # TODO: Parse mentions in the message body, into contact names.
+            # Parse mentions in the message body, into contact names.
+            if data.mentions:
+                logger.info("Message has mentions.")
+                for mention in data.mentions:
+                    contact = self.phonebook.get_contact(
+                        mention.name, mention.number, mention.uuid
+                    )
+
+                    name = "unknown_contact"
+                    if contact:
+                        name = contact.name
+
+                    data.message = data.message.replace(
+                        MENTION_CHAR, f"@{name}"
+                    )
 
             # Place the message in the message history list
             self.add_message_to_history(msg)

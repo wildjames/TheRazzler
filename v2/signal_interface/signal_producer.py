@@ -9,7 +9,7 @@ import redis
 from utils.storage import RedisCredentials
 
 from .signal_api import SignalAPI
-from .signal_data_classes import (
+from .dataclasses import (
     OutgoingMessage,
     OutgoingReaction,
     SignalCredentials,

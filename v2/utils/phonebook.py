@@ -102,7 +102,9 @@ class PhoneBook(BaseModel):
 
         return False
 
-    def get_contact(self, identifier: str) -> Contact:
+    def get_contact(
+        self, identifier: str, *other_identifiers: List[str]
+    ) -> Optional[Contact]:
         """Contacts have at least one of the following identifiers:
             - UUID
             - Phone number
@@ -110,9 +112,15 @@ class PhoneBook(BaseModel):
         But none are guaranteed. This function will return the first contact
         that matches any of its fields with the given identifier.
         """
+        # Get a list of all the identifiers I've been passed
+        identifiers = [identifier, *other_identifiers]
+
         for contact in self.contacts:
-            if identifier in [contact.uuid, contact.number]:
-                return contact
+            for id in identifiers:
+                if id in [contact.uuid, contact.number]:
+                    return contact
+
+        return None
 
     def add_group(self, group: Dict[str, str | List[str]]):
         logger.info(f"Creating group from {group}")
