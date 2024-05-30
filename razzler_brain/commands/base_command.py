@@ -48,16 +48,24 @@ class CommandHandler(ABC):
             msg_out = ""
             match msg:
                 case IncomingMessage():
-                    # Parse the POSIX timestamp to a human-readable format
-                    timestamp = msg.envelope.timestamp
-                    timestamp = datetime.fromtimestamp(timestamp).strftime(
+                    # Parse the UNIX timestamp (e.g. 1717075009) to a
+                    # human-readable format
+                    ts = msg.envelope.timestamp / 1000
+                    time_str = datetime.fromtimestamp(ts).strftime(
                         "%Y-%m-%d %H:%M:%S"
                     )
-                    msg_out = (
-                        f"{msg.envelope.sourceName} [{timestamp}]:"
-                        f" {msg.envelope.dataMessage.message}"
-                    )
-                    messages.append(gpt.create_chat_message("user", msg_out))
+
+                    # Skips over things like reacts and other non-message
+                    # events
+                    message_content = msg.envelope.dataMessage.message
+                    if message_content:
+                        msg_out = (
+                            f"{msg.envelope.sourceName} [{time_str}]:"
+                            f" {message_content}"
+                        )
+                        messages.append(
+                            gpt.create_chat_message("user", msg_out)
+                        )
 
                 case OutgoingMessage():
                     msg_out = f"Razzler: {msg.message}"

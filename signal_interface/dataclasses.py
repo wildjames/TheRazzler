@@ -84,6 +84,7 @@ class Envelope(BaseModel):
     sourceUuid: str
     sourceName: str
     sourceDevice: int
+    # UNIX timestamp, in milliseconds
     timestamp: int
     receiptMessage: Optional[ReceiptMessage] = None
     typingMessage: Optional[TypingMessage] = None

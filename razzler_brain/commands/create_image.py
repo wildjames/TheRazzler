@@ -71,6 +71,8 @@ class CreateImageCommandHandler(CommandHandler):
             prompt = prompt.strip()
             created_images = gpt.generate_image_response(prompt)
 
+            logger.info(f"Creating an image from prompt: {prompt}")
+
             reply_message = OutgoingMessage(
                 recipient=self.get_recipient(message),
                 message="Here is your dream.",
