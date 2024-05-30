@@ -85,7 +85,7 @@ class CreateImageCommandHandler(CommandHandler):
             logger.error(f"Error creating image: {e}")
             yield OutgoingReaction(
                 recipient=self.get_recipient(message),
-                reaction="😢",
+                reaction="❌",
                 target_uuid=message.envelope.sourceUuid,
                 timestamp=message.envelope.timestamp,
             )

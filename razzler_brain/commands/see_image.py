@@ -31,6 +31,7 @@ def image_to_base64(file_path):
 
 
 class SeeImageCommandHandler(CommandHandler):
+    reply_filename = "reply.txt"
 
     def can_handle(
         self,
@@ -147,29 +148,19 @@ class SeeImageCommandHandler(CommandHandler):
             timestamp=message.envelope.timestamp,
         )
 
-        personality_text = load_file("personality.txt")
-        if not personality_text:
-            logger.error("Personality prompt not found")
-            return
-        logger.info("Personality prompt found")
-
-        gpt_messages = self.get_chat_history(
-            f"message_history:{message.get_recipient()}",
-            redis_connection,
-            gpt,
-        )
-        gpt_messages.append(
-            gpt.create_chat_message("system", personality_text.strip())
-        )
-
         try:
-            response = gpt.generate_images_response(
-                images, caption=message_text, gpt_messages=gpt_messages
+            response = self.generate_chat_message(
+                message, redis_connection, gpt
             )
-        except Exception as e:
-            logger.error(f"Error creating message: {e}")
-            return
 
-        yield OutgoingMessage(
-            recipient=self.get_recipient(message), message=response
-        )
+            yield OutgoingMessage(
+                recipient=self.get_recipient(message), message=response
+            )
+        except:
+            yield OutgoingReaction(
+                recipient=self.get_recipient(message),
+                reaction="🤐",
+                target_uuid=message.envelope.sourceUuid,
+                timestamp=message.envelope.timestamp,
+            )
+            raise

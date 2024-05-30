@@ -11,7 +11,7 @@ from signal_interface.dataclasses import (
     OutgoingMessage,
     OutgoingReaction,
 )
-from utils.storage import load_phonebook
+from utils.storage import load_phonebook, load_file
 
 from ..dataclasses import RazzlerBrainConfig
 
@@ -77,6 +77,40 @@ class CommandHandler(ABC):
                     continue
 
         return messages
+
+    def generate_chat_message(
+        self,
+        message: IncomingMessage,
+        redis_client: redis.Redis,
+        gpt: GPTInterface,
+    ) -> str:
+
+        personality_prompt = load_file("personality.txt")
+        if not personality_prompt:
+            raise ValueError("Personality prompt not found")
+
+        # Fetch the reply prompt
+        reply_prompt = load_file(self.reply_filename)
+        if not reply_prompt:
+            raise ValueError("reply prompt not found")
+
+        messages = []
+
+        cache_key = f"message_history:{message.get_recipient()}"
+        history = self.get_chat_history(cache_key, redis_client, gpt)
+
+        messages.extend(history)
+        messages.append(gpt.create_chat_message("system", personality_prompt))
+        messages.append(gpt.create_chat_message("system", reply_prompt))
+
+        logger.info(f"Creating chat completion with {len(messages)} messages")
+
+        response = gpt.generate_chat_completion("quality", messages)
+        if response.lower().startswith("razzler:"):
+            response = response[8:]
+        response = response.strip()
+
+        return response
 
     @staticmethod
     def get_recipient(message: IncomingMessage) -> str:
