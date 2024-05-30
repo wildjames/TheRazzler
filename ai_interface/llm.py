@@ -63,7 +63,7 @@ class GPTInterface:
 
         logger.info(f"Creating chat completion with {len(messages)} messages")
         for m in messages:
-            logger.info(m)
+            logger.debug(m)
 
         response: ChatCompletion = self.llm.chat.completions.create(
             messages=messages,
