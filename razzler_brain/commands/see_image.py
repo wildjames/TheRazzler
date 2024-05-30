@@ -81,8 +81,19 @@ class SeeImageCommandHandler(CommandHandler):
                         b64_image,
                     )
                 )
+
+            gpt_messages = []
+            describe_image_prompt = load_file("describe_image.txt")
+            if describe_image_prompt:
+                gpt_messages.append(
+                    gpt.create_chat_message(
+                        "system",
+                        describe_image_prompt.strip(),
+                    )
+                )
+
             response = gpt.generate_images_response(
-                images, caption=message_text
+                images, caption=message_text, gpt_messages=gpt_messages
             )
         except Exception as e:
             # give back the failed looking reaction, then terminate the command
@@ -107,7 +118,7 @@ class SeeImageCommandHandler(CommandHandler):
         if not message_text:
             message_text = ""
         img_description = (
-            f"This message contains an image. Image description: {response}"
+            f"This message contains an image. Image description: '{response}'"
         )
         message_text = " | ".join([message_text, img_description])
         parsed_message.envelope.dataMessage.message = message_text

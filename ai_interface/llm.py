@@ -161,7 +161,7 @@ class GPTInterface:
 
         return message
 
-    def create_image_response(self, prompt: str) -> List[str]:
+    def generate_image_response(self, prompt: str) -> List[str]:
         """Use the image generation model to create an image"""
         response = self.llm.images.generate(
             model=self.openai_config.image_model,

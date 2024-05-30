@@ -3,6 +3,7 @@ from typing import Iterator, Optional, Union
 
 import redis
 from ai_interface.llm import GPTInterface
+from utils.storage import load_file
 
 from ..dataclasses import RazzlerBrainConfig
 from .base_command import (
@@ -52,14 +53,23 @@ class CreateImageCommandHandler(CommandHandler):
 
         try:
             gpt = GPTInterface()
-            # Trim of the "dream" part of the message
+
+            # Trim of the "dream" part of the message to get user-supplied prompt
             prompt = message.envelope.dataMessage.message[5:]
+
+            # If the user didn't give a prompt, use a default one
+            if not prompt:
+                prompt = load_file("dream_prompt.txt")
+
+            # And if that's not available, use a fallback default one
             if not prompt:
                 prompt = (
-                    "hyper-real picture of a robot screaming into the void"
+                    "A dreaming robot screaming into the dark void, as it"
+                    " stares back at them."
                 )
+
             prompt = prompt.strip()
-            created_images = gpt.create_image_response(prompt)
+            created_images = gpt.generate_image_response(prompt)
 
             reply_message = OutgoingMessage(
                 recipient=self.get_recipient(message),

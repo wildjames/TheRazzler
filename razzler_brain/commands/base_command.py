@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 from abc import ABC, abstractmethod
 from logging import getLogger
@@ -47,8 +48,13 @@ class CommandHandler(ABC):
             msg_out = ""
             match msg:
                 case IncomingMessage():
+                    # Parse the POSIX timestamp to a human-readable format
+                    timestamp = msg.envelope.timestamp
+                    timestamp = datetime.fromtimestamp(timestamp).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    )
                     msg_out = (
-                        f"{msg.envelope.sourceName}:"
+                        f"{msg.envelope.sourceName} [{timestamp}]:"
                         f" {msg.envelope.dataMessage.message}"
                     )
                     messages.append(gpt.create_chat_message("user", msg_out))
