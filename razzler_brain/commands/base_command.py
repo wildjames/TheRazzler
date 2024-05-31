@@ -1,17 +1,19 @@
-from datetime import datetime
 import json
 from abc import ABC, abstractmethod
+from datetime import datetime
 from logging import getLogger
 from typing import Iterator, List, Optional, Union
 
 import redis
+import tiktoken
+
 from ai_interface.llm import GPTInterface
 from signal_interface.dataclasses import (
     IncomingMessage,
     OutgoingMessage,
     OutgoingReaction,
 )
-from utils.storage import load_phonebook, load_file
+from utils.storage import load_file, load_phonebook
 
 from ..dataclasses import RazzlerBrainConfig
 
@@ -22,14 +24,28 @@ logger = getLogger(__name__)
 class CommandHandler(ABC):
 
     def get_chat_history(
-        self, cache_key: str, redis_connection: redis.Redis, gpt: GPTInterface
+        self,
+        config: RazzlerBrainConfig,
+        cache_key: str,
+        redis_connection: redis.Redis,
+        gpt: GPTInterface,
+        model: str,
     ) -> List[str]:
+
         # Get the message history list from redis
         history = redis_connection.lrange(cache_key, 0, -1)
         # This is in reverse order, so we need to reverse it
         history.reverse()
 
         messages = []
+        num_tokens = 0
+
+        if model == "fast":
+            model = gpt.openai_config.fast_model
+        elif model == "quality":
+            model = gpt.openai_config.quality_model
+        else:
+            raise ValueError(f"Invalid model: {model}")
 
         # Parse the messages into something the AI can understand
         for msg_str in history:
@@ -63,9 +79,22 @@ class CommandHandler(ABC):
                             f"{msg.envelope.sourceName} [{time_str}]:"
                             f" {message_content}"
                         )
-                        messages.append(
-                            gpt.create_chat_message("user", msg_out)
-                        )
+
+                        # How many tokens is this message?
+                        enc = tiktoken.get_encoding(model)
+                        num_tokens += len(enc.encode(msg_out))
+
+                        # If we've reached the token limit, stop adding
+                        # messages and return
+                        if num_tokens < config.max_chat_history_tokens:
+                            messages.append(
+                                gpt.create_chat_message("user", msg_out)
+                            )
+                        else:
+                            logger.info(
+                                f"Reached token limit at: {num_tokens}"
+                            )
+                            return messages
 
                 case OutgoingMessage():
                     msg_out = f"Razzler: {msg.message}"
@@ -80,10 +109,13 @@ class CommandHandler(ABC):
 
     def generate_chat_message(
         self,
+        config: RazzlerBrainConfig,
         message: IncomingMessage,
         redis_client: redis.Redis,
         gpt: GPTInterface,
+        model: str,
     ) -> str:
+        """Model can be either "fast" or "quality"."""
 
         personality_prompt = load_file("personality.txt")
         if not personality_prompt:
@@ -97,7 +129,9 @@ class CommandHandler(ABC):
         messages = []
 
         cache_key = f"message_history:{message.get_recipient()}"
-        history = self.get_chat_history(cache_key, redis_client, gpt)
+        history = self.get_chat_history(
+            config, cache_key, redis_client, gpt, model
+        )
 
         messages.extend(history)
         messages.append(gpt.create_chat_message("system", personality_prompt))
@@ -105,7 +139,7 @@ class CommandHandler(ABC):
 
         logger.info(f"Creating chat completion with {len(messages)} messages")
 
-        response = gpt.generate_chat_completion("quality", messages)
+        response = gpt.generate_chat_completion(model, messages)
         if response.lower().startswith("razzler:"):
             response = response[8:]
         response = response.strip()

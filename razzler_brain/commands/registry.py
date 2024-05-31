@@ -1,7 +1,7 @@
 from .create_image import CreateImageCommandHandler
-from .reply import ReplyCommandHandler
 from .ping import PingCommandHandler
 from .react import ReactCommandHandler
+from .reply import ReplyCommandHandler
 from .see_image import SeeImageCommandHandler
 from .summon import SummonCommandHandler
 

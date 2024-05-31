@@ -3,6 +3,7 @@ from logging import getLogger
 from typing import Iterator, List, Optional
 
 import redis
+
 from ai_interface.llm import GPTInterface
 
 from ..dataclasses import RazzlerBrainConfig
@@ -62,7 +63,11 @@ class ReplyCommandHandler(CommandHandler):
         try:
             gpt = GPTInterface()
             response = self.generate_chat_message(
-                message, redis_connection, gpt
+                config,
+                message,
+                redis_connection,
+                gpt,
+                "quality",
             )
 
         except Exception as e:

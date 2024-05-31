@@ -3,6 +3,7 @@ from logging import getLogger
 from typing import Iterator, Optional, Union
 
 import redis
+
 from ai_interface.llm import GPTInterface
 from utils.storage import load_file
 
@@ -150,7 +151,11 @@ class SeeImageCommandHandler(CommandHandler):
 
         try:
             response = self.generate_chat_message(
-                message, redis_connection, gpt
+                config,
+                message,
+                redis_connection,
+                gpt,
+                "quality",
             )
 
             yield OutgoingMessage(

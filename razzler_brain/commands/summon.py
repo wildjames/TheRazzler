@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import Iterator, Optional
 
 import redis
+
 from ai_interface.llm import GPTInterface
 
 from ..dataclasses import RazzlerBrainConfig

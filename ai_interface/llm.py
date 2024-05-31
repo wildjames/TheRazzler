@@ -8,6 +8,7 @@ import openai
 import yaml
 from openai.resources.chat.completions import ChatCompletionMessageParam
 from openai.types.chat.chat_completion import ChatCompletion, Choice
+
 from utils.storage import load_file, load_file_lock
 
 from .dataclasses import OpenAIConfig
@@ -163,12 +164,15 @@ class GPTInterface:
 
     def generate_image_response(self, prompt: str) -> List[str]:
         """Use the image generation model to create an image"""
+
         response = self.llm.images.generate(
             model=self.openai_config.image_model,
             prompt=prompt,
             response_format="b64_json",
             **self.openai_config.image_generation_kwargs,
         )
+
+        # TODO: Add cost updating here
 
         images = [r.b64_json for r in response.data]
         return images

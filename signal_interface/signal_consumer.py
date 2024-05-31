@@ -15,16 +15,17 @@ from typing import Any, Dict
 
 import aio_pika
 import redis
+
 from utils.phonebook import Group, PhoneBook
 from utils.storage import RedisCredentials, load_file_lock, load_phonebook
 
-from .signal_api import SignalAPI
 from .dataclasses import (
     MENTION_CHAR,
     DataMessage,
     IncomingMessage,
     SignalCredentials,
 )
+from .signal_api import SignalAPI
 
 logger = getLogger(__name__)
 

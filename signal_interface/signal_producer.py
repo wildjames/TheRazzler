@@ -8,12 +8,8 @@ import redis
 
 from utils.storage import RedisCredentials
 
+from .dataclasses import OutgoingMessage, OutgoingReaction, SignalCredentials
 from .signal_api import SignalAPI
-from .dataclasses import (
-    OutgoingMessage,
-    OutgoingReaction,
-    SignalCredentials,
-)
 
 logger = getLogger(__name__)
 

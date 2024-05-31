@@ -4,6 +4,7 @@ from logging import INFO, basicConfig, getLogger
 from typing import List
 
 import yaml
+
 from razzler_brain.razzler import RazzlerBrain
 from signal_interface.signal_consumer import SignalConsumer
 from signal_interface.signal_producer import SignalProducer
