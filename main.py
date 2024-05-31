@@ -1,5 +1,6 @@
 import asyncio
 import multiprocessing
+import os
 from logging import INFO, basicConfig, getLogger
 from typing import List
 
@@ -77,5 +78,9 @@ if __name__ == "__main__":
     # Load the configuration from the data directory
     config = yaml.safe_load(load_file("config.yaml"))
     config = Config(**config)
+
+    # Check that the OPENAI_API_KEY environment variable is set
+    if "OPENAI_API_KEY" not in os.environ:
+        raise ValueError("OPENAI_API_KEY environment variable not set")
 
     main(config)

@@ -29,32 +29,36 @@ class CommandHandler(ABC):
         cache_key: str,
         redis_connection: redis.Redis,
         gpt: GPTInterface,
-        model: str,
+        ai_model: str,
     ) -> List[str]:
 
         # Get the message history list from redis
         history = redis_connection.lrange(cache_key, 0, -1)
-        # This is in reverse order, so we need to reverse it
-        history.reverse()
+
+        logger.info(f"Fetched {len(history)} messages from cache")
 
         messages = []
         num_tokens = 0
 
-        if model == "fast":
-            model = gpt.openai_config.fast_model
-        elif model == "quality":
-            model = gpt.openai_config.quality_model
+        if ai_model == "fast":
+            ai_model = gpt.openai_config.fast_model
+        elif ai_model == "quality":
+            ai_model = gpt.openai_config.quality_model
         else:
-            raise ValueError(f"Invalid model: {model}")
+            raise ValueError(f"Invalid model: {ai_model}")
+        logger.info(f"Using model: {ai_model}")
+
+        enc = tiktoken.encoding_for_model(ai_model)
+        logger.info(f"Encoding for model: {enc}")
 
         # Parse the messages into something the AI can understand
         for msg_str in history:
             msg_dict = json.loads(msg_str)
             # Parse the message into the appropriate type
-            models = [IncomingMessage, OutgoingMessage, OutgoingReaction]
-            for model in models:
+            msg_models = [IncomingMessage, OutgoingMessage, OutgoingReaction]
+            for msg_model in msg_models:
                 try:
-                    msg = model(**msg_dict)
+                    msg = msg_model(**msg_dict)
                     break
                 except:
                     pass
@@ -81,7 +85,6 @@ class CommandHandler(ABC):
                         )
 
                         # How many tokens is this message?
-                        enc = tiktoken.get_encoding(model)
                         num_tokens += len(enc.encode(msg_out))
 
                         # If we've reached the token limit, stop adding
@@ -92,8 +95,17 @@ class CommandHandler(ABC):
                             )
                         else:
                             logger.info(
-                                f"Reached token limit at: {num_tokens}"
+                                f"Reached token limit at: {num_tokens} tokens"
+                                f" over {len(messages)} messages"
                             )
+                            # We built the messages history in reverse order,
+                            # starting with the most recent, so we need to
+                            # reverse it
+                            messages.reverse()
+
+                            logger.info(f"Oldest message: {messages[0]}")
+                            logger.info(f"Most recent message: {messages[-1]}")
+
                             return messages
 
                 case OutgoingMessage():
@@ -105,6 +117,10 @@ class CommandHandler(ABC):
                 case _:
                     continue
 
+        messages.reverse()
+
+        logger.info(f"Oldest message: {messages[0]}")
+        logger.info(f"Most recent message: {messages[-1]}")
         return messages
 
     def generate_chat_message(
