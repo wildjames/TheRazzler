@@ -4,3 +4,4 @@
 - I need to decide on the best way to handle commands that have some overlap. Notes in `razzler.py`
 - Implement profiling for members of a chat?
 - Should all the settings be in a SQL database? That way, I could build a web configuration page...
+- The websocket `receive` endpoint only streams incoming messages, and doesn't yield up things that were sent while the connection wasnt alive. When the razzler starts, it should call the HTTP version of the endpoint, which DOES return a list of un-acknowleged messages, so it can work down the backlog.
