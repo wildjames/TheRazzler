@@ -9,6 +9,7 @@ class GeneralConfig(BaseModel):
     num_producers: int = 1
     num_consumers: int = 1
     num_brains: int = 1
+    debug: bool = False
 
 
 class Config(BaseModel):

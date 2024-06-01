@@ -68,6 +68,23 @@ class Attachment(BaseModel):
     data: Optional[str] = None
 
 
+class QuoteAttachment(BaseModel):
+    contentType: str
+    filename: str
+    thumbnail: Attachment
+    # This is the data extracted from the attachment thumbnail
+    data: Optional[str] = None
+
+
+class QuoteMessage(BaseModel):
+    id: int
+    author: str
+    authorNumber: str
+    authorUuid: str
+    text: str
+    attachments: List[QuoteAttachment] = Field(default_factory=list)
+
+
 class DataMessage(BaseModel):
     timestamp: int
     message: Optional[str] = None
@@ -76,6 +93,7 @@ class DataMessage(BaseModel):
     attachments: Optional[List[Attachment]] = None
     reaction: Optional[Reaction] = None
     mentions: Optional[List[Mention]] = None
+    quote: Optional[QuoteMessage] = None
     groupInfo: Optional[GroupInfo] = None
 
 

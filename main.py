@@ -1,7 +1,7 @@
 import asyncio
 import multiprocessing
 import os
-from logging import INFO, basicConfig, getLogger
+from logging import INFO, DEBUG, basicConfig, getLogger
 from typing import List
 
 import yaml
@@ -12,7 +12,16 @@ from signal_interface.signal_producer import SignalProducer
 from utils.datastructures import Config
 from utils.storage import load_file
 
-basicConfig(level=INFO)
+
+# Load the configuration from the data directory
+config = yaml.safe_load(load_file("config.yaml"))
+config = Config(**config)
+
+if config.general.debug:
+    basicConfig(level=DEBUG)
+else:
+    basicConfig(level=INFO)
+
 logger = getLogger(__name__)
 
 
@@ -75,10 +84,6 @@ def main(config: Config):
 
 
 if __name__ == "__main__":
-    # Load the configuration from the data directory
-    config = yaml.safe_load(load_file("config.yaml"))
-    config = Config(**config)
-
     # Check that the OPENAI_API_KEY environment variable is set
     if "OPENAI_API_KEY" not in os.environ:
         raise ValueError("OPENAI_API_KEY environment variable not set")

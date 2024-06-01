@@ -38,9 +38,14 @@ class ReplyCommandHandler(CommandHandler):
             return False
 
         # Check if there are any image attachments.
-        # If there are, we don't want to handle this message
+        # If there are, we don't want to handle this message - the image
+        # handler should take care of it.
         if message.envelope.dataMessage.attachments:
             return False
+        # Or, if there are any quote attachments.
+        if message.envelope.dataMessage.quote:
+            if message.envelope.dataMessage.quote.attachments:
+                return False
 
         return mentions[0].number == config.razzler_phone_number
 

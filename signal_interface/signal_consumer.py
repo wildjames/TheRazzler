@@ -11,7 +11,7 @@ server.
 import asyncio
 import json
 from logging import getLogger
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import aio_pika
 import redis
@@ -21,8 +21,11 @@ from utils.storage import RedisCredentials, load_file_lock, load_phonebook
 
 from .dataclasses import (
     MENTION_CHAR,
+    Attachment,
     DataMessage,
     IncomingMessage,
+    QuoteAttachment,
+    QuoteMessage,
     SignalCredentials,
 )
 from .signal_api import SignalAPI
@@ -182,22 +185,30 @@ class SignalConsumer:
             self.phonebook = phonebook
             logger.info(f"Updated phonebook contact: {msg.envelope.source}")
 
-    async def download_attachments(self, data: DataMessage):
+    async def download_attachments(self, data: Union[DataMessage, QuoteMessage]):
         """Download attachments from the message, to local storage."""
 
         for attachment in data.attachments:
-            logger.info(f"Downloading attachment: {attachment.id}")
+
+            if isinstance(attachment, Attachment):
+                identifier = attachment.id
+            elif isinstance(attachment, QuoteAttachment):
+                identifier = attachment.thumbnail.id
+            else:
+                raise ValueError(f"Attachment type {type(attachment)} not valid.")
+
+            logger.info(f"Downloading attachment: {identifier}")
             attachment_bytes = await self.api_client.download_attachment(
-                attachment.id
+                identifier
             )
 
-            local_filename = f"attachments/{attachment.id}"
+            local_filename = f"attachments/{identifier}"
             with load_file_lock(local_filename, "wb") as f:
                 f.write(attachment_bytes)
 
             # convert the bytes to b64 for storage
             attachment.data = local_filename
-            logger.debug(f"Downloaded attachment: {attachment.id}")
+            logger.debug(f"Downloaded attachment: {identifier}")
 
     def add_message_to_history(self, msg: IncomingMessage):
         """Add the message to the message history redis cache.
@@ -235,6 +246,10 @@ class SignalConsumer:
             logger.debug("Receipt message received")
             return
 
+        if msg.envelope.typingMessage:
+            logger.debug("Typing message received")
+            return
+
         # DataMessages contain actual message content.
         if msg.envelope.dataMessage:
             logger.debug("Data message received")
@@ -266,6 +281,18 @@ class SignalConsumer:
                     data.message = data.message.replace(
                         MENTION_CHAR, f"@{name}"
                     )
+
+            # Parse out any quotes in the message body
+            if data.quote:
+                logger.info("Message has a quote.")
+                quote = data.quote
+                data.message = f'Replied to {quote.author}: "{quote.text}" >>> {data.message}'
+
+                # Quotes can have attachments too
+                if quote.attachments:
+                    logger.info("Quote has attachments.")
+                    logger.info(f"Downloading attachments for quote: {message}")
+                    await self.download_attachments(quote)
 
             # Place the message in the message history list
             self.add_message_to_history(msg)

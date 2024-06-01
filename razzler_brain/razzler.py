@@ -309,17 +309,17 @@ class RazzlerBrain:
                     logger.debug(f"Skipping command {command}")
                     continue
 
-                logger.debug(f"Handling message with {command}")
+                logger.info(f"Handling message with {command}")
                 for response in command.handle(
                     msg, self.redis_client, self.brain_config
                 ):
                     # If the command returns None, there's nothing to do.
                     # Go to the next response.
                     if response is None:
-                        logger.info("Command yielded None")
+                        logger.debug("Command yielded None")
                         continue
 
-                    logger.debug(f"Command produced message: {response}")
+                    logger.info(f"Command {command} produced message: {response}")
 
                     # In the specific case of the command yielding an incoming
                     # message, it is a replacement for the message that was

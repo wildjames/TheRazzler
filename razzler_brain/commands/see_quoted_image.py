@@ -18,7 +18,7 @@ from .utils import image_to_base64
 logger = getLogger(__name__)
 
 
-class SeeImageCommandHandler(CommandHandler):
+class SeeQuotedImageCommandHandler(CommandHandler):
     reply_filename = "reply.txt"
 
     def can_handle(
@@ -33,10 +33,10 @@ class SeeImageCommandHandler(CommandHandler):
         if not message.envelope.dataMessage:
             return False
 
-        if not message.envelope.dataMessage.attachments:
+        if not message.envelope.dataMessage.quote:
             return False
 
-        for attachment in message.envelope.dataMessage.attachments:
+        for attachment in message.envelope.dataMessage.quote.attachments:
             if attachment.contentType.startswith("image"):
                 return True
 
@@ -62,7 +62,7 @@ class SeeImageCommandHandler(CommandHandler):
 
         try:
             images = []
-            for attachment in message.envelope.dataMessage.attachments:
+            for attachment in message.envelope.dataMessage.quote.attachments:
                 b64_image = image_to_base64(attachment.data)
                 if attachment.contentType.startswith("image"):
                     images.append(
@@ -108,9 +108,9 @@ class SeeImageCommandHandler(CommandHandler):
         if not message_text:
             message_text = ""
         img_description = (
-            f"This message contains an image. Image description: '{response}'"
+            f"The original message contains an image. Image description: '{response}'"
         )
-        message_text = " | ".join([message_text, img_description])
+        message_text = " | ".join([img_description, message_text])
         parsed_message.envelope.dataMessage.message = message_text
         yield parsed_message
 
@@ -129,12 +129,6 @@ class SeeImageCommandHandler(CommandHandler):
 
         if not reply:
             return
-
-        # And also, if we're replying to a message, we need to check that it has no images.
-        # If they do, the reply will come later, after those have been parsed out.
-        if message.envelope.dataMessage.quote:
-            if message.envelope.dataMessage.quote.attachments:
-                return
 
         yield OutgoingReaction(
             recipient=self.get_recipient(message),
