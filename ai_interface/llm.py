@@ -1,28 +1,18 @@
 import json
 import random
-import re
 from logging import getLogger
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Dict, Iterator, List, Literal, Optional, Tuple
 
 import openai
 import yaml
 from openai.resources.chat.completions import ChatCompletionMessageParam
 from openai.types.chat.chat_completion import ChatCompletion, Choice
 
-from utils.storage import load_file, load_file_lock
+from utils.storage import load_file, file_lock
 
 from .dataclasses import OpenAIConfig
 
 logger = getLogger(__name__)
-
-
-def clean_filename(filename):
-    # Replaces non-alphanumeric characters (except for periods, hyphens and
-    # underscores) with an underscore
-    filename = re.sub(r"[^a-zA-Z0-9_.-]", "_", filename)
-    # Replaces any remaining forward slashes with an underscore
-    filename = filename.replace("/", "_")
-    return filename
 
 
 class GPTInterface:
@@ -38,6 +28,8 @@ class GPTInterface:
     def __init__(self):
         logger.info("Initializing GPTInterface...")
 
+        # We re-load the configuration each time, to allow for dynamic changes
+        # without needing to restart the server.
         config = yaml.safe_load(load_file("config.yaml"))
 
         self.openai_config = OpenAIConfig(**config["openai"])
@@ -51,9 +43,18 @@ class GPTInterface:
 
     def generate_chat_completion(
         self,
-        model: str,
+        model: Literal["fast", "quality"],
         messages: List[str],
     ) -> str:
+        """Given a chat history (including system, assistant, and user
+        messages), generate a response from the AI.
+
+        Args:
+        model (str): The model to use for the completion. Can be "fast" or
+            "quality".
+        messages (List[str]): A list of messages in the chat history.
+        """
+
         match model:
             case "fast":
                 use_model = self.openai_config.fast_model
@@ -80,7 +81,7 @@ class GPTInterface:
         return chosen_response.message.content
 
     def create_chat_message(
-        self, role: str, content: str
+        self, role: Literal["system", "user", "assistant"], content: str,
     ) -> ChatCompletionMessageParam:
         """
         Create a chat message with the given role and content.
@@ -104,6 +105,15 @@ class GPTInterface:
         """Describe a series of images. The images should be a list of tuples,
         where each tuple contains the image format and base64-encoded image
         in that order.
+
+        Args:
+        images (List[Tuple[str, str]]): A list of tuples containing the image
+            format and base64-encoded image.
+        caption (str): The caption associated with the images.
+        gpt_messages (List[str]): A list of messages to send to the GPT model.
+
+        Returns:
+        str: The response from the GPT model.
         """
         if gpt_messages is None:
             gpt_messages = []
@@ -163,7 +173,8 @@ class GPTInterface:
         return message
 
     def generate_image_response(self, prompt: str) -> List[str]:
-        """Use the image generation model to create an image"""
+        """Use the image generation model to create an image. Returns
+        a list of base64-encoded images."""
 
         response = self.llm.images.generate(
             model=self.openai_config.image_model,
@@ -172,7 +183,7 @@ class GPTInterface:
             **self.openai_config.image_generation_kwargs,
         )
 
-        # TODO: Add cost updating here
+        # TODO: Add cost updating here. How much is image generation???
 
         images = [r.b64_json for r in response.data]
         return images
@@ -181,7 +192,7 @@ class GPTInterface:
         """Update the costs of the models. Syncs the usage with the file."""
         logger.info(f"Updating costs from message: {response}")
 
-        with load_file_lock("llm_usage.json") as f:
+        with file_lock("llm_usage.json") as f:
             usage_str = f.read()
             if not usage_str:
                 usage_str = "{}"
@@ -204,9 +215,3 @@ class GPTInterface:
             f.seek(0)
             json.dump(usage, f)
             f.truncate()
-
-    def compute_costs(self):
-        """Compute the costs of the models."""
-        costs = load_file("costs.yaml")
-        self.total_prompt_tokens = costs["total_prompt_tokens"]
-        self.total_completion_tokens = costs["total_completion_tokens"]

@@ -107,7 +107,16 @@ class SignalAPI:
                 return await resp.read()
 
     def _receive_ws_uri(self):
-        return f"ws://{self.signal_service}/v1/receive/{self.phone_number}"
+        """Hardcoded to ignore stories, get attachments, and send read
+        receipts.
+        """
+        return (
+            f"ws://{self.signal_service}/v1/receive/{self.phone_number}"
+            "?send_read_receipts=true"
+            "&ignore_attachments=false"
+            "&ignore_stories=true"
+        )
+
 
     def _send_rest_uri(self):
         return f"http://{self.signal_service}/v2/send"

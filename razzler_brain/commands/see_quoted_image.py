@@ -19,6 +19,7 @@ logger = getLogger(__name__)
 
 
 class SeeQuotedImageCommandHandler(CommandHandler):
+    # TODO: This should be a command argument
     reply_filename = "reply.txt"
 
     def can_handle(
@@ -27,6 +28,7 @@ class SeeQuotedImageCommandHandler(CommandHandler):
         redis_connection: Optional[redis.Redis] = None,
         config: Optional[RazzlerBrainConfig] = None,
     ) -> bool:
+        """Returns True if the message contains a quoted image, False otherwise."""
         if not isinstance(message, IncomingMessage):
             return False
 
@@ -37,6 +39,7 @@ class SeeQuotedImageCommandHandler(CommandHandler):
             return False
 
         for attachment in message.envelope.dataMessage.quote.attachments:
+            # We need at least one attachement that is an image
             if attachment.contentType.startswith("image"):
                 return True
 
@@ -73,6 +76,7 @@ class SeeQuotedImageCommandHandler(CommandHandler):
                     )
 
             gpt_messages = []
+            # TODO: This filename should be a command argument
             describe_image_prompt = load_file("describe_image.txt")
             if describe_image_prompt:
                 gpt_messages.append(

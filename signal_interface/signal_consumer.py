@@ -17,7 +17,7 @@ import aio_pika
 import redis
 
 from utils.phonebook import Group, PhoneBook
-from utils.storage import RedisCredentials, load_file_lock, load_phonebook
+from utils.storage import RedisCredentials, file_lock, load_phonebook
 
 from .dataclasses import (
     MENTION_CHAR,
@@ -64,7 +64,7 @@ class SignalConsumer:
 
         # Set up the phonebook
         if load_phonebook() == PhoneBook():
-            with load_file_lock("phonebook.json") as f:
+            with file_lock("phonebook.json") as f:
                 f.seek(0)
                 f.write(PhoneBook().model_dump_json())
                 f.truncate()
@@ -81,7 +81,7 @@ class SignalConsumer:
         Fetches from signal a list of currently participating groups, and adds
         them to the phonebook."""
         groups = await self.api_client.get_groups()
-        with load_file_lock("phonebook.json") as f:
+        with file_lock("phonebook.json") as f:
             phonebook = PhoneBook(**json.load(f))
             for group in groups:
                 logger.info(f"Adding group to phonebook: {group}")
@@ -169,7 +169,7 @@ class SignalConsumer:
         if is_updated:
             # If it is, then get a lock on the file and update the phonebook
             # properly
-            with load_file_lock("phonebook.json") as f:
+            with file_lock("phonebook.json") as f:
                 phonebook = PhoneBook(**json.load(f))
                 phonebook.update_contact(
                     msg.envelope.sourceUuid,
@@ -203,7 +203,7 @@ class SignalConsumer:
             )
 
             local_filename = f"attachments/{identifier}"
-            with load_file_lock(local_filename, "wb") as f:
+            with file_lock(local_filename, "wb") as f:
                 f.write(attachment_bytes)
 
             # convert the bytes to b64 for storage

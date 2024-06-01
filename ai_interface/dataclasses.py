@@ -18,7 +18,3 @@ class OpenAIConfig(BaseModel):
         default_factory=dict
     )
 
-
-IMAGE_TOKENS = {
-    "256x256": 755,
-}

@@ -18,6 +18,7 @@ logger = getLogger(__name__)
 
 
 class ReplyCommandHandler(CommandHandler):
+    # TODO: This should be a command argument
     reply_filename = "reply.txt"
 
     def can_handle(

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -37,6 +37,7 @@ class Reaction(BaseModel):
     targetAuthor: str
     targetAuthorNumber: str
     targetAuthorUuid: str
+    # Corresponds to the timestamp of the message that the reaction is to
     targetSentTimestamp: int
     isRemove: bool
 
@@ -55,7 +56,10 @@ class GroupInfo(BaseModel):
 
 
 class Attachment(BaseModel):
+    # The internal ID used for retrieving the attachment from the Signal API
     id: str
+    # MIME type of the attachment
+    # e.g. "image/jpeg", "video/mp4", "audio/aac", ...
     contentType: str
     filename: Optional[str]
     size: Optional[int] = None
@@ -115,6 +119,10 @@ class IncomingMessage(BaseModel):
     account: str
 
     def get_recipient(self) -> str:
+        """Get the ID needed to target a return message. For phone numbers,
+        this is the phone number. For groups, this is the internal ID of the
+        group. *NOT* the ID attached to the message!
+        """
         if self.envelope.dataMessage:
             if self.envelope.dataMessage.groupInfo:
                 gid = self.envelope.dataMessage.groupInfo.groupId
@@ -128,10 +136,25 @@ class OutgoingMessage(BaseModel):
     recipient: str
     message: str
     base64_attachments: List[str] = Field(default_factory=list)
+    edit_timestamp: Optional[int] = None
+    mentions: Optional[str] = None
+    quote_author: Optional[str] = None
+    quote_mentions: Optional[str] = None
+    quote_message: Optional[str] = None
+    quote_timestamp: Optional[int] = None
+    sticker: Optional[str] = None
+    text_mode: Optional[Literal["normal", "styled"]] = "normal"
 
 
 class OutgoingReaction(BaseModel):
     recipient: str
     reaction: str
     target_uuid: str
+    timestamp: int
+
+
+class OutgoingReceipt(BaseModel):
+    receipt_type: Literal["read", "viewed"]
+    recipient: str
+    # Timestamp of the message that the receipt is for
     timestamp: int

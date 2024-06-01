@@ -19,6 +19,7 @@ logger = getLogger(__name__)
 
 
 class SeeImageCommandHandler(CommandHandler):
+    # TODO: This should be a command argument
     reply_filename = "reply.txt"
 
     def can_handle(
@@ -73,6 +74,7 @@ class SeeImageCommandHandler(CommandHandler):
                     )
 
             gpt_messages = []
+            # TODO: This should be a command argument
             describe_image_prompt = load_file("describe_image.txt")
             if describe_image_prompt:
                 gpt_messages.append(

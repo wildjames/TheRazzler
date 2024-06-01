@@ -31,6 +31,13 @@ class PhoneBook(BaseModel):
     groups: Dict[str, Group] = {}
 
     def add_contact(self, contact: Contact):
+        """Depending on signal's inscrutable whims, contacts may be identified
+        by either a UUID or a phone number. Names are also sometimes, for
+        whatever reason, phone numbers. If a contact with the same UUID or
+        phone number already exists, update the contact with the new
+        information. Otherwise, add the new contact to the phonebook.
+        """
+
         for existing_contact in self.contacts:
             if (
                 (
@@ -109,7 +116,11 @@ class PhoneBook(BaseModel):
             - UUID
             - Phone number
             - Name
-        But none are guaranteed. This function will return the first contact
+        But none are guaranteed. As far as I can tell though, we always have
+        at least one, though "Name" may sometimes be a phone number (in this
+        case, the phone number field is also populated with the same value)
+
+        This function will return the first contact
         that matches any of its fields with the given identifier.
         """
         # Get a list of all the identifiers I've been passed

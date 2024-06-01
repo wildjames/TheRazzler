@@ -13,10 +13,10 @@ from signal_interface.dataclasses import (
     IncomingMessage,
     OutgoingReaction,
 )
-from utils.storage import RedisCredentials, load_file, load_file_lock
+from utils.storage import RedisCredentials, load_file, file_lock
 
 from .commands.base_command import CommandHandler
-from .commands.registry import COMMAND_REGISTRY
+from .commands.registry import COMMAND_REGISTRY, COMMAND_PROCESSING_ORDER
 from .dataclasses import RazzlerBrainConfig
 
 logger = getLogger(__name__)
@@ -42,10 +42,18 @@ class RazzlerBrain:
         )
 
         # Register the commands with the brain
+        # The order of the commands is important, since some can apply to
+        # similar messages. The first command in the priority order that can
+        # handle a message will be the one to process it.
         self.commands = []
-        for command in brain_config.commands:
-            logger.info(f"Registering command: {command}")
-            self.commands.append(COMMAND_REGISTRY[command]())
+        for command in COMMAND_PROCESSING_ORDER:
+            if command in self.brain_config.commands:
+                logger.info(f"Registering command: {command}")
+                # This is an instance of the command class.
+                # If they have init arguments, they should be passed here.
+                # TODO: Alter the config file to take commands with arguments
+                # e.g. prompt filenames
+                self.commands.append(COMMAND_REGISTRY[command]())
 
         # Check for any whitelisted groups
         whitelisted_groups = load_file(self.whitelist_file)
@@ -53,7 +61,7 @@ class RazzlerBrain:
             whitelisted_groups = json.loads(whitelisted_groups)
         else:
             whitelisted_groups = []
-            with load_file_lock(self.whitelist_file) as f:
+            with file_lock(self.whitelist_file) as f:
                 json.dump(whitelisted_groups, f)
 
         logger.info(
@@ -64,8 +72,23 @@ class RazzlerBrain:
         if whitelisted_groups:
             self.redis_client.sadd("whitelisted_groups", *whitelisted_groups)
 
-    def __del__(self):
-        self.stop()
+    async def consume_messages(self):
+        """Consume messages from RabbitMQ and process them."""
+        logger.info("Consuming messages from RabbitMQ...")
+
+        # Reopen the connection, if necessary
+        if not self.connection or self.connection.is_closed:
+            self.connection = await self.get_rabbitmq_connection()
+
+        # Open a channel and consume incoming messages
+        async with self.connection:
+            self.channel = await self.connection.channel()
+            queue = await self.channel.declare_queue(
+                "incoming_messages", durable=True
+            )
+            await queue.consume(self._process_incoming_message)
+            logger.info("Consuming messages...")
+            await asyncio.Future()
 
     def get_rabbitmq_connection(self):
         return aio_pika.connect_robust(**self.rabbit_config)
@@ -92,23 +115,8 @@ class RazzlerBrain:
             self.connection.close()
             logger.info("RabbitMQ connection closed.")
 
-    async def consume_messages(self):
-        """Consume messages from RabbitMQ and process them."""
-        logger.info("Consuming messages from RabbitMQ...")
-
-        # Reopen the connection, if necessary
-        if not self.connection or self.connection.is_closed:
-            self.connection = await self.get_rabbitmq_connection()
-
-        # Open a channel and consume incoming messages
-        async with self.connection:
-            self.channel = await self.connection.channel()
-            queue = await self.channel.declare_queue(
-                "incoming_messages", durable=True
-            )
-            await queue.consume(self._process_incoming_message)
-            logger.info("Consuming messages...")
-            await asyncio.Future()
+    def __del__(self):
+        self.stop()
 
     def replace_message_in_history(
         self,
@@ -253,7 +261,7 @@ class RazzlerBrain:
                 # Whitelist the group
                 logger.info(f"Whitelisting group {gid}")
                 self.redis_client.sadd(wl_key, gid)
-                with load_file_lock(self.whitelist_file) as f:
+                with file_lock(self.whitelist_file) as f:
                     whitelisted_groups: List[str] = json.load(f)
                     whitelisted_groups.append(gid)
                     f.seek(0)
@@ -264,7 +272,7 @@ class RazzlerBrain:
                 # Blacklist the group
                 logger.info(f"Blacklisting group {gid}")
                 self.redis_client.srem(wl_key, gid)
-                with load_file_lock(self.whitelist_file) as f:
+                with file_lock(self.whitelist_file) as f:
                     whitelisted_groups: List[str] = json.load(f)
                     whitelisted_groups.remove(gid)
                     f.seek(0)
@@ -281,6 +289,38 @@ class RazzlerBrain:
         self,
         message: aio_pika.IncomingMessage,
     ):
+        """For an incoming message, parse the incoming message JSON string into
+        an IncomingMessage object, then loop over the commands to see if any
+        can handle the message. If a command can handle the message, run it.
+
+        Note that all messages able to be handled by a command will be handled,
+        so if a message *could* be handled by multiple commands, it will be.
+        """
+
+        # TODO: This is not ideal. As-is, I need to have logic in some commands
+        # to check if a message that they *could* theoretically handle has been
+        # handled by another command. However, I still any want them to run.
+        #
+        # For example, take the case where a message is replying to a message
+        # that has an image in it, while they also address the razzler. We want
+        # to trigger the "see_image" command to parse the image content, but we
+        # ALSO want to trigger the response.
+        #
+        # However, take the case where they post an image, and request some
+        # reply from the razzler. We want to use the image-embedded reply
+        # generator, since that sees the image directly, but we DONT want the
+        # plain text reply command to run, since then they'd get two replies
+        # where only one knows what the image is, and we only wanted one anyway
+        #
+        # Can we make this more efficient? I'm not sure. I think we need to
+        # keep the current structure, but we can make it more efficient by
+        # having the commands return a flag that says "I handled this message"?
+        # Trouble is, what if we want only *some* commands to be blocked?
+        # Could build a list of commands that handled the message, and
+        # have commands cross-reference that list before running?
+        # That feels clunky too. I want them to be as modular as possible,
+        # which ideally means they don't need to know about each other.
+        # Perhaps the Razzler command registry can hold that information?
         # This method is called for each incoming message.
         # Here, we can assume the connection is open and the channel is
         # available, since it is called from the consume_messages method.
@@ -324,14 +364,14 @@ class RazzlerBrain:
                     # In the specific case of the command yielding an incoming
                     # message, it is a replacement for the message that was
                     # processed. We need to remove the original message from
-                    # the message history with it, if it's not been done
-                    # already, then push the new message into its place
+                    # the message history, if it's not been done already, then
+                    # push the new message into its place
                     # NOTE: This is SLOW!
                     if isinstance(response, IncomingMessage):
                         self.replace_message_in_history(msg, response)
 
                         # We don't publish the incoming message to the queue
-                        # since it's a replacement for the original message
+                        # so go to the next response
                         continue
 
                     # Publish the outgoing message to the queue
@@ -342,3 +382,5 @@ class RazzlerBrain:
                         ),
                         routing_key="outgoing_messages",
                     )
+
+                return

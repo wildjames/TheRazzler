@@ -70,6 +70,7 @@ class CommandHandler(ABC):
                 case IncomingMessage():
                     # Parse the UNIX timestamp (e.g. 1717075009) to a
                     # human-readable format
+                    # Irritatingly, the timestamp is in milliseconds
                     ts = msg.envelope.timestamp / 1000
                     time_str = datetime.fromtimestamp(ts).strftime(
                         "%Y-%m-%d %H:%M:%S"

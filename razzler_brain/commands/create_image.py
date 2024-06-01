@@ -60,6 +60,7 @@ class CreateImageCommandHandler(CommandHandler):
 
             # If the user didn't give a prompt, use a default one
             if not prompt:
+                # TODO: Make this a command argument
                 prompt = load_file("dream_prompt.txt")
 
             # And if that's not available, use a fallback default one

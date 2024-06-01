@@ -54,8 +54,19 @@ def save_file(fname: str, data: str):
 
 
 @contextmanager
-def load_file_lock(fname, mode="r+") -> Generator[IO, None, None]:
-    """Get a lock for a file."""
+def file_lock(fname, mode="r+") -> Generator[IO, None, None]:
+    """Get a lock for a file.
+
+    Note that this has no queueing mechanism, so if two processes try to
+    acquire a lock at the same time (for example, if they are both waiting for
+    the same process to release the lock), they may encounter a race condition.
+
+    In other words, this ONLY reliably prevents two processes from writing to
+    the same file at the same time. It does not prevent three.
+
+    # TODO: Address the race condition. Some external packages exist,
+    # maybe use that. https://pypi.org/project/portalocker/
+    """
     lockfile = os.path.join(DATA_DIR, f"{fname}.lock")
     fname = os.path.join(DATA_DIR, fname)
 
