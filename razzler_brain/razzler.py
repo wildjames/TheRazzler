@@ -382,5 +382,3 @@ class RazzlerBrain:
                         ),
                         routing_key="outgoing_messages",
                     )
-
-                return

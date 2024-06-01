@@ -21,8 +21,8 @@ COMMAND_PROCESSING_ORDER: List[str] = [
     "ping",
     "react",
     "summon",
-    "see_quoted_image",
     "see_image",
+    "see_quoted_image",
     "create_image",
     "reply",
 ]
