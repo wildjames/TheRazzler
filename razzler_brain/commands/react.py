@@ -34,10 +34,7 @@ class ReactCommandHandler(CommandHandler):
         config: Optional[RazzlerBrainConfig] = None,
     ) -> Iterator[OutgoingReaction]:
         logger.info("Handling react command")
-        response_message = OutgoingReaction(
-            recipient=message.envelope.source,
+        yield self.generate_reaction(
+            message=message,
             reaction="👍",
-            target_uuid=message.envelope.sourceUuid,
-            timestamp=message.envelope.timestamp,
         )
-        yield response_message

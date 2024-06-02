@@ -1,3 +1,4 @@
+import base64
 import json
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -22,6 +23,19 @@ logger = getLogger(__name__)
 
 # This needs to be parsable by Pydantic
 class CommandHandler(ABC):
+
+    @staticmethod
+    def image_to_base64(file_path):
+        # Read the image file in binary mode
+        image_data = load_file(file_path, "rb")
+
+        # Encode the bytes to base64
+        encoded_data = base64.b64encode(image_data)
+
+        # Decode bytes to a string (optional, if you need the result as a string)
+        encoded_string = encoded_data.decode("utf-8")
+
+        return encoded_string
 
     def get_chat_history(
         self,
@@ -162,6 +176,18 @@ class CommandHandler(ABC):
         response = response.strip()
 
         return response
+
+    def generate_reaction(
+        self,
+        emoji: str,
+        message: IncomingMessage,
+    ) -> OutgoingReaction:
+        return OutgoingReaction(
+            recipient=message.get_recipient(),
+            reaction=emoji,
+            target_uuid=message.envelope.sourceUuid,
+            timestamp=message.envelope.timestamp,
+        )
 
     @staticmethod
     def get_recipient(message: IncomingMessage) -> str:

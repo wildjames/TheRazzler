@@ -13,7 +13,6 @@ from .base_command import (
     OutgoingMessage,
     OutgoingReaction,
 )
-from .utils import image_to_base64
 
 logger = getLogger(__name__)
 
@@ -53,12 +52,7 @@ class SeeQuotedImageCommandHandler(CommandHandler):
     ) -> Iterator[Union[OutgoingReaction, OutgoingMessage, IncomingMessage]]:
         logger.info("Digesting an image message")
 
-        yield OutgoingReaction(
-            recipient=self.get_recipient(message),
-            reaction="🕵️",
-            target_uuid=message.envelope.sourceUuid,
-            timestamp=message.envelope.timestamp,
-        )
+        yield self.generate_reaction("🕵️", message)
 
         gpt = GPTInterface()
         message_text = message.envelope.dataMessage.message
@@ -66,7 +60,7 @@ class SeeQuotedImageCommandHandler(CommandHandler):
         try:
             images = []
             for attachment in message.envelope.dataMessage.quote.attachments:
-                b64_image = image_to_base64(attachment.data)
+                b64_image = self.image_to_base64(attachment.data)
                 if attachment.contentType.startswith("image"):
                     images.append(
                         (
@@ -91,20 +85,10 @@ class SeeQuotedImageCommandHandler(CommandHandler):
             )
         except Exception as e:
             # give back the failed looking reaction, then terminate the command
-            yield OutgoingReaction(
-                recipient=self.get_recipient(message),
-                reaction="😢",
-                target_uuid=message.envelope.sourceUuid,
-                timestamp=message.envelope.timestamp,
-            )
+            yield self.generate_reaction("❌", message)
             raise e
 
-        yield OutgoingReaction(
-            recipient=self.get_recipient(message),
-            reaction="👁️",
-            target_uuid=message.envelope.sourceUuid,
-            timestamp=message.envelope.timestamp,
-        )
+        yield self.generate_reaction("👁️", message)
 
         # Replace the message containing the image, with a message containing a
         # description of the image
@@ -112,7 +96,8 @@ class SeeQuotedImageCommandHandler(CommandHandler):
         if not message_text:
             message_text = ""
         img_description = (
-            f"The original message contains an image. Image description: '{response}'"
+            "The original message contains an image. Image description:"
+            f" '{response}'"
         )
         message_text = " | ".join([img_description, message_text])
         parsed_message.envelope.dataMessage.message = message_text
@@ -134,12 +119,7 @@ class SeeQuotedImageCommandHandler(CommandHandler):
         if not reply:
             return
 
-        yield OutgoingReaction(
-            recipient=self.get_recipient(message),
-            reaction="🗣️",
-            target_uuid=message.envelope.sourceUuid,
-            timestamp=message.envelope.timestamp,
-        )
+        yield self.generate_reaction("🗣️", message)
 
         try:
             response = self.generate_chat_message(
@@ -153,11 +133,6 @@ class SeeQuotedImageCommandHandler(CommandHandler):
             yield OutgoingMessage(
                 recipient=self.get_recipient(message), message=response
             )
-        except:
-            yield OutgoingReaction(
-                recipient=self.get_recipient(message),
-                reaction="🤐",
-                target_uuid=message.envelope.sourceUuid,
-                timestamp=message.envelope.timestamp,
-            )
-            raise
+        except Exception as e:
+            yield self.generate_reaction("❌", message)
+            raise e

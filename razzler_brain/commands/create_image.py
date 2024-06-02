@@ -44,13 +44,7 @@ class CreateImageCommandHandler(CommandHandler):
     ) -> Iterator[Union[OutgoingMessage, OutgoingReaction]]:
         logger.info("Handling create image command")
 
-        reaction_message = OutgoingReaction(
-            recipient=self.get_recipient(message),
-            reaction="🎨",
-            target_uuid=message.envelope.sourceUuid,
-            timestamp=message.envelope.timestamp,
-        )
-        yield reaction_message
+        yield self.generate_reaction("🎨", message)
 
         try:
             gpt = GPTInterface()
@@ -85,9 +79,4 @@ class CreateImageCommandHandler(CommandHandler):
 
         except Exception as e:
             logger.error(f"Error creating image: {e}")
-            yield OutgoingReaction(
-                recipient=self.get_recipient(message),
-                reaction="❌",
-                target_uuid=message.envelope.sourceUuid,
-                timestamp=message.envelope.timestamp,
-            )
+            self.generate_reaction("❌", message)

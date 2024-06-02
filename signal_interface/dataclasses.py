@@ -135,7 +135,7 @@ class IncomingMessage(BaseModel):
 class OutgoingMessage(BaseModel):
     recipient: str
     message: str
-    base64_attachments: List[str] = Field(default_factory=list)
+    base64_attachments: List[str] = Field(default_factory=list, repr=False)
     edit_timestamp: Optional[int] = None
     mentions: Optional[str] = None
     quote_author: Optional[str] = None

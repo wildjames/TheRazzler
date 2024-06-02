@@ -58,13 +58,7 @@ class ReplyCommandHandler(CommandHandler):
     ) -> Iterator[OutgoingMessage]:
         logger.info("Handling reply command")
 
-        reaction_message = OutgoingReaction(
-            recipient=self.get_recipient(message),
-            reaction="🧠",
-            target_uuid=message.envelope.sourceUuid,
-            timestamp=message.envelope.timestamp,
-        )
-        yield reaction_message
+        yield self.generate_reaction("🧠", message)
 
         try:
             gpt = GPTInterface()
@@ -78,12 +72,7 @@ class ReplyCommandHandler(CommandHandler):
 
         except Exception as e:
             logger.error(f"Error creating message: {e}")
-            yield OutgoingReaction(
-                recipient=self.get_recipient(message),
-                reaction="❌",
-                target_uuid=message.envelope.sourceUuid,
-                timestamp=message.envelope.timestamp,
-            )
+            yield self.generate_reaction("❌", message)
             raise e
 
         response_message = OutgoingMessage(
@@ -91,11 +80,4 @@ class ReplyCommandHandler(CommandHandler):
         )
         yield response_message
 
-        done_reaction_message = OutgoingReaction(
-            recipient=self.get_recipient(message),
-            # success emoji
-            reaction="✅",
-            target_uuid=message.envelope.sourceUuid,
-            timestamp=message.envelope.timestamp,
-        )
-        yield done_reaction_message
+        yield self.generate_reaction("✅", message)

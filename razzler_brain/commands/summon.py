@@ -59,9 +59,5 @@ class SummonCommandHandler(CommandHandler):
 
         except Exception as e:
             logger.error(f"Error creating image: {e}")
-            yield OutgoingReaction(
-                recipient=self.get_recipient(message),
-                reaction="❌",
-                target_uuid=message.envelope.sourceUuid,
-                timestamp=message.envelope.timestamp,
-            )
+            yield self.generate_reaction("❌", message)
+            raise e

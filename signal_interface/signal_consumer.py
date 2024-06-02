@@ -185,7 +185,9 @@ class SignalConsumer:
             self.phonebook = phonebook
             logger.info(f"Updated phonebook contact: {msg.envelope.source}")
 
-    async def download_attachments(self, data: Union[DataMessage, QuoteMessage]):
+    async def download_attachments(
+        self, data: Union[DataMessage, QuoteMessage]
+    ):
         """Download attachments from the message, to local storage."""
 
         for attachment in data.attachments:
@@ -195,7 +197,9 @@ class SignalConsumer:
             elif isinstance(attachment, QuoteAttachment):
                 identifier = attachment.thumbnail.id
             else:
-                raise ValueError(f"Attachment type {type(attachment)} not valid.")
+                raise ValueError(
+                    f"Attachment type {type(attachment)} not valid."
+                )
 
             logger.info(f"Downloading attachment: {identifier}")
             attachment_bytes = await self.api_client.download_attachment(
@@ -286,12 +290,17 @@ class SignalConsumer:
             if data.quote:
                 logger.info("Message has a quote.")
                 quote = data.quote
-                data.message = f'Replied to {quote.author}: "{quote.text}" >>> {data.message}'
+                data.message = (
+                    f'In reply to {quote.author}:\n"{quote.text}"\n[End'
+                    f" quote]\n\n{data.message}"
+                )
 
                 # Quotes can have attachments too
                 if quote.attachments:
                     logger.info("Quote has attachments.")
-                    logger.info(f"Downloading attachments for quote: {message}")
+                    logger.info(
+                        f"Downloading attachments for quote: {message}"
+                    )
                     await self.download_attachments(quote)
 
             # Place the message in the message history list

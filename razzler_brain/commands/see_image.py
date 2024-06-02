@@ -13,7 +13,6 @@ from .base_command import (
     OutgoingMessage,
     OutgoingReaction,
 )
-from .utils import image_to_base64
 
 logger = getLogger(__name__)
 
@@ -51,12 +50,7 @@ class SeeImageCommandHandler(CommandHandler):
     ) -> Iterator[Union[OutgoingReaction, OutgoingMessage, IncomingMessage]]:
         logger.info("Digesting an image message")
 
-        yield OutgoingReaction(
-            recipient=self.get_recipient(message),
-            reaction="🕵️",
-            target_uuid=message.envelope.sourceUuid,
-            timestamp=message.envelope.timestamp,
-        )
+        yield self.generate_reaction("🕵️", message)
 
         gpt = GPTInterface()
         message_text = message.envelope.dataMessage.message
@@ -64,7 +58,7 @@ class SeeImageCommandHandler(CommandHandler):
         try:
             images = []
             for attachment in message.envelope.dataMessage.attachments:
-                b64_image = image_to_base64(attachment.data)
+                b64_image = self.image_to_base64(attachment.data)
                 if attachment.contentType.startswith("image"):
                     images.append(
                         (
@@ -89,20 +83,10 @@ class SeeImageCommandHandler(CommandHandler):
             )
         except Exception as e:
             # give back the failed looking reaction, then terminate the command
-            yield OutgoingReaction(
-                recipient=self.get_recipient(message),
-                reaction="😢",
-                target_uuid=message.envelope.sourceUuid,
-                timestamp=message.envelope.timestamp,
-            )
+            yield self.generate_reaction("❌", message)
             raise e
 
-        yield OutgoingReaction(
-            recipient=self.get_recipient(message),
-            reaction="👁️",
-            target_uuid=message.envelope.sourceUuid,
-            timestamp=message.envelope.timestamp,
-        )
+        yield self.generate_reaction("👁️", message)
 
         # Replace the message containing the image, with a message containing a
         # description of the image
@@ -138,12 +122,7 @@ class SeeImageCommandHandler(CommandHandler):
             if message.envelope.dataMessage.quote.attachments:
                 return
 
-        yield OutgoingReaction(
-            recipient=self.get_recipient(message),
-            reaction="🗣️",
-            target_uuid=message.envelope.sourceUuid,
-            timestamp=message.envelope.timestamp,
-        )
+        yield self.generate_reaction("🗣️", message)
 
         try:
             response = self.generate_chat_message(
@@ -155,13 +134,9 @@ class SeeImageCommandHandler(CommandHandler):
             )
 
             yield OutgoingMessage(
-                recipient=self.get_recipient(message), message=response
+                recipient=self.get_recipient(message),
+                message=response,
             )
         except:
-            yield OutgoingReaction(
-                recipient=self.get_recipient(message),
-                reaction="🤐",
-                target_uuid=message.envelope.sourceUuid,
-                timestamp=message.envelope.timestamp,
-            )
+            yield self.generate_reaction("❌", message)
             raise
