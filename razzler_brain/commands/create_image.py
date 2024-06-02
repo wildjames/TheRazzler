@@ -39,8 +39,8 @@ class CreateImageCommandHandler(CommandHandler):
     def handle(
         self,
         message: IncomingMessage,
-        redis_connection: Optional[redis.Redis] = None,
-        config: Optional[RazzlerBrainConfig] = None,
+        redis_connection: redis.Redis,
+        config: RazzlerBrainConfig,
     ) -> Iterator[Union[OutgoingMessage, OutgoingReaction]]:
         logger.info("Handling create image command")
 
@@ -49,7 +49,7 @@ class CreateImageCommandHandler(CommandHandler):
         try:
             gpt = GPTInterface()
 
-            # Trim of the "dream" part of the message to get user-supplied prompt
+            # Trim of the "dream" part of the message to get user-given prompt
             prompt = message.envelope.dataMessage.message[5:]
 
             # If the user didn't give a prompt, use a default one

@@ -94,9 +94,9 @@ class DataMessage(BaseModel):
     message: Optional[str] = None
     expiresInSeconds: int
     viewOnce: bool
-    attachments: Optional[List[Attachment]] = None
+    attachments: List[Attachment] = Field(default_factory=list)
     reaction: Optional[Reaction] = None
-    mentions: Optional[List[Mention]] = None
+    mentions: List[Mention] = Field(default_factory=list)
     quote: Optional[QuoteMessage] = None
     groupInfo: Optional[GroupInfo] = None
 

@@ -1,18 +1,12 @@
-import json
 from logging import getLogger
-from typing import Iterator, List, Optional
+from typing import Iterator, Optional
 
 import redis
 
 from ai_interface.llm import GPTInterface
 
 from ..dataclasses import RazzlerBrainConfig
-from .base_command import (
-    CommandHandler,
-    IncomingMessage,
-    OutgoingMessage,
-    OutgoingReaction,
-)
+from .base_command import CommandHandler, IncomingMessage, OutgoingMessage
 
 logger = getLogger(__name__)
 
@@ -38,28 +32,38 @@ class ReplyCommandHandler(CommandHandler):
         if not mentions:
             return False
 
-        # Check if there are any image attachments.
-        # If there are, we don't want to handle this message - the image
-        # handler should take care of it.
-        if message.envelope.dataMessage.attachments:
-            return False
-        # Or, if there are any quote attachments.
-        if message.envelope.dataMessage.quote:
-            if message.envelope.dataMessage.quote.attachments:
-                return False
-
         return mentions[0].number == config.razzler_phone_number
 
     def handle(
         self,
         message: IncomingMessage,
-        redis_connection: Optional[redis.Redis] = None,
-        config: Optional[RazzlerBrainConfig] = None,
+        redis_connection: redis.Redis,
+        config: RazzlerBrainConfig,
     ) -> Iterator[OutgoingMessage]:
         logger.info("Handling reply command")
 
         yield self.generate_reaction("🧠", message)
 
+        # There are three cases.
+        # 1. The message contains no images
+        # 2. The message contains an image
+        # 3. The message contains a quote with an image
+        # Note that 2. and 3. are not mutually exclusive - we can have both.
+
+        images = []
+
+        # Handle the case where the message contains an image
+        datamessage = message.envelope.dataMessage
+        images += self.extract_images(datamessage)
+
+        # Handle the case where the message contains a quote with an image
+        quote = message.envelope.dataMessage.quote
+        if quote:
+            images += self.extract_images(quote)
+
+        logger.info(f"Extracted {len(images)} images from message")
+
+        # Then, get the response.
         try:
             gpt = GPTInterface()
             response = self.generate_chat_message(
@@ -68,6 +72,7 @@ class ReplyCommandHandler(CommandHandler):
                 redis_connection,
                 gpt,
                 "quality",
+                images,
             )
 
         except Exception as e:

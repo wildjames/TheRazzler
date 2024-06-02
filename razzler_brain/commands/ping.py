@@ -31,8 +31,8 @@ class PingCommandHandler(CommandHandler):
     def handle(
         self,
         message: IncomingMessage,
-        redis_connection: Optional[redis.Redis] = None,
-        config: Optional[RazzlerBrainConfig] = None,
+        redis_connection: redis.Redis,
+        config: RazzlerBrainConfig,
     ) -> Iterator[OutgoingMessage]:
         logger.info("Handling ping command")
         response_message = OutgoingMessage(

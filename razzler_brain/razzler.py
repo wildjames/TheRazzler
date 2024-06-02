@@ -131,17 +131,18 @@ class RazzlerBrain:
         logger.info(f"Replacing message with {new_message}")
 
         timestamp = original_message.envelope.timestamp
+        logger.info(f"It has the timestamp {timestamp}")
+
         chat = original_message.get_recipient()
 
         msg_cache = f"message_history:{chat}"
+        message_history = self.redis_client.lrange(msg_cache, 0, -1)
 
         # Get the index of the original message in the
         # message history
-        length = self.redis_client.llen(msg_cache)
-        logger.info(f"Message history length: {length}")
+        logger.info(f"Message history length: {len(message_history)}")
 
-        for i in range(length):
-            message_str = self.redis_client.lindex(msg_cache, i)
+        for i, message_str in enumerate(message_history):
             message = json.loads(message_str)
 
             # If the message is of type IncomingMessage, instatiate it
@@ -158,47 +159,18 @@ class RazzlerBrain:
                     "Found the original message - removing it "
                     "from the message history"
                 )
+                logger.info(f"Original message: {message}")
                 # Remove the original message from the message history
-                self.redis_client.lrem(
-                    msg_cache,
-                    0,
-                    message_str,
+                self.redis_client.lset(
+                    msg_cache, i, new_message.model_dump_json()
                 )
-                break
+                return
         else:
             # Default to the front of the list
-            logger.info("Original message not found in the message history")
-            i = 0
-
-        # Push the new message into the message history
-        length = self.redis_client.llen(msg_cache)
-
-        # If the list is empty, push the new message to the front
-        if length == 0:
-            self.redis_client.lpush(
-                msg_cache,
-                new_message.model_dump_json(),
+            logger.error("Original message not found in the message history")
+            raise ValueError(
+                "Original message not found in the message history"
             )
-            logger.info("Pushed new message into message history")
-            return
-
-        # If the list has changed since we started, and the index is now
-        # out of bounds, push the new message to the end of the list
-        if i >= length:
-            self.redis_client.rpush(
-                msg_cache,
-                new_message.model_dump_json(),
-            )
-            logger.info("Pushed new message into message history")
-            return
-
-        # Otherwise, set the new message at the index of the original message
-        self.redis_client.lset(
-            msg_cache,
-            i,
-            new_message.model_dump_json(),
-        )
-        logger.info("Pushed new message into message history")
 
     async def acknowledge_message(
         self, message: IncomingMessage, emoji: str = "👍"
@@ -359,7 +331,9 @@ class RazzlerBrain:
                         logger.debug("Command yielded None")
                         continue
 
-                    logger.info(f"Command {command} produced message: {response}")
+                    logger.info(
+                        f"Command {command} produced message: {response}"
+                    )
 
                     # In the specific case of the command yielding an incoming
                     # message, it is a replacement for the message that was

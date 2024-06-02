@@ -38,8 +38,13 @@ class GPTInterface:
         self.llm = openai.OpenAI()
 
     def reset(self):
+        logger.info("Resetting GPTInterface costs...")
         self.total_prompt_tokens = {}
         self.total_completion_tokens = {}
+        with file_lock("llm_usage.json") as f:
+            f.seek(0)
+            f.write("{}")
+            f.truncate()
 
     def generate_chat_completion(
         self,
@@ -81,7 +86,9 @@ class GPTInterface:
         return chosen_response.message.content
 
     def create_chat_message(
-        self, role: Literal["system", "user", "assistant"], content: str,
+        self,
+        role: Literal["system", "user", "assistant"],
+        content: str,
     ) -> ChatCompletionMessageParam:
         """
         Create a chat message with the given role and content.
@@ -136,7 +143,10 @@ class GPTInterface:
         return chosen_response.message.content
 
     def create_image_message(
-        self, images: Iterator[Tuple[str, str]], image_caption: str = ""
+        self,
+        images: Iterator[Tuple[str, str]],
+        image_caption: str = "",
+        detail: Literal["low", "high", "auto"] = "low",
     ) -> ChatCompletionMessageParam:
         """
         Create a chat message with the given image format and base64 image.
@@ -165,7 +175,7 @@ class GPTInterface:
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:{image_format};base64,{b64_image}",
-                        # "detail": "low",
+                        "detail": detail,
                     },
                 },
             )

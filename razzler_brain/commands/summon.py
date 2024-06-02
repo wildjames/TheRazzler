@@ -10,7 +10,6 @@ from .base_command import (
     CommandHandler,
     IncomingMessage,
     OutgoingMessage,
-    OutgoingReaction,
 )
 
 logger = getLogger(__name__)
@@ -34,8 +33,8 @@ class SummonCommandHandler(CommandHandler):
     def handle(
         self,
         message: IncomingMessage,
-        redis_connection: Optional[redis.Redis] = None,
-        config: Optional[RazzlerBrainConfig] = None,
+        redis_connection: redis.Redis,
+        config: RazzlerBrainConfig,
     ) -> Iterator[OutgoingMessage]:
         logger.info("Handling summon command")
 

@@ -30,8 +30,8 @@ class ReactCommandHandler(CommandHandler):
     def handle(
         self,
         message: IncomingMessage,
-        redis_connection: Optional[redis.Redis] = None,
-        config: Optional[RazzlerBrainConfig] = None,
+        redis_connection: redis.Redis,
+        config: RazzlerBrainConfig,
     ) -> Iterator[OutgoingReaction]:
         logger.info("Handling react command")
         yield self.generate_reaction(

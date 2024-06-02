@@ -1,5 +1,6 @@
+import re
 from logging import getLogger
-from typing import Iterator, Optional, Union
+from typing import Iterator, List, Optional, Tuple, Union
 
 import redis
 
@@ -18,6 +19,13 @@ logger = getLogger(__name__)
 
 
 class SeeImageCommandHandler(CommandHandler):
+    """Replace the IncomingMessage in the message history, such that it
+    contains the image description. The image description is generated using
+    an openAI model.
+
+    Injected image descriptions are enclosed in [[[ ]]] brackets.
+    """
+
     # TODO: This should be a command argument
     reply_filename = "reply.txt"
 
@@ -45,98 +53,116 @@ class SeeImageCommandHandler(CommandHandler):
     def handle(
         self,
         message: IncomingMessage,
-        redis_connection: Optional[redis.Redis] = None,
-        config: Optional[RazzlerBrainConfig] = None,
+        redis_connection: redis.Redis,
+        config: RazzlerBrainConfig,
     ) -> Iterator[Union[OutgoingReaction, OutgoingMessage, IncomingMessage]]:
         logger.info("Digesting an image message")
-
         yield self.generate_reaction("🕵️", message)
 
-        gpt = GPTInterface()
-        message_text = message.envelope.dataMessage.message
+        # There are two cases, one where the image is attached to the message
+        # and the other where the image is quoted in the message.
 
         try:
-            images = []
-            for attachment in message.envelope.dataMessage.attachments:
-                b64_image = self.image_to_base64(attachment.data)
-                if attachment.contentType.startswith("image"):
-                    images.append(
-                        (
-                            attachment.contentType,
-                            b64_image,
-                        )
-                    )
+            # Handle the case where the image is attached to the message
+            images = self.extract_images(message.envelope.dataMessage)
 
-            gpt_messages = []
-            # TODO: This should be a command argument
-            describe_image_prompt = load_file("describe_image.txt")
-            if describe_image_prompt:
-                gpt_messages.append(
-                    gpt.create_chat_message(
-                        "system",
-                        describe_image_prompt.strip(),
-                    )
+            if images:
+                logger.info(f"Extracted {len(images)} images from message")
+                response = self.generate_images_description(images, message)
+                yield self.update_message_with_description(message, response)
+
+            # Handle the case where the image is quoted in the message
+            if message.envelope.dataMessage.quote:
+                logger.info("This message contains a quote")
+                images = self.extract_images(
+                    message.envelope.dataMessage.quote
                 )
 
-            response = gpt.generate_images_response(
-                images, caption=message_text, gpt_messages=gpt_messages
-            )
+                if images:
+                    logger.info(f"Extracted {len(images)} images from quote")
+                    response = self.generate_images_description(
+                        images, message
+                    )
+                    yield self.update_quote_with_description(message, response)
+
         except Exception as e:
-            # give back the failed looking reaction, then terminate the command
             yield self.generate_reaction("❌", message)
             raise e
 
         yield self.generate_reaction("👁️", message)
 
-        # Replace the message containing the image, with a message containing a
-        # description of the image
-        parsed_message = message.model_copy()
-        if not message_text:
-            message_text = ""
-        img_description = (
-            f"This message contains an image. Image description: '{response}'"
+    def generate_images_description(
+        self,
+        images: List[Tuple[str, str]],
+        message: IncomingMessage,
+    ):
+        gpt = GPTInterface()
+        describe_image_prompt = load_file(self.reply_filename)
+        if not describe_image_prompt:
+            describe_image_prompt = "Describe the image in a few words."
+        logger.info(f"Describing image using prompt: {describe_image_prompt}")
+
+        gpt_messages = [
+            gpt.create_chat_message("system", describe_image_prompt.strip())
+        ]
+        return gpt.generate_images_response(
+            images,
+            caption=message.envelope.dataMessage.message,
+            gpt_messages=gpt_messages,
         )
-        message_text = " | ".join([message_text, img_description])
+
+    def update_message_with_description(
+        self, message: IncomingMessage, description: str
+    ) -> IncomingMessage:
+        """Given an incoming message and an image description, update the
+        message with the image description."""
+
+        parsed_message = message.model_copy()
+        img_description = (
+            "[[[This message contains an image. Image description:"
+            f" '{description}']]]"
+        )
+
+        # Concatenate the image description with the original message
+        # (At least one exists, possibly both)
+        message_text = " ".join(
+            filter(
+                None, [message.envelope.dataMessage.message, img_description]
+            )
+        )
+
+        # Return the updated message
         parsed_message.envelope.dataMessage.message = message_text
-        yield parsed_message
+        return parsed_message
 
-        # Check to see if the Razzler is the only element of the mentions list
-        reply = False
-        if message.envelope.dataMessage.mentions:
-            if len(message.envelope.dataMessage.mentions) == 1:
-                mention = message.envelope.dataMessage.mentions[0].number
-                logger.info(f"Mentioned: {mention}")
-                if mention == config.razzler_phone_number:
-                    logger.info(
-                        "The razzler was tagged. Posting the message"
-                        " description"
-                    )
-                    reply = True
+    def update_quote_with_description(
+        self, message: IncomingMessage, description: str
+    ) -> IncomingMessage:
+        """Given an incoming message and an image description, update the
+        quoted message with the image description."""
 
-        if not reply:
-            return
+        parsed_message = message.model_copy()
+        img_description = (
+            "[[[This message contains an image. Image description:"
+            f" '{description}']]]"
+        )
 
-        # And also, if we're replying to a message, we need to check that it has no images.
-        # If they do, the reply will come later, after those have been parsed out.
-        if message.envelope.dataMessage.quote:
-            if message.envelope.dataMessage.quote.attachments:
-                return
+        # Build a new message with the image description and the quoted message
+        # Remove the quote from the original message
+        scrubbed_msg = re.sub(
+            r"\[Quote\].*\[End quote\]",
+            "",
+            message.envelope.dataMessage.message,
+        )
 
-        yield self.generate_reaction("🗣️", message)
+        quote = message.envelope.dataMessage.quote
+        message_text = (
+            "[Quote]\n"
+            "In reply to"
+            f' {quote.author}:\n"{quote.text}"\n{img_description}\n[End'
+            f" quote]\n\n{scrubbed_msg}"
+        )
 
-        try:
-            response = self.generate_chat_message(
-                config,
-                message,
-                redis_connection,
-                gpt,
-                "quality",
-            )
-
-            yield OutgoingMessage(
-                recipient=self.get_recipient(message),
-                message=response,
-            )
-        except:
-            yield self.generate_reaction("❌", message)
-            raise
+        # Return the updated message
+        parsed_message.envelope.dataMessage.message = message_text
+        return parsed_message

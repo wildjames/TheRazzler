@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -133,7 +133,7 @@ class PhoneBook(BaseModel):
 
         return None
 
-    def add_group(self, group: Dict[str, str | List[str]]):
+    def add_group(self, group: Dict[str, Union[str, List[str]]]):
         logger.info(f"Creating group from {group}")
 
         # Gather the list of members from contacts. If a member is not in the

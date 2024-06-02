@@ -1,18 +1,22 @@
 import base64
 import json
+import re
 from abc import ABC, abstractmethod
 from datetime import datetime
 from logging import getLogger
-from typing import Iterator, List, Optional, Union
+from typing import Dict, Iterator, List, Literal, Optional, Tuple, Union
 
+import pydantic
 import redis
 import tiktoken
 
 from ai_interface.llm import GPTInterface
 from signal_interface.dataclasses import (
+    DataMessage,
     IncomingMessage,
     OutgoingMessage,
     OutgoingReaction,
+    QuoteMessage,
 )
 from utils.storage import load_file, load_phonebook
 
@@ -21,8 +25,10 @@ from ..dataclasses import RazzlerBrainConfig
 logger = getLogger(__name__)
 
 
-# This needs to be parsable by Pydantic
 class CommandHandler(ABC):
+    # TODO: This is currently quite specialised to work specifically with
+    # signal messages. It would be nice to make this more generic, so that it
+    # can be used with other messaging services.
 
     @staticmethod
     def image_to_base64(file_path):
@@ -32,7 +38,8 @@ class CommandHandler(ABC):
         # Encode the bytes to base64
         encoded_data = base64.b64encode(image_data)
 
-        # Decode bytes to a string (optional, if you need the result as a string)
+        # Decode bytes to a string
+        # (optional, if you need the result as a string)
         encoded_string = encoded_data.decode("utf-8")
 
         return encoded_string
@@ -43,8 +50,18 @@ class CommandHandler(ABC):
         cache_key: str,
         redis_connection: redis.Redis,
         gpt: GPTInterface,
-        ai_model: str,
-    ) -> List[str]:
+        ai_model: Literal["fast", "quality"],
+    ) -> List[Dict]:
+        """Get the chat history from the cache, and parse it into a format
+        that the AI can understand.
+
+        The chat history is returned as a list of dictionaries, where each
+        dictionary contains the following keys:
+        - sender: The name of the sender
+        - content: The content of the message
+
+        Gathers the chat history until the token limit is reached.
+        """
 
         # Get the message history list from redis
         history = redis_connection.lrange(cache_key, 0, -1)
@@ -74,7 +91,7 @@ class CommandHandler(ABC):
                 try:
                     msg = msg_model(**msg_dict)
                     break
-                except:
+                except pydantic.ValidationError:
                     pass
             else:
                 logger.error(f"Could not parse message: {msg_str}")
@@ -144,9 +161,14 @@ class CommandHandler(ABC):
         message: IncomingMessage,
         redis_client: redis.Redis,
         gpt: GPTInterface,
-        model: str,
+        model: Literal["fast", "quality"],
+        images: Optional[List[Tuple[str, str]]] = None,
     ) -> str:
-        """Model can be either "fast" or "quality"."""
+        """Generate a chat message in response to the given message.
+        Note that images can be attached, but they're assumed to be
+        associated with the incoming message. Past images are not parsed.
+
+        Model can be either "fast" or "quality"."""
 
         personality_prompt = load_file("personality.txt")
         if not personality_prompt:
@@ -165,6 +187,36 @@ class CommandHandler(ABC):
         )
 
         messages.extend(history)
+
+        # If we have images, add them to the message content
+        if images:
+            logger.info("Injecting image data into the chat history")
+            # Loop backwards, since we want to inject the data into a recent
+            # message
+            for m in messages[::-1]:
+                if message.envelope.dataMessage.message in m["content"]:
+                    logger.info(f"Found the corresponding message: {m}")
+                    # update the content of the message with the image(s)
+                    image_message = gpt.create_image_message(
+                        images, m["content"]
+                    )
+
+                    # Process the old message content
+                    message_body = m["content"]
+
+                    # And update the content with its new data
+                    m["content"] = image_message["content"]
+
+                    # Remove previous image descriptions, which are enclosed by
+                    # [[[ and ]]]
+                    message_body = re.sub(r"\[\[\[.*?\]\]\]", "", message_body)
+
+                    # Push the old message content back into the caption
+                    logger.info(f"Old message content: {message_body}")
+                    m["content"][0]["text"] = message_body
+
+                    break
+
         messages.append(gpt.create_chat_message("system", personality_prompt))
         messages.append(gpt.create_chat_message("system", reply_prompt))
 
@@ -188,6 +240,30 @@ class CommandHandler(ABC):
             target_uuid=message.envelope.sourceUuid,
             timestamp=message.envelope.timestamp,
         )
+
+    def extract_images(
+        self, message: Union[DataMessage, QuoteMessage]
+    ) -> List[Tuple[str, str]]:
+        """Get the image data from images contained in the message directly,
+        or those contained in the message's quotes.
+
+        Returns a list of tuples, where the first element is the content type
+        of the image, and the second element is the base64-encoded image data.
+        """
+
+        images = []
+
+        for attachment in message.attachments:
+            if attachment.contentType.startswith("image"):
+                b64_image = self.image_to_base64(attachment.data)
+                images.append(
+                    (
+                        attachment.contentType,
+                        b64_image,
+                    )
+                )
+
+        return images
 
     @staticmethod
     def get_recipient(message: IncomingMessage) -> str:
@@ -214,8 +290,8 @@ class CommandHandler(ABC):
     def handle(
         self,
         message: IncomingMessage,
-        redis_connection: Optional[redis.Redis] = None,
-        config: Optional[RazzlerBrainConfig] = None,
+        redis_connection: redis.Redis,
+        config: RazzlerBrainConfig,
     ) -> Iterator[
         Optional[Union[OutgoingMessage, OutgoingReaction, IncomingMessage]]
     ]:

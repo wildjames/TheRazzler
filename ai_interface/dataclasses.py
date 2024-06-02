@@ -17,4 +17,3 @@ class OpenAIConfig(BaseModel):
     image_generation_kwargs: Dict[str, Union[str, int, float]] = Field(
         default_factory=dict
     )
-

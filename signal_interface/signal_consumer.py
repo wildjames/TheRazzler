@@ -16,7 +16,7 @@ from typing import Any, Dict, Union
 import aio_pika
 import redis
 
-from utils.phonebook import Group, PhoneBook
+from utils.phonebook import PhoneBook
 from utils.storage import RedisCredentials, file_lock, load_phonebook
 
 from .dataclasses import (
@@ -291,7 +291,8 @@ class SignalConsumer:
                 logger.info("Message has a quote.")
                 quote = data.quote
                 data.message = (
-                    f'In reply to {quote.author}:\n"{quote.text}"\n[End'
+                    "[Quote]\nIn reply to"
+                    f' {quote.author}:\n"{quote.text}"\n[End'
                     f" quote]\n\n{data.message}"
                 )
 

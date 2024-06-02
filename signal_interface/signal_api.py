@@ -117,7 +117,6 @@ class SignalAPI:
             "&ignore_stories=true"
         )
 
-
     def _send_rest_uri(self):
         return f"http://{self.signal_service}/v2/send"
 
