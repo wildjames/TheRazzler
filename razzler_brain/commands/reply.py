@@ -1,9 +1,10 @@
 from logging import getLogger
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Union
 
 import redis
 
 from ai_interface.llm import GPTInterface
+from signal_interface.dataclasses import OutgoingReaction
 
 from ..dataclasses import RazzlerBrainConfig
 from .base_command import CommandHandler, IncomingMessage, OutgoingMessage
@@ -32,6 +33,11 @@ class ReplyCommandHandler(CommandHandler):
         if not mentions:
             return False
 
+        # Check that we have only one mention
+        if len(mentions) != 1:
+            return False
+
+        # Check that the mention is the Razzler
         return mentions[0].number == config.razzler_phone_number
 
     def handle(
@@ -39,7 +45,7 @@ class ReplyCommandHandler(CommandHandler):
         message: IncomingMessage,
         redis_connection: redis.Redis,
         config: RazzlerBrainConfig,
-    ) -> Iterator[OutgoingMessage]:
+    ) -> Iterator[Union[OutgoingMessage, OutgoingReaction]]:
         logger.info("Handling reply command")
 
         yield self.generate_reaction("🧠", message)
