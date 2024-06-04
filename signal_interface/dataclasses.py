@@ -87,6 +87,7 @@ class QuoteMessage(BaseModel):
     authorUuid: str
     text: str
     attachments: List[QuoteAttachment] = Field(default_factory=list)
+    mentions: List[Mention] = Field(default_factory=list)
 
 
 class DataMessage(BaseModel):
