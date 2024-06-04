@@ -81,6 +81,13 @@ class ReplyCommandHandler(CommandHandler):
                 images,
             )
 
+            # The LLM may prefix its messages, so remove them if needed.
+            if response.lower().startswith("the razzler"):
+                response = response[11:]
+            if response.startswith(":"):
+                response = response[1:]
+            response = response.strip()
+
         except Exception as e:
             logger.error(f"Error creating message: {e}")
             yield self.generate_reaction("❌", message)

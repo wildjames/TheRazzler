@@ -56,7 +56,7 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
             try:
                 msg = IncomingMessage(**json.loads(record))
 
-                if msg.envelope.receiptMessage:
+                if not msg.envelope.dataMessage:
                     # Don't count receipt messages
                     continue
 
@@ -71,13 +71,10 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
                 try:
                     OutgoingMessage(**json.loads(record))
 
-                    this_timestamp = msg.envelope.timestamp
-                    if abs(this_timestamp - last_msg_time) < time_window:
-                        logger.debug(
-                            f"The razzler last replied at {this_timestamp}."
-                            " Stopping counting messages"
-                        )
-                        break
+                    logger.debug(
+                        f"Found a razzler reply. Stopping counting messages"
+                    )
+                    break
 
                 except pydantic.ValidationError:
                     # If we get here, it's an OutgoingReaction

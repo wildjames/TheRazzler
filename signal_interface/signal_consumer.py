@@ -273,7 +273,9 @@ class SignalConsumer:
             # Parse mentions in the message body, into contact names.
             if data.mentions:
                 logger.info("Message has mentions.")
-                for mention in data.mentions:
+                # Since we replace substrings, we need to loop backwards
+                # Or we get out of sync
+                for mention in data.mentions[::-1]:
                     contact = self.phonebook.get_contact(
                         mention.name, mention.number, mention.uuid
                     )
@@ -282,8 +284,11 @@ class SignalConsumer:
                     if contact:
                         name = contact.name
 
-                    data.message = data.message.replace(
-                        MENTION_CHAR, f"@{name}"
+                    # Inject the name at the position of mention.start
+                    data.message = (
+                        data.message[: mention.start]
+                        + f"@{name}"
+                        + data.message[mention.start + mention.length :]
                     )
 
             # Parse out any quotes in the message body
