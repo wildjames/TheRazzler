@@ -137,7 +137,9 @@ class CommandHandler(ABC):
 
                             if len(messages):
                                 logger.info(f"Oldest message: {messages[0]}")
-                                logger.info(f"Most recent message: {messages[-1]}")
+                                logger.info(
+                                    f"Most recent message: {messages[-1]}"
+                                )
                             else:
                                 logger.info("No messages in history")
 

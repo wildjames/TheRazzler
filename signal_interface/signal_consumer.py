@@ -11,7 +11,7 @@ server.
 import asyncio
 import json
 from logging import getLogger
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 import aio_pika
 import redis
@@ -24,6 +24,7 @@ from .dataclasses import (
     Attachment,
     DataMessage,
     IncomingMessage,
+    Mention,
     QuoteAttachment,
     QuoteMessage,
     SignalCredentials,
@@ -229,6 +230,25 @@ class SignalConsumer:
             msg_cache, 0, self.signal_info.message_history_length
         )
 
+    def parse_mentions(self, message: str, mentions: List[Mention]):
+
+        for mention in mentions[::-1]:
+            contact = self.phonebook.get_contact(
+                mention.name, mention.number, mention.uuid
+            )
+
+            name = "unknown_contact"
+            if contact:
+                name = contact.name
+
+            message = (
+                message[: mention.start]
+                + f"@{name}"
+                + message[mention.start + mention.length :]
+            )
+
+        return message
+
     async def _process_incoming(self, message: Dict[str, Any]):
         """Process incoming messages."""
         logger.debug("Processing incoming message")
@@ -271,30 +291,16 @@ class SignalConsumer:
                 await self.download_attachments(data)
 
             # Parse mentions in the message body, into contact names.
-            if data.mentions:
-                logger.info("Message has mentions.")
-                # Since we replace substrings, we need to loop backwards
-                # Or we get out of sync
-                for mention in data.mentions[::-1]:
-                    contact = self.phonebook.get_contact(
-                        mention.name, mention.number, mention.uuid
-                    )
-
-                    name = "unknown_contact"
-                    if contact:
-                        name = contact.name
-
-                    # Inject the name at the position of mention.start
-                    data.message = (
-                        data.message[: mention.start]
-                        + f"@{name}"
-                        + data.message[mention.start + mention.length :]
-                    )
+            data.message = self.parse_mentions(data.message, data.mentions)
 
             # Parse out any quotes in the message body
             if data.quote:
                 logger.info("Message has a quote.")
                 quote = data.quote
+
+                # parse any mentions in the quote
+                quote.text = self.parse_mentions(quote.text, quote.mentions)
+
                 data.message = (
                     "[Quote]\nIn reply to"
                     f' {quote.author}:\n"{quote.text}"\n[End'

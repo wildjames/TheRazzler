@@ -269,34 +269,6 @@ class RazzlerBrain:
         so if a message *could* be handled by multiple commands, it will be.
         """
 
-        # TODO: This is not ideal. As-is, I need to have logic in some commands
-        # to check if a message that they *could* theoretically handle has been
-        # handled by another command. However, I still any want them to run.
-        #
-        # For example, take the case where a message is replying to a message
-        # that has an image in it, while they also address the razzler. We want
-        # to trigger the "see_image" command to parse the image content, but we
-        # ALSO want to trigger the response.
-        #
-        # However, take the case where they post an image, and request some
-        # reply from the razzler. We want to use the image-embedded reply
-        # generator, since that sees the image directly, but we DONT want the
-        # plain text reply command to run, since then they'd get two replies
-        # where only one knows what the image is, and we only wanted one anyway
-        #
-        # Can we make this more efficient? I'm not sure. I think we need to
-        # keep the current structure, but we can make it more efficient by
-        # having the commands return a flag that says "I handled this message"?
-        # Trouble is, what if we want only *some* commands to be blocked?
-        # Could build a list of commands that handled the message, and
-        # have commands cross-reference that list before running?
-        # That feels clunky too. I want them to be as modular as possible,
-        # which ideally means they don't need to know about each other.
-        # Perhaps the Razzler command registry can hold that information?
-        # This method is called for each incoming message.
-        # Here, we can assume the connection is open and the channel is
-        # available, since it is called from the consume_messages method.
-
         logger.info("Processing incoming message...")
         async with message.process():
 
