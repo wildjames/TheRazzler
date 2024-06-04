@@ -61,11 +61,13 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
                     continue
 
                 this_timestamp = msg.envelope.timestamp
-                if abs(this_timestamp - last_msg_time) < time_window:
-                    count += 1
-                    logger.debug(
-                        f"Counting message: {msg.envelope.dataMessage.message}"
-                    )
+                if abs(this_timestamp - last_msg_time) > time_window:
+                    break
+
+                count += 1
+                logger.debug(
+                    f"Counting message: {msg.envelope.dataMessage.message}"
+                )
             except pydantic.ValidationError:
                 # If the window contains a razzler message, stop counting
                 try:
