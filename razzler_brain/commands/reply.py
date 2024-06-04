@@ -1,3 +1,4 @@
+from datetime import datetime
 from logging import getLogger
 from typing import Iterator, Optional, Union
 
@@ -15,6 +16,42 @@ logger = getLogger(__name__)
 class ReplyCommandHandler(CommandHandler):
     # TODO: This should be a command argument
     reply_filename = "reply.txt"
+
+    # We can only reply so many times in a row
+    time_window = 60 * 10
+    max_replies = 10
+
+    def razzle_history_key(self, recipient: str) -> str:
+        return f"razzle_history:{recipient}"
+
+    def count_razzler_messages_in_window(
+        self,
+        message: IncomingMessage,
+        time_window: int,
+        redis_connection: redis.Redis,
+    ):
+
+        # Get the message history list from redis
+        cache_key = self.razzle_history_key(message.get_recipient())
+        history = redis_connection.lrange(cache_key, 0, -1)
+        # This is a list of datetime strings.
+        # Count how many there are in the last time_window seconds
+        now = message.envelope.timestamp / 1000
+        now = datetime.fromtimestamp(now)
+
+        count = 0
+        for timestamp in history:
+            timestamp = datetime.fromisoformat(timestamp.decode())
+            if (now - timestamp).total_seconds() < time_window:
+                count += 1
+
+        logger.info(
+            f"Counted {count} messages in the last {time_window} seconds (max"
+            f" {self.max_replies})"
+        )
+
+        # If we have too many messages in the window, return false
+        return count
 
     def can_handle(
         self,
@@ -50,11 +87,12 @@ class ReplyCommandHandler(CommandHandler):
 
         yield self.generate_reaction("🧠", message)
 
-        # There are three cases.
-        # 1. The message contains no images
-        # 2. The message contains an image
-        # 3. The message contains a quote with an image
-        # Note that 2. and 3. are not mutually exclusive - we can have both.
+        recent_razzing = self.count_razzler_messages_in_window(
+            message, self.time_window, redis_connection
+        )
+        if recent_razzing >= self.max_replies:
+            yield self.generate_reaction("🤫", message)
+            return
 
         images = []
 
@@ -97,5 +135,10 @@ class ReplyCommandHandler(CommandHandler):
             recipient=self.get_recipient(message), message=response
         )
         yield response_message
+
+        # Add the current time to the razzle history list
+        cache_key = self.razzle_history_key(message.get_recipient())
+        now = datetime.now()
+        redis_connection.lpush(cache_key, now.isoformat())
 
         yield self.generate_reaction("✅", message)

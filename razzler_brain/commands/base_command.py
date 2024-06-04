@@ -44,7 +44,7 @@ class CommandHandler(ABC):
 
         return encoded_string
 
-    def get_chat_history(
+    def get_chat_history_for_llm(
         self,
         config: RazzlerBrainConfig,
         cache_key: str,
@@ -190,7 +190,7 @@ class CommandHandler(ABC):
         messages = []
 
         cache_key = f"message_history:{message.get_recipient()}"
-        history = self.get_chat_history(
+        history = self.get_chat_history_for_llm(
             config, cache_key, redis_client, gpt, model
         )
 
