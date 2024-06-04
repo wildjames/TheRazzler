@@ -135,8 +135,11 @@ class CommandHandler(ABC):
                             # reverse it
                             messages.reverse()
 
-                            logger.info(f"Oldest message: {messages[0]}")
-                            logger.info(f"Most recent message: {messages[-1]}")
+                            if len(messages):
+                                logger.info(f"Oldest message: {messages[0]}")
+                                logger.info(f"Most recent message: {messages[-1]}")
+                            else:
+                                logger.info("No messages in history")
 
                             return messages
 
@@ -151,8 +154,11 @@ class CommandHandler(ABC):
 
         messages.reverse()
 
-        logger.info(f"Oldest message: {messages[0]}")
-        logger.info(f"Most recent message: {messages[-1]}")
+        if len(messages):
+            logger.info(f"Oldest message: {messages[0]}")
+            logger.info(f"Most recent message: {messages[-1]}")
+        else:
+            logger.info("No messages in history")
         return messages
 
     def generate_chat_message(
