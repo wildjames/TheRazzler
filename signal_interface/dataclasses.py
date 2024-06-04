@@ -61,7 +61,7 @@ class Attachment(BaseModel):
     # MIME type of the attachment
     # e.g. "image/jpeg", "video/mp4", "audio/aac", ...
     contentType: str
-    filename: Optional[str]
+    filename: Optional[str] = None
     size: Optional[int] = None
     width: Optional[int] = None
     height: Optional[int] = None
@@ -74,7 +74,7 @@ class Attachment(BaseModel):
 
 class QuoteAttachment(BaseModel):
     contentType: str
-    filename: str
+    filename: Optional[str] = None
     thumbnail: Attachment
     # This is the data extracted from the attachment thumbnail
     data: Optional[str] = None
