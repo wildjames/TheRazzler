@@ -25,10 +25,10 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
     """
 
     minumum_frequency = 5
-    maximum_frequency = 30
+    maximum_frequency = 100
 
     # Maximum time to scan, in seconds.
-    time_window = 60 * 60 * 6
+    time_window = 60 * 60 * 3
 
     def can_handle(
         self,
