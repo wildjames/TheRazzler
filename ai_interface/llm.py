@@ -8,7 +8,7 @@ import yaml
 from openai.resources.chat.completions import ChatCompletionMessageParam
 from openai.types.chat.chat_completion import ChatCompletion, Choice
 
-from utils.storage import load_file, file_lock
+from utils.local_storage import load_file, file_lock
 
 from .dataclasses import OpenAIConfig
 

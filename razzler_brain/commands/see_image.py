@@ -5,7 +5,7 @@ from typing import Iterator, List, Optional, Tuple, Union
 import redis
 
 from ai_interface.llm import GPTInterface
-from utils.storage import load_file
+from utils.local_storage import load_file
 
 from ..dataclasses import RazzlerBrainConfig
 from .base_command import (

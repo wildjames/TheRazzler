@@ -18,7 +18,7 @@ from signal_interface.dataclasses import (
     OutgoingReaction,
     QuoteMessage,
 )
-from utils.storage import load_file, load_phonebook
+from utils.local_storage import load_file, load_phonebook
 
 from ..dataclasses import RazzlerBrainConfig
 

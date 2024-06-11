@@ -13,7 +13,7 @@ from signal_interface.dataclasses import (
     IncomingMessage,
     OutgoingReaction,
 )
-from utils.storage import RedisCredentials, load_file, file_lock
+from utils.local_storage import RedisCredentials, load_file, file_lock
 
 from .commands.base_command import CommandHandler
 from .commands.registry import COMMAND_REGISTRY, COMMAND_PROCESSING_ORDER

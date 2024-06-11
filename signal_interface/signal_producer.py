@@ -6,7 +6,7 @@ from typing import List, Optional
 import aio_pika
 import redis
 
-from utils.storage import RedisCredentials
+from utils.local_storage import RedisCredentials
 
 from .dataclasses import OutgoingMessage, OutgoingReaction, SignalCredentials
 from .signal_api import SignalAPI

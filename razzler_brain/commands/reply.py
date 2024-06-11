@@ -18,8 +18,8 @@ class ReplyCommandHandler(CommandHandler):
     reply_filename = "reply.txt"
 
     # We can only reply so many times in a row
-    time_window = 60 * 10
-    max_replies = 10
+    time_window = 60 * 1
+    max_replies = 100
 
     def razzle_history_key(self, recipient: str) -> str:
         return f"razzle_history:{recipient}"
@@ -91,6 +91,19 @@ class ReplyCommandHandler(CommandHandler):
             message, self.time_window, redis_connection
         )
         if recent_razzing >= self.max_replies:
+            logger.info(
+                f"Too many razzles in the last {self.time_window} seconds."
+                f" I've already been summoned {recent_razzing} times."
+            )
+            yield OutgoingMessage(
+                recipient=self.get_recipient(message),
+                message=(
+                    "I've been summoned"
+                    f" {recent_razzing} times in the last"
+                    f" {self.time_window/60} minutes, wait a while and"
+                    " try again."
+                ),
+            )
             yield self.generate_reaction("🤫", message)
             return
 

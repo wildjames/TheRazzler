@@ -10,7 +10,7 @@ from razzler_brain.razzler import RazzlerBrain
 from signal_interface.signal_consumer import SignalConsumer
 from signal_interface.signal_producer import SignalProducer
 from utils.configuration import Config
-from utils.storage import load_file
+from utils.local_storage import load_file
 
 
 # Load the configuration from the data directory
