@@ -4,8 +4,6 @@ from contextlib import contextmanager
 from logging import getLogger
 from typing import IO, Generator, Optional
 
-from pydantic import BaseModel
-
 from .phonebook import PhoneBook
 
 logger = getLogger(__name__)
@@ -105,10 +103,3 @@ def load_phonebook() -> PhoneBook:
         return PhoneBook()
     except json.JSONDecodeError:
         return PhoneBook()
-
-
-class RedisCredentials(BaseModel):
-    host: str = "localhost"
-    port: int = 6379
-    db: int = 0
-    password: Optional[str] = None

@@ -11,7 +11,8 @@ import aio_pika
 import redis
 
 from signal_interface.dataclasses import IncomingMessage, OutgoingReaction
-from utils.local_storage import RedisCredentials, file_lock, load_file
+from utils.local_storage import file_lock, load_file
+from utils.redis import RedisCredentials
 from utils.mongo import MongoConfig
 
 from .commands.base_command import CommandHandler

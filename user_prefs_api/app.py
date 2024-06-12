@@ -1,10 +1,14 @@
+import logging
+from datetime import datetime, timedelta
+
+import jwt
 import yaml
 from flask import Flask, jsonify, request
 
+from signal_interface.dataclasses import OutgoingMessage
 from utils.configuration import Config
-from utils.local_storage import load_file
+from utils.local_storage import load_file, load_phonebook
 from utils.mongo import (
-    MongoConfig,
     UserPreferencesUpdate,
     clear_user_preferences,
     get_mongo_db,
@@ -13,11 +17,16 @@ from utils.mongo import (
     update_user_preferences,
 )
 
-# Load the configuration from the data directory
-config = yaml.safe_load(load_file("config.yaml"))
-config = Config(**config).mongodb
+from .utils import fetch_cached_otp, get_otp, publish_message
 
-db = get_mongo_db(config)
+# Load the configuration from the data directory
+config = Config(**yaml.safe_load(load_file("config.yaml")))
+
+redis_config = config.redis
+
+rabbit_config = config.rabbitmq
+
+db = get_mongo_db(config.mongodb)
 preferences_collection = initialize_preferences_collection(db)
 
 app = Flask(__name__)
@@ -60,5 +69,73 @@ def delete_preferences():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/login/issue_otp", methods=["GET"])
+async def issue_otp():
+    user_id = request.args.get("user_number")
+    if not user_id:
+        return jsonify({"error": "user_number is required"}), 400
+
+    if user_id.startswith("0"):
+        user_id = "+44" + user_id[1:]
+
+    phonebook = load_phonebook()
+    app.logger.info(phonebook.contacts)
+    app.logger.info(f"Do we have {user_id}?")
+    contact = phonebook.get_contact(user_id)
+    app.logger.info(contact)
+
+    # Issue an OTP here
+    try:
+        otp = get_otp(user_id, redis_config)
+    except:
+        return jsonify({"error": "User not recognised"}), 404
+
+    # And the OTP needs to be added to the rabbit queue, to be sent to the user
+    msg = OutgoingMessage(
+        recipient=user_id,
+        message=f"Your OTP is: {otp}",
+    )
+    try:
+        # This will be picked up by a producer, and sent to the user
+        await publish_message(msg, rabbit_config)
+    except:
+        return jsonify({"error": "Failed to send OTP"}), 500
+
+    return jsonify({"message": "OTP issued"}), 200
+
+
+@app.route("/login/verify_otp", methods=["GET"])
+def verify_otp():
+    user_id = request.args.get("user_number")
+    otp = request.args.get("otp")
+
+    if not user_id or not otp:
+        return jsonify({"error": "user_number and otp are required"}), 400
+
+    if user_id.startswith("0"):
+        user_id = "+44" + user_id[1:]
+
+    app.logger.info(f"Verifying OTP for {user_id}: user submitted {otp}")
+
+    # Verify the OTP
+    stored_otp = fetch_cached_otp(user_id, redis_config)
+    app.logger.info(f"Stored OTP: {stored_otp}")
+
+    if stored_otp == otp:
+        exp = datetime.now() + timedelta(days=1)
+        payload = {
+            "user_id": user_id,
+            "exp": exp,
+        }
+
+        token = jwt.encode(payload, key=config.general.jwt_secret)
+
+        return jsonify({"token": token}), 200
+
+    else:
+        return jsonify({"error": "Invalid OTP"}), 400
+
+
 if __name__ == "__main__":
+    app.logger.setLevel(logging.INFO)
     app.run(debug=True)

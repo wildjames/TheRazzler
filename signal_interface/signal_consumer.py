@@ -17,7 +17,8 @@ import aio_pika
 import redis
 
 from utils.phonebook import PhoneBook
-from utils.local_storage import RedisCredentials, file_lock, load_phonebook
+from utils.local_storage import file_lock, load_phonebook
+from utils.redis import RedisCredentials
 
 from .dataclasses import (
     Attachment,
