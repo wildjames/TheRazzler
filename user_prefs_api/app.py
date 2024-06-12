@@ -34,11 +34,7 @@ preferences_collection = initialize_preferences_collection(db)
 app = Flask(__name__)
 CORS(
     app,
-    origins=[
-        "localhost",
-        "127.0.0.1",
-        "https://razzler-web.wildjames.com",
-    ],
+    origins="*",
 )
 app.logger.setLevel(logging.INFO)
 
