@@ -39,8 +39,6 @@ class CommandHandler(ABC):
 
     def __init__(self, mongo_config: MongoConfig):
         self.mongo_config = mongo_config
-        db = get_mongo_db(self.mongo_config)
-        self.mongo_collection = initialize_preferences_collection(db)
 
     @staticmethod
     def image_to_base64(file_path):
@@ -179,6 +177,7 @@ class CommandHandler(ABC):
         self,
         config: RazzlerBrainConfig,
         message: IncomingMessage,
+        prompt_key: str,
         redis_client: redis.Redis,
         gpt: GPTInterface,
         model: Literal["fast", "quality"],
@@ -190,14 +189,10 @@ class CommandHandler(ABC):
 
         Model can be either "fast" or "quality"."""
 
-        personality_prompt = load_file("personality.txt")
-        if not personality_prompt:
-            raise ValueError("Personality prompt not found")
-
         # Fetch the reply prompt
-        reply_prompt = load_file(self.reply_filename)
-        if not reply_prompt:
-            raise ValueError("reply prompt not found")
+        user_prefs = self.get_user_prefs(message.get_sender_id())
+        reply_prompt = getattr(user_prefs, prompt_key)
+        personality_prompt = user_prefs.personality
 
         messages = []
 
@@ -298,7 +293,9 @@ class CommandHandler(ABC):
 
     def get_user_prefs(self, user_id: str) -> UserPreferences:
         """Return an object containing this users' preferences"""
-        return get_user_preferences(self.mongo_collection, user_id)
+        db = get_mongo_db(self.mongo_config)
+        mongo_collection = initialize_preferences_collection(db)
+        return get_user_preferences(mongo_collection, user_id)
 
     @abstractmethod
     def can_handle(

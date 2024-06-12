@@ -5,7 +5,6 @@ from typing import Iterator, List, Optional, Tuple, Union
 import redis
 
 from ai_interface.llm import GPTInterface
-from utils.local_storage import load_file
 
 from ..dataclasses import RazzlerBrainConfig
 from .base_command import (
@@ -25,9 +24,6 @@ class SeeImageCommandHandler(CommandHandler):
 
     Injected image descriptions are enclosed in [[[ ]]] brackets.
     """
-
-    # TODO: This should be a command argument
-    reply_filename = "reply.txt"
 
     def can_handle(
         self,
@@ -97,9 +93,10 @@ class SeeImageCommandHandler(CommandHandler):
         message: IncomingMessage,
     ):
         gpt = GPTInterface()
-        describe_image_prompt = load_file(self.reply_filename)
-        if not describe_image_prompt:
-            describe_image_prompt = "Describe the image in a few words."
+
+        # Get the user preference for image descriptions
+        user_prefs = self.get_user_prefs(message.get_sender_id())
+        describe_image_prompt = user_prefs.describe_image
         logger.info(f"Describing image using prompt: {describe_image_prompt}")
 
         gpt_messages = [

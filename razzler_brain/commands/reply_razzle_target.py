@@ -11,8 +11,7 @@ logger = getLogger(__name__)
 
 
 class ReplyRazzleTargetCommandHandler(ReplyCommandHandler):
-    # TODO: This should be a command argument
-    reply_filename = "reply_razzle_target.txt"
+    prompt_key = "reply_razzle_target"
 
     def can_handle(
         self,

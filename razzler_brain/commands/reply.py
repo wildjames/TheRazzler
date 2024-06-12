@@ -14,8 +14,7 @@ logger = getLogger(__name__)
 
 
 class ReplyCommandHandler(CommandHandler):
-    # TODO: This should be a command argument
-    reply_filename = "reply.txt"
+    prompt_key = "reply"
 
     # We can only reply so many times in a row
     time_window = 60 * 1
@@ -126,6 +125,7 @@ class ReplyCommandHandler(CommandHandler):
             response = self.generate_chat_message(
                 config,
                 message,
+                self.prompt_key,
                 redis_connection,
                 gpt,
                 "quality",
