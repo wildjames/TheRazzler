@@ -190,9 +190,14 @@ class CommandHandler(ABC):
         Model can be either "fast" or "quality"."""
 
         # Fetch the reply prompt
-        user_prefs = self.get_user_prefs(message.get_sender_id())
+        sid = message.get_sender_id()
+        logger.info(f"Fetching user preferences for {sid}")
+        user_prefs = self.get_user_prefs(sid)
         reply_prompt = getattr(user_prefs, prompt_key)
         personality_prompt = user_prefs.personality
+
+        logger.info(f"Reply prompt: {reply_prompt}")
+        logger.info(f"Personality prompt: {personality_prompt}")
 
         messages = []
 
