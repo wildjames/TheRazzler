@@ -32,7 +32,7 @@ db = get_mongo_db(config.mongodb)
 preferences_collection = initialize_preferences_collection(db)
 
 app = Flask(__name__)
-CORS(app, origins="*")
+CORS(app, origins=["localhost", "wildjames.com", "127.0.0.1", "192.168.0.111"])
 app.logger.setLevel(logging.INFO)
 
 

@@ -25,6 +25,7 @@ def load_default_value(key: str) -> str:
     data = load_file(DEFAULTS[key])
     if not data:
         logger.warn(f"Could not load default value for {key}")
+    data = data.strip()
     return data
 
 
