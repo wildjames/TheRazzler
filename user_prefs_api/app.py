@@ -5,6 +5,7 @@ from functools import wraps
 import jwt
 import yaml
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 from signal_interface.dataclasses import OutgoingMessage
 from utils.configuration import Config
@@ -31,6 +32,7 @@ db = get_mongo_db(config.mongodb)
 preferences_collection = initialize_preferences_collection(db)
 
 app = Flask(__name__)
+CORS(app, origins="*")
 app.logger.setLevel(logging.INFO)
 
 
