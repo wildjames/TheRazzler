@@ -239,6 +239,12 @@ class CommandHandler(ABC):
 
         messages.append(gpt.create_chat_message("system", personality_prompt))
         messages.append(gpt.create_chat_message("system", reply_prompt))
+        messages.append(
+            gpt.create_chat_message(
+                "system",
+                'You must respond in the exact format: "The Razzler: <message>"'
+            )
+        )
 
         logger.info(f"Creating chat completion with {len(messages)} messages")
 
