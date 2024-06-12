@@ -39,8 +39,9 @@ def fetch_cached_otp(user_phone_number: str, redis_config: RedisCredentials):
     client = get_redis_client(redis_config)
     stored_otp = client.get(f"razzler_otp:{contact.uuid}")
 
-    # Delete it from the cache, now it's used
-    client.delete(f"razzler_otp:{contact.uuid}")
+    if stored_otp:
+        # Delete it from the cache, now it's used
+        client.delete(f"razzler_otp:{contact.uuid}")
 
     return stored_otp
 
