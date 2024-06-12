@@ -13,6 +13,7 @@ class GeneralConfig(BaseModel):
     num_brains: int = 1
     debug: bool = False
     jwt_secret: str
+    jwt_expiry_days: float = 7.0
 
 
 class Config(BaseModel):

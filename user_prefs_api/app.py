@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+from functools import wraps
 
 import jwt
 import yaml
@@ -32,9 +33,61 @@ preferences_collection = initialize_preferences_collection(db)
 app = Flask(__name__)
 
 
+def validate_jwt(token):
+    try:
+        # Decode the token using the same secret key used for encoding
+        payload = jwt.decode(
+            token, config.general.jwt_secret, algorithms=["HS256"]
+        )
+        return payload
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token has expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+
+def jwt_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Extract token from the Authorization header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Authorization header is missing"}), 401
+
+        parts = auth_header.split()
+        if parts[0].lower() != "bearer":
+            return (
+                jsonify(
+                    {"error": "Authorization header must start with Bearer"}
+                ),
+                401,
+            )
+        elif len(parts) == 1:
+            return jsonify({"error": "Token not found"}), 401
+        elif len(parts) > 2:
+            return (
+                jsonify(
+                    {"error": "Authorization header must be Bearer token"}
+                ),
+                401,
+            )
+
+        token = parts[1]
+        result = validate_jwt(token)
+        if isinstance(result, tuple):  # Error tuple returned
+            return result
+
+        # Set the user_id in the flask global g, which is accessible to the route
+        request.user_id = result["user_id"]
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
 @app.route("/preferences", methods=["GET"])
+@jwt_required
 def get_preferences():
-    user_id = request.args.get("user_id")
+    user_id = request.user_id
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
     try:
@@ -45,8 +98,9 @@ def get_preferences():
 
 
 @app.route("/preferences", methods=["PUT"])
+@jwt_required
 def update_preferences():
-    user_id = request.args.get("user_id")
+    user_id = request.user_id
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
     try:
@@ -58,8 +112,9 @@ def update_preferences():
 
 
 @app.route("/preferences", methods=["DELETE"])
+@jwt_required
 def delete_preferences():
-    user_id = request.args.get("user_id")
+    user_id = request.user_id
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
     try:
@@ -122,7 +177,10 @@ def verify_otp():
     app.logger.info(f"Stored OTP: {stored_otp}")
 
     if stored_otp == otp:
-        exp = datetime.now() + timedelta(days=1)
+        # Get the corresponding UUID, and use that rather than a phone number
+        user_id = load_phonebook().get_contact(user_id).uuid
+
+        exp = datetime.now() + timedelta(days=config.general.jwt_expiry_days)
         payload = {
             "user_id": user_id,
             "exp": exp,
