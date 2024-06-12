@@ -31,6 +31,12 @@ db = get_mongo_db(config.mongodb)
 preferences_collection = initialize_preferences_collection(db)
 
 app = Flask(__name__)
+app.logger.setLevel(logging.INFO)
+
+
+@app.route("/", methods=["GET"])
+def health_check():
+    return "OK", 200
 
 
 def validate_jwt(token):
@@ -195,5 +201,4 @@ def verify_otp():
 
 
 if __name__ == "__main__":
-    app.logger.setLevel(logging.INFO)
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)
