@@ -10,9 +10,7 @@ from utils.redis import RedisCredentials, get_redis_client
 logger = getLogger(__name__)
 
 
-def get_otp(
-    user_phone_number: str, redis_config: RedisCredentials, expiry=300
-):
+def get_otp(user_phone_number: str, redis_config: RedisCredentials, expiry=60):
     phonebook = load_phonebook()
 
     contact = phonebook.get_contact(user_phone_number)
