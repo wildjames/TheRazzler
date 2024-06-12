@@ -2,7 +2,9 @@ from pydantic import BaseModel
 
 from razzler_brain.razzler import RazzlerBrainConfig
 from signal_interface.dataclasses import SignalCredentials
-from utils.local_storage import RedisCredentials
+
+from .local_storage import RedisCredentials
+from .mongo import MongoConfig
 
 
 class GeneralConfig(BaseModel):
@@ -18,3 +20,4 @@ class Config(BaseModel):
     rabbitmq: dict
     razzler_brain: RazzlerBrainConfig
     general: GeneralConfig
+    mongodb: MongoConfig

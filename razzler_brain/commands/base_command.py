@@ -19,6 +19,13 @@ from signal_interface.dataclasses import (
     QuoteMessage,
 )
 from utils.local_storage import load_file, load_phonebook
+from utils.mongo import (
+    MongoConfig,
+    UserPreferences,
+    get_mongo_db,
+    get_user_preferences,
+    initialize_preferences_collection,
+)
 
 from ..dataclasses import RazzlerBrainConfig
 
@@ -29,6 +36,11 @@ class CommandHandler(ABC):
     # TODO: This is currently quite specialised to work specifically with
     # signal messages. It would be nice to make this more generic, so that it
     # can be used with other messaging services.
+
+    def __init__(self, mongo_config: MongoConfig):
+        self.mongo_config = mongo_config
+        db = get_mongo_db(self.mongo_config)
+        self.mongo_collection = initialize_preferences_collection(db)
 
     @staticmethod
     def image_to_base64(file_path):
@@ -283,6 +295,10 @@ class CommandHandler(ABC):
                 return phonebook.get_group_internal_id(gid)
 
         return message.envelope.source
+
+    def get_user_prefs(self, user_id: str) -> UserPreferences:
+        """Return an object containing this users' preferences"""
+        return get_user_preferences(self.mongo_collection, user_id)
 
     @abstractmethod
     def can_handle(

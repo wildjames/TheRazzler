@@ -9,14 +9,13 @@ from typing import List
 
 import aio_pika
 import redis
-from signal_interface.dataclasses import (
-    IncomingMessage,
-    OutgoingReaction,
-)
-from utils.local_storage import RedisCredentials, load_file, file_lock
+
+from signal_interface.dataclasses import IncomingMessage, OutgoingReaction
+from utils.local_storage import RedisCredentials, file_lock, load_file
+from utils.mongo import MongoConfig
 
 from .commands.base_command import CommandHandler
-from .commands.registry import COMMAND_REGISTRY, COMMAND_PROCESSING_ORDER
+from .commands.registry import COMMAND_PROCESSING_ORDER, COMMAND_REGISTRY
 from .dataclasses import RazzlerBrainConfig
 
 logger = getLogger(__name__)
@@ -30,6 +29,7 @@ class RazzlerBrain:
         self,
         redis_config: RedisCredentials,
         rabbit_config: dict,
+        mongo_config: MongoConfig,
         brain_config: RazzlerBrainConfig,
     ):
         self.brain_config = brain_config
@@ -53,7 +53,7 @@ class RazzlerBrain:
                 # If they have init arguments, they should be passed here.
                 # TODO: Alter the config file to take commands with arguments
                 # e.g. prompt filenames
-                self.commands.append(COMMAND_REGISTRY[command]())
+                self.commands.append(COMMAND_REGISTRY[command](mongo_config))
 
         # Check for any whitelisted groups
         whitelisted_groups = load_file(self.whitelist_file)

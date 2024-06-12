@@ -74,7 +74,7 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
                     OutgoingMessage(**json.loads(record))
 
                     logger.debug(
-                        f"Found a razzler reply. Stopping counting messages"
+                        "Found a razzler reply. Stopping counting messages"
                     )
                     break
 

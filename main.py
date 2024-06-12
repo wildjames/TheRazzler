@@ -34,19 +34,32 @@ def main(config: Config):
 
     # Initialize producers
     producers: List[SignalProducer] = [
-        SignalProducer(config.signal, config.rabbitmq, config.redis)
+        SignalProducer(
+            config.signal,
+            config.rabbitmq,
+            config.redis,
+        )
         for _ in range(config.general.num_producers)
     ]
 
     # Initialize consumers
     consumers: List[SignalConsumer] = [
-        SignalConsumer(config.signal, config.redis, config.rabbitmq)
+        SignalConsumer(
+            config.signal,
+            config.redis,
+            config.rabbitmq,
+        )
         for _ in range(config.general.num_consumers)
     ]
 
     # Initialize brains
     brains: List[RazzlerBrain] = [
-        RazzlerBrain(config.redis, config.rabbitmq, config.razzler_brain)
+        RazzlerBrain(
+            config.redis,
+            config.rabbitmq,
+            config.mongodb,
+            config.razzler_brain,
+        )
         for _ in range(config.general.num_brains)
     ]
 

@@ -132,6 +132,10 @@ class IncomingMessage(BaseModel):
 
         return self.envelope.source
 
+    def get_sender_id(self) -> str:
+        """Get the UUID of the sender of the message."""
+        return self.envelope.sourceUuid
+
 
 class OutgoingMessage(BaseModel):
     recipient: str

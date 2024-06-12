@@ -4,7 +4,6 @@ from typing import Iterator, Optional, Union
 import redis
 
 from ai_interface.llm import GPTInterface
-from utils.local_storage import load_file
 
 from ..dataclasses import RazzlerBrainConfig
 from .base_command import (
@@ -54,15 +53,8 @@ class CreateImageCommandHandler(CommandHandler):
 
             # If the user didn't give a prompt, use a default one
             if not prompt:
-                # TODO: Make this a command argument
-                prompt = load_file("dream_prompt.txt")
-
-            # And if that's not available, use a fallback default one
-            if not prompt:
-                prompt = (
-                    "A dreaming robot screaming into the dark void, as it"
-                    " stares back at them."
-                )
+                user_prefs = self.get_user_prefs(message.get_sender_id())
+                prompt = user_prefs.dream_prompt
 
             prompt = prompt.strip()
             created_images = gpt.generate_image_response(prompt)
@@ -80,3 +72,4 @@ class CreateImageCommandHandler(CommandHandler):
         except Exception as e:
             logger.error(f"Error creating image: {e}")
             self.generate_reaction("❌", message)
+            raise e
