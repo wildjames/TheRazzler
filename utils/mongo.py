@@ -18,6 +18,7 @@ DEFAULTS = {
     "insult": "insult.txt",
     "dream_prompt": "dream_prompt.txt",
     "describe_image": "describe_image.txt",
+    "react_when_active_chat": "react_when_active_chat.txt",
 }
 
 
@@ -37,6 +38,7 @@ class UserPreferences(BaseModel):
     insult: Optional[str] = None
     dream_prompt: Optional[str] = None
     describe_image: Optional[str] = None
+    react_when_active_chat: Optional[str] = None
 
     @model_validator(mode="after")
     @classmethod

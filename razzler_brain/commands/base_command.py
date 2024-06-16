@@ -67,16 +67,22 @@ class CommandHandler(ABC):
 
         The chat history is returned as a list of dictionaries, where each
         dictionary contains the following keys:
-        - sender: The name of the sender
+        - role: This will always be "user" if it's a person, or "system" if
+            it's the Razzler
         - content: The content of the message
 
-        Gathers the chat history until the token limit is reached.
+        Gathers the chat history until the token limit is reached. This
+        requires knowledge of what model is being used, since they encode
+        tokens differently.
         """
 
         # Get the message history list from redis
         history = redis_connection.lrange(cache_key, 0, -1)
 
-        logger.info(f"Fetched {len(history)} messages from cache")
+        logger.info(
+            f"Fetched {len(history)} messages from cache under key {cache_key}"
+        )
+        logger.info(f"History: {history}")
 
         messages = []
         num_tokens = 0
@@ -94,6 +100,7 @@ class CommandHandler(ABC):
 
         # Parse the messages into something the AI can understand
         for msg_str in history:
+            logger.info(f"Loading message: {msg_str}")
             msg_dict = json.loads(msg_str)
             # Parse the message into the appropriate type
             msg_models = [IncomingMessage, OutgoingMessage, OutgoingReaction]
@@ -173,6 +180,12 @@ class CommandHandler(ABC):
             logger.info("No messages in history")
         return messages
 
+    def razzle_history_key(self, recipient: str) -> str:
+        return f"razzle_history:{recipient}"
+
+    def message_history_key(self, recipient: str) -> str:
+        return f"message_history:{recipient}"
+
     def generate_chat_message(
         self,
         config: RazzlerBrainConfig,
@@ -201,7 +214,7 @@ class CommandHandler(ABC):
 
         messages = []
 
-        cache_key = f"message_history:{message.get_recipient()}"
+        cache_key = self.message_history_key(message.get_recipient())
         history = self.get_chat_history_for_llm(
             config, cache_key, redis_client, gpt, model
         )
@@ -242,7 +255,8 @@ class CommandHandler(ABC):
         messages.append(
             gpt.create_chat_message(
                 "system",
-                'You must respond in the exact format: "The Razzler: <message>"'
+                'You must respond in the exact format: "The Razzler:'
+                ' <message>"',
             )
         )
 
@@ -251,6 +265,8 @@ class CommandHandler(ABC):
         response = gpt.generate_chat_completion(model, messages)
         if response.lower().startswith("razzler:"):
             response = response[8:]
+        if response.lower().startswith("the razzler:"):
+            response = response[12:]
         response = response.strip()
 
         return response

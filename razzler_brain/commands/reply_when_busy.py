@@ -40,7 +40,7 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
         if not isinstance(message, IncomingMessage):
             return False
 
-        cache_key = f"message_history:{message.get_recipient()}"
+        cache_key = self.message_history_key(message.get_recipient())
         history = redis_connection.lrange(cache_key, 0, -1)
 
         if len(history) < 2:

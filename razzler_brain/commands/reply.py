@@ -20,9 +20,6 @@ class ReplyCommandHandler(CommandHandler):
     time_window = 60 * 1
     max_replies = 100
 
-    def razzle_history_key(self, recipient: str) -> str:
-        return f"razzle_history:{recipient}"
-
     def count_razzler_messages_in_window(
         self,
         message: IncomingMessage,

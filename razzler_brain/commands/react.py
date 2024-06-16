@@ -36,5 +36,5 @@ class ReactCommandHandler(CommandHandler):
         logger.info("Handling react command")
         yield self.generate_reaction(
             message=message,
-            reaction="👍",
+            emoji="👍",
         )
