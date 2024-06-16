@@ -30,7 +30,7 @@ class ReactToChatCommandHandler(ReplyCommandHandler):
     prompt_key = "react_when_active_chat"
 
     # TODO: This should be in the user prefs
-    frequency = 0.1
+    frequency = 0.5
 
     def can_handle(
         self,
@@ -75,7 +75,7 @@ class ReactToChatCommandHandler(ReplyCommandHandler):
         )
 
         logger.info(f"Asked the Razzler for an emoji. Response: '{response}'")
-        emoji = adv.extract_emoji(response)
+        emoji = adv.extract_emoji([response])
         if not emoji:
             logger.error("No emoji found in response")
             return
