@@ -30,7 +30,7 @@ class ReactToChatCommandHandler(ReplyCommandHandler):
     prompt_key = "react_when_active_chat"
 
     # TODO: This should be in the user prefs
-    frequency = 0.5
+    frequency = 0.2
 
     def can_handle(
         self,
