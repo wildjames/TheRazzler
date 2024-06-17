@@ -78,11 +78,9 @@ class CommandHandler(ABC):
 
         # Get the message history list from redis
         history = redis_connection.lrange(cache_key, 0, -1)
-
         logger.info(
             f"Fetched {len(history)} messages from cache under key {cache_key}"
         )
-        logger.info(f"History: {history}")
 
         messages = []
         num_tokens = 0
