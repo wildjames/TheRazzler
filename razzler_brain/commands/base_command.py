@@ -98,7 +98,6 @@ class CommandHandler(ABC):
 
         # Parse the messages into something the AI can understand
         for msg_str in history:
-            logger.info(f"Loading message: {msg_str}")
             msg_dict = json.loads(msg_str)
             # Parse the message into the appropriate type
             msg_models = [IncomingMessage, OutgoingMessage, OutgoingReaction]
