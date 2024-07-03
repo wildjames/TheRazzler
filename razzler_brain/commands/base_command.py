@@ -22,9 +22,12 @@ from utils.local_storage import load_file, load_phonebook
 from utils.mongo import (
     MongoConfig,
     UserPreferences,
+    UserState,
     get_mongo_db,
     get_user_preferences,
     initialize_preferences_collection,
+    initialize_user_state_collection,
+    get_user_state,
 )
 
 from ..dataclasses import RazzlerBrainConfig
@@ -320,6 +323,24 @@ class CommandHandler(ABC):
         db = get_mongo_db(self.mongo_config)
         mongo_collection = initialize_preferences_collection(db)
         return get_user_preferences(mongo_collection, user_id)
+
+    def get_user_state(self, user_id: str) -> UserState:
+        """Return the user's state from the database"""
+        db = get_mongo_db(self.mongo_config)
+        mongo_collection = initialize_user_state_collection(db)
+        return get_user_state(mongo_collection, user_id)
+
+
+    def count_user_recent_messages(
+        self,
+        user_id: str,
+    ) -> int:
+        """The user state stores the timestamps of recent razzler responses
+        that cost money. It also stores the number of responses allowed, and
+        the time window to count them in. This function counts the number of
+        responses in the time window and returns the count."""
+
+
 
     @abstractmethod
     def can_handle(

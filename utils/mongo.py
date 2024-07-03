@@ -1,5 +1,7 @@
+from dataclasses import Field
+from datetime import datetime
 from logging import getLogger
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import pymongo
 from pydantic import BaseModel, model_validator
@@ -62,6 +64,35 @@ class UserPreferencesUpdate(BaseModel):
         extra = "forbid"
 
 
+
+class UserState(BaseModel):
+    user_id: str
+    recent_usage: List[datetime] = Field(default_factory=list)
+    cost: float = 0.0
+    rate_limit_window: int = 60
+    rate_limit_count: int = 10
+
+    class Config:
+        extra = "forbid"
+
+
+class UserStateUpdate(BaseModel):
+    recent_usage: Optional[list] = []
+    cost: Optional[float] = None
+
+    class Config:
+        extra = "forbid"
+
+    @model_validator(mode="after")
+    @classmethod
+    def limit_recent_usage_length(
+        cls,
+        v: "UserStateUpdate"
+    ) -> "UserStateUpdate":
+        v.recent_usage = v.recent_usage[-100:]
+        return v
+
+
 class MongoConfig(BaseModel):
     host: str
     port: int
@@ -115,6 +146,42 @@ def update_user_preferences(
 
 
 def clear_user_preferences(collection: Collection, user_id: str):
+    collection.delete_one({"user_id": user_id})
+
+
+# User state collection
+
+
+def initialize_user_state_collection(
+    db: Database,
+) -> Collection:
+    """The user state stores persistent data about the user. e.g. recent usage,
+    cost of the user, etc."""
+    collection = db["user_state"]
+    # Ensure index on user_id for faster query performance
+    logger.info("Creating index on user_id for user_state collection")
+    collection.create_index("user_id", unique=True)
+    logger.info("Index created")
+    return collection
+
+
+def get_user_state(collection: Collection, user_id: str) -> Dict[str, Any]:
+    state = collection.find_one({"user_id": user_id})
+    if state:
+        return UserState(**state)
+
+    # If no state is found, return a new state object
+    return UserState(user_id=user_id)
+
+
+def update_user_state(collection: Collection, user_id: str, update_data: UserStateUpdate):
+    update_data = update_data.model_dump(exclude_none=True)
+    collection.update_one(
+        {"user_id": user_id}, {"$set": update_data}, upsert=True
+    )
+
+
+def clear_user_state(collection: Collection, user_id: str):
     collection.delete_one({"user_id": user_id})
 
 
