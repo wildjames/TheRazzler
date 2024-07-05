@@ -7,3 +7,26 @@
 - Use a proper file lock system
 - Implement per-user rate limiting
 - Set up a dev container environment
+
+
+
+# Developer setup
+
+I use a dev container to keep things easy and consistent.
+
+1. Install VS Code
+2. Install the Dev Container extension
+3. Download and extract the Razzler Data folder: [here](https://nextcloud.wildjames.com/s/qcGffbm2Ygj28bs) (talk to me for the required password)
+4. Press `CTRL+SHIFT+P` on windows, or `CMD+SHIFT+P` on a mac to bring up the command prompt
+5. Type "Dev Containers: Open Folder in Container" and choose the base directory of the repo
+6. Wait for the dev container to start up
+
+## Makefile commands
+
+WIP
+
+- `install`: Should be unnecessary to run manually - install the requirements for the project
+- `dev`: Start a "live" version of the razzler stack, which should load changes as they're made
+- `prod`: Build and run the production razzler image
+- `publish`: Build the docker image for the razzler, and push it to the docker hub
+
