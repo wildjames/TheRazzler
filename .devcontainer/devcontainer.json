@@ -29,7 +29,8 @@
 	"forwardPorts": [8573],
 
 	"mounts": [
-		"source=${localWorkspaceFolder},target=/app,type=bind"
+		"source=${localWorkspaceFolder},target=/app,type=bind",
+		"source=${env:HOME}/.ssh,target=/home/devuser/.ssh,type=bind"
 	],
 
 	"postCreateCommand": "direnv allow"

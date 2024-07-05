@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libc-dev \
     curl \
     git \
+    ssh \
     vim \
     build-essential \
     zsh \
