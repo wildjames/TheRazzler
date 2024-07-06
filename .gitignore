@@ -1,5 +1,6 @@
 data/
-.envrc
+.env*
+supervisord.pid
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
