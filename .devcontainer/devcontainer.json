@@ -30,7 +30,7 @@
 
 	"mounts": [
 		"source=${localWorkspaceFolder},target=/app,type=bind",
-		"source=${env:HOME}/.ssh,target=/home/devuser/.ssh,type=bind"
+		"source=${env:HOME}/.ssh,target=/home/vscode/.ssh,type=bind"
 	],
 
 	"postCreateCommand": "direnv allow"
