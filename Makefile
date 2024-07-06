@@ -1,5 +1,6 @@
 VENV = venv
 PYTHON = $(VENV)/bin/python
+SHELL := /bin/bash
 
 install:
 	@echo "Installing Python dependencies..."
@@ -10,9 +11,23 @@ install:
 dev:
 	@echo "[TODO] Starting development environment..."
 
-prod:
-	@echo "Starting production environment..."
-	@$(VENV)/bin/supervisord -c supervisord.conf
+build:
+	@echo "Building Docker image..."
+	@docker build -t wizenedchimp/therazzler:latest -f Razzler_Dockerfile .
+
+run:
+	@echo "Running Docker container..."
+	@docker run --env-file .env -v $$(pwd)/data:/data -e DATA_DIR=/data -p 8573:8573 wizenedchimp/therazzler:latest
+
+brun:
+	@echo "Building Docker image..."
+	@docker build -t wizenedchimp/therazzler:latest -f Razzler_Dockerfile .
+	@echo
+	@echo
+	@echo "Running Docker container..."
+	@echo
+	@echo
+	@docker run --env-file .env -v $$(pwd)/data:/data -e DATA_DIR=/data -p 8573:8573 wizenedchimp/therazzler:latest
 
 publish:
 	@echo "Building Docker image..."

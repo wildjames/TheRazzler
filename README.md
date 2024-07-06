@@ -21,9 +21,11 @@ I use a dev container to keep things easy and consistent.
 5. Type "Dev Containers: Open Folder in Container" and choose the base directory of the repo
 6. Wait for the dev container to start up
 
+Note that if you're on windows, the user configuration API will not be available on the host windows machine (or any other machine, for that matter) until the port has been [forwarded from WSL to windows](https://superuser.com/questions/1717753/how-to-connect-to-windows-subsystem-for-linux-from-another-machine-within-networ/1830244#1830244).
+
 ## Makefile commands
 
-WIP
+TODO: WIP
 
 - `install`: Should be unnecessary to run manually - install the requirements for the project
 - `dev`: Start a "live" version of the razzler stack, which should load changes as they're made

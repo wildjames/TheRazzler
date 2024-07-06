@@ -22,11 +22,6 @@ RUN pip install --no-cache-dir -r requirements.txt \
 # Copy the rest of the application except the 'data' directory
 COPY . /app
 
-# Remove the 'data' directory from the container
-RUN rm -rf /app/data
-# Also remove the .envrc file
-RUN rm -rf /app/.envrc
-
 # Set up Supervisord configuration
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
