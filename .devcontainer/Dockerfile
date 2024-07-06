@@ -1,5 +1,5 @@
 # Use the official Python 3.11 image from the Docker Hub
-FROM python:3.11.9-slim
+FROM mcr.microsoft.com/vscode/devcontainers/python:3.11
 
 # Install system dependencies and development tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -35,7 +35,8 @@ RUN /bin/zsh /home/devuser/.zshrc
 
 # Install Python dependencies
 COPY requirements.txt /setup/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt \
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
     && pip install gunicorn
 
 # Set up Supervisord configuration

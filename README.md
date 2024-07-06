@@ -25,10 +25,10 @@ Note that if you're on windows, the user configuration API will not be available
 
 ## Makefile commands
 
-TODO: WIP
-
-- `install`: Should be unnecessary to run manually - install the requirements for the project
+- `install`: Install the requirements for local development in a new `venv` space
 - `dev`: Start a "live" version of the razzler stack, which should load changes as they're made
-- `prod`: Build and run the production razzler image
-- `publish`: Build the docker image for the razzler, and push it to the docker hub
-
+- `build`: Build the official docker image
+- `run`: Run the latest version of the docker image
+- `brun`: Build and run the docker image
+- `publish`: Build the docker image with the `latest` tag, and push to docker hub
+- `clean`: Reset the build environment

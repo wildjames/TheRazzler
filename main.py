@@ -2,6 +2,8 @@ import asyncio
 import multiprocessing
 import os
 from logging import INFO, DEBUG, basicConfig, getLogger
+import signal
+import sys
 from typing import List
 
 import yaml
@@ -95,6 +97,15 @@ def main(config: Config):
     for process in producer_processes + consumer_processes + brain_processes:
         process.join()
 
+
+def shutdown_handler(signum, frame):
+    # You would add any necessary cleanup here
+    logger.info("Shutdown signal received. Cleaning up...")
+    # Optionally, send a stop or close signal to your asyncio coroutines
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, shutdown_handler)
+signal.signal(signal.SIGINT, shutdown_handler)
 
 if __name__ == "__main__":
     # Check that the OPENAI_API_KEY environment variable is set
