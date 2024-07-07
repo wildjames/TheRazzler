@@ -38,6 +38,9 @@ class ChangeHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
+        if event.event_type not in ["modified", "created", "moved"]:
+            return
+
         # Check if the event path matches with any of the ignores patterns
         for ignore_dir in self.ignores:
             if fnmatch.fnmatch(event.src_path, ignore_dir):
@@ -52,9 +55,8 @@ class ChangeHandler(FileSystemEventHandler):
                 else:
                     return
 
-        if event.event_type in ["modified", "created", "moved"]:
-            logger.critical(f"Event: {event.event_type} on {event.src_path}")
-            self.restart_process()
+        logger.critical(f"Event: {event.event_type} on {event.src_path}")
+        self.restart_process()
 
     def restart_process(self):
         """Restart the managed process."""
