@@ -1,0 +1,37 @@
+{
+	"name": "Razzler Dev Container",
+	"build": {
+		// Sets the run context to one level up instead of the .devcontainer folder.
+		"context": "..",
+		// Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
+		"dockerfile": "Dockerfile"
+	},
+
+	"customizations": {
+		"settings": {
+			"python.pythonPath": "/usr/local/bin/python",
+			"terminal.integrated.shell.linux": "/bin/bash"
+		},
+
+		"vscode": {
+			"extensions": [
+				"eamodio.gitlens",
+				"ms-python.python",
+				"mhutchie.git-graph",
+				"ms-vscode.makefile-tools",
+				"ms-python.vscode-pylance",
+				"ms-python.black-formatter",
+				"ms-azuretools.vscode-docker",
+				"github.vscode-github-actions"
+			]
+		}
+	},
+
+	"forwardPorts": [8573],
+
+	"mounts": [
+		"source=${env:HOME}/.ssh,target=/home/vscode/.ssh,type=bind"
+	],
+
+	"postCreateCommand": "direnv allow"
+}
