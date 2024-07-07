@@ -16,17 +16,22 @@ class ChangeHandler(FileSystemEventHandler):
     """Handles the file change events by restarting the application."""
 
     def __init__(
-        self, command: List[str], ignores: Optional[List[str]] = None
+        self,
+        command: List[str],
+        ignores: Optional[List[str]] = None,
+        exceptions: Optional[List[str]] = None,
     ):
         self.command = command
         self.env = os.environ.copy()
         self.process = subprocess.Popen(self.command, env=self.env)
         self.ignores = ignores or []
+        self.exceptions = exceptions or []
 
         logger.info(
             f"Starting the managed process with command: {self.command}"
         )
         logger.info(f"Ignoring directories: {self.ignores}")
+        logger.info(f"Exceptions: {self.exceptions}")
         logger.info(f"Process ID: {self.process.pid}")
 
     def on_any_event(self, event):
@@ -36,7 +41,16 @@ class ChangeHandler(FileSystemEventHandler):
         # Check if the event path matches with any of the ignores patterns
         for ignore_dir in self.ignores:
             if fnmatch.fnmatch(event.src_path, ignore_dir):
-                return  # Ignore this event
+                for exception in self.exceptions:
+                    if fnmatch.fnmatch(event.src_path, exception):
+                        logger.info(
+                            f"Event: {event.event_type} on {event.src_path} -"
+                            " Ignore pattern matched, but reloading anyway"
+                            " due to exception"
+                        )
+                        break
+                else:
+                    return
 
         if event.event_type in ["modified", "created", "moved"]:
             logger.critical(f"Event: {event.event_type} on {event.src_path}")
@@ -54,9 +68,12 @@ class ChangeHandler(FileSystemEventHandler):
 
 
 def start_monitoring(
-    path, command: List[str], ignores: Optional[List[str]] = None
+    path,
+    command: List[str],
+    ignores: Optional[List[str]] = None,
+    exceptions: Optional[List[str]] = None,
 ):
-    event_handler = ChangeHandler(command, ignores)
+    event_handler = ChangeHandler(command, ignores, exceptions)
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
     observer.start()
@@ -84,7 +101,7 @@ if __name__ == "__main__":
     ]
     ignores = [os.path.join(path, dir) for dir in ignores]
 
-    exceptions = ["data/config.yaml"]
+    exceptions = ["*/config.yaml"]
 
     command = ["python", "main.py"]
-    start_monitoring(path, command, ignores=ignores)
+    start_monitoring(path, command, ignores=ignores, exceptions=exceptions)
