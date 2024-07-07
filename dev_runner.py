@@ -27,7 +27,9 @@ class ChangeHandler(FileSystemEventHandler):
         self.ignores = ignores or []
         self.exceptions = exceptions or []
 
-        logger.info(f"Starting the managed process with command: {self.command}")
+        logger.info(
+            f"Starting the managed process with command: {self.command}"
+        )
         logger.info(f"Ignoring directories: {self.ignores}")
         logger.info(f"Exceptions: {self.exceptions}")
         logger.info(f"Process ID: {self.process.pid}")
@@ -98,6 +100,7 @@ if __name__ == "__main__":
         "*.pid",
         "dev_runner.py",
         ".devcontainer/*",
+        "*.md",
     ]
     ignores = [os.path.join(path, dir) for dir in ignores]
 
