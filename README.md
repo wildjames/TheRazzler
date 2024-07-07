@@ -23,6 +23,23 @@ I use a dev container to keep things easy and consistent.
 
 Note that if you're on windows, the user configuration API will not be available on the host windows machine (or any other machine, for that matter) until the port has been [forwarded from WSL to windows](https://superuser.com/questions/1717753/how-to-connect-to-windows-subsystem-for-linux-from-another-machine-within-networ/1830244#1830244).
 
+You will need two files in the root of the repo:
+
+## `.env`
+
+```
+OPENAI_API_KEY=<KEY>
+```
+
+## `.envrc`
+
+```
+export DATA_DIR=/app/data
+export OPENAI_API_KEY=<KEY>
+```
+
+These will be used to run the code.
+
 ## Makefile commands
 
 - `install`: Install the requirements for local development in a new `venv` space
