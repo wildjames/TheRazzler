@@ -47,9 +47,7 @@ def health_check():
 def validate_jwt(token):
     try:
         # Decode the token using the same secret key used for encoding
-        payload = jwt.decode(
-            token, config.general.jwt_secret, algorithms=["HS256"]
-        )
+        payload = jwt.decode(token, config.general.jwt_secret, algorithms=["HS256"])
         return payload
     except jwt.ExpiredSignatureError:
         return jsonify({"error": "Token has expired"}), 401
@@ -68,18 +66,14 @@ def jwt_required(f):
         parts = auth_header.split()
         if parts[0].lower() != "bearer":
             return (
-                jsonify(
-                    {"error": "Authorization header must start with Bearer"}
-                ),
+                jsonify({"error": "Authorization header must start with Bearer"}),
                 401,
             )
         elif len(parts) == 1:
             return jsonify({"error": "Token not found"}), 401
         elif len(parts) > 2:
             return (
-                jsonify(
-                    {"error": "Authorization header must be Bearer token"}
-                ),
+                jsonify({"error": "Authorization header must be Bearer token"}),
                 401,
             )
 

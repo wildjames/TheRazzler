@@ -210,14 +210,11 @@ class GPTInterface:
 
             used_model = response.model
             prev_p_tokens = usage.get(used_model, {}).get("prompt_tokens", 0)
-            prev_c_tokens = usage.get(used_model, {}).get(
-                "completion_tokens", 0
-            )
+            prev_c_tokens = usage.get(used_model, {}).get("completion_tokens", 0)
 
             usage[used_model] = {
                 "prompt_tokens": prev_p_tokens + response.usage.prompt_tokens,
-                "completion_tokens": prev_c_tokens
-                + response.usage.completion_tokens,
+                "completion_tokens": prev_c_tokens + response.usage.completion_tokens,
             }
 
             logger.debug(f"Usage updated: {usage}")

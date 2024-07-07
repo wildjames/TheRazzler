@@ -70,15 +70,11 @@ class SeeImageCommandHandler(CommandHandler):
             # Handle the case where the image is quoted in the message
             if message.envelope.dataMessage.quote:
                 logger.info("This message contains a quote")
-                images = self.extract_images(
-                    message.envelope.dataMessage.quote
-                )
+                images = self.extract_images(message.envelope.dataMessage.quote)
 
                 if images:
                     logger.info(f"Extracted {len(images)} images from quote")
-                    response = self.generate_images_description(
-                        images, message
-                    )
+                    response = self.generate_images_description(images, message)
                     yield self.update_quote_with_description(message, response)
 
         except Exception as e:
@@ -123,9 +119,7 @@ class SeeImageCommandHandler(CommandHandler):
         # Concatenate the image description with the original message
         # (At least one exists, possibly both)
         message_text = " ".join(
-            filter(
-                None, [message.envelope.dataMessage.message, img_description]
-            )
+            filter(None, [message.envelope.dataMessage.message, img_description])
         )
 
         # Return the updated message

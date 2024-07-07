@@ -40,10 +40,7 @@ class PhoneBook(BaseModel):
 
         for existing_contact in self.contacts:
             if (
-                (
-                    contact.uuid is not None
-                    and existing_contact.uuid == contact.uuid
-                )
+                (contact.uuid is not None and existing_contact.uuid == contact.uuid)
                 or contact.number is not None
                 and existing_contact.number == contact.number
             ):
@@ -101,9 +98,7 @@ class PhoneBook(BaseModel):
         # If no contact matches by UUID or number, create a new one if name or
         # number is provided
         if name or number:
-            new_contact = Contact(
-                uuid=uuid, name=name, number=number, profile=profile
-            )
+            new_contact = Contact(uuid=uuid, name=name, number=number, profile=profile)
             self.add_contact(new_contact)
             return True
 
@@ -146,9 +141,7 @@ class PhoneBook(BaseModel):
             else:
                 # Group chats identify their members by phone number, AFAIK
                 contact = Contact(number=member)
-                logger.info(
-                    f"Created a new contact with phone number: {member}"
-                )
+                logger.info(f"Created a new contact with phone number: {member}")
                 self.add_contact(contact)
 
             members.append(contact)

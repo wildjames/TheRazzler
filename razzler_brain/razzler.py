@@ -84,9 +84,7 @@ class RazzlerBrain:
         # Open a channel and consume incoming messages
         async with self.connection:
             self.channel = await self.connection.channel()
-            queue = await self.channel.declare_queue(
-                "incoming_messages", durable=True
-            )
+            queue = await self.channel.declare_queue("incoming_messages", durable=True)
             await queue.consume(self._process_incoming_message)
             logger.info("Consuming messages...")
             await asyncio.Future()
@@ -162,20 +160,14 @@ class RazzlerBrain:
                 )
                 logger.info(f"Original message: {message}")
                 # Remove the original message from the message history
-                self.redis_client.lset(
-                    msg_cache, i, new_message.model_dump_json()
-                )
+                self.redis_client.lset(msg_cache, i, new_message.model_dump_json())
                 return
         else:
             # Default to the front of the list
             logger.error("Original message not found in the message history")
-            raise ValueError(
-                "Original message not found in the message history"
-            )
+            raise ValueError("Original message not found in the message history")
 
-    async def acknowledge_message(
-        self, message: IncomingMessage, emoji: str = "👍"
-    ):
+    async def acknowledge_message(self, message: IncomingMessage, emoji: str = "👍"):
         """Just acknowledge the message by reacting to it"""
         # Publish a reaction to the message to acknowledge the whitelist
         reaction = OutgoingReaction(
@@ -288,9 +280,7 @@ class RazzlerBrain:
             # Loop over commands. If a command can handle the message, run it.
             # Executes ALL commands able to handle a message, sequentially.
             for command in self.commands:
-                if not command.can_handle(
-                    msg, self.redis_client, self.brain_config
-                ):
+                if not command.can_handle(msg, self.redis_client, self.brain_config):
                     logger.debug(f"Skipping command {command}")
                     continue
 
@@ -304,9 +294,7 @@ class RazzlerBrain:
                         logger.debug("Command yielded None")
                         continue
 
-                    logger.info(
-                        f"Command {command} produced message: {response}"
-                    )
+                    logger.info(f"Command {command} produced message: {response}")
 
                     # In the specific case of the command yielding an incoming
                     # message, it is a replacement for the message that was

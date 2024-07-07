@@ -36,13 +36,10 @@ class CharacterProfileCommandHandler(CommandHandler):
     ) -> Iterator[None]:
 
         logger.info(
-            "Creating character profiles of chat members"
-            f" {message.get_recipient()}"
+            "Creating character profiles of chat members" f" {message.get_recipient()}"
         )
         response_message = OutgoingMessage(
             recipient=self.get_recipient(message),
-            message=(
-                "Hold on, I need to take some notes on what you're saying..."
-            ),
+            message=("Hold on, I need to take some notes on what you're saying..."),
         )
         yield response_message

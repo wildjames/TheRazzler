@@ -1,10 +1,9 @@
-from dataclasses import Field
 from datetime import datetime
 from logging import getLogger
 from typing import Any, Dict, List, Optional
 
 import pymongo
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, Field
 from pymongo.collection import Collection
 from pymongo.database import Database
 
@@ -64,7 +63,6 @@ class UserPreferencesUpdate(BaseModel):
         extra = "forbid"
 
 
-
 class UserState(BaseModel):
     user_id: str
     recent_usage: List[datetime] = Field(default_factory=list)
@@ -85,10 +83,7 @@ class UserStateUpdate(BaseModel):
 
     @model_validator(mode="after")
     @classmethod
-    def limit_recent_usage_length(
-        cls,
-        v: "UserStateUpdate"
-    ) -> "UserStateUpdate":
+    def limit_recent_usage_length(cls, v: "UserStateUpdate") -> "UserStateUpdate":
         v.recent_usage = v.recent_usage[-100:]
         return v
 
@@ -127,9 +122,7 @@ def initialize_preferences_collection(
     return collection
 
 
-def get_user_preferences(
-    collection: Collection, user_id: str
-) -> UserPreferences:
+def get_user_preferences(collection: Collection, user_id: str) -> UserPreferences:
     preferences = collection.find_one({"user_id": user_id})
     if preferences:
         return UserPreferences(**preferences)
@@ -140,9 +133,7 @@ def update_user_preferences(
     collection: Collection, user_id: str, update_data: UserPreferencesUpdate
 ):
     update_data = update_data.model_dump(exclude_none=True)
-    collection.update_one(
-        {"user_id": user_id}, {"$set": update_data}, upsert=True
-    )
+    collection.update_one({"user_id": user_id}, {"$set": update_data}, upsert=True)
 
 
 def clear_user_preferences(collection: Collection, user_id: str):
@@ -174,11 +165,11 @@ def get_user_state(collection: Collection, user_id: str) -> Dict[str, Any]:
     return UserState(user_id=user_id)
 
 
-def update_user_state(collection: Collection, user_id: str, update_data: UserStateUpdate):
+def update_user_state(
+    collection: Collection, user_id: str, update_data: UserStateUpdate
+):
     update_data = update_data.model_dump(exclude_none=True)
-    collection.update_one(
-        {"user_id": user_id}, {"$set": update_data}, upsert=True
-    )
+    collection.update_one({"user_id": user_id}, {"$set": update_data}, upsert=True)
 
 
 def clear_user_state(collection: Collection, user_id: str):

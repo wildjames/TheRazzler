@@ -81,9 +81,7 @@ class CommandHandler(ABC):
 
         # Get the message history list from redis
         history = redis_connection.lrange(cache_key, 0, -1)
-        logger.info(
-            f"Fetched {len(history)} messages from cache under key {cache_key}"
-        )
+        logger.info(f"Fetched {len(history)} messages from cache under key {cache_key}")
 
         messages = []
         num_tokens = 0
@@ -120,9 +118,7 @@ class CommandHandler(ABC):
                     # human-readable format
                     # Irritatingly, the timestamp is in milliseconds
                     ts = msg.envelope.timestamp / 1000
-                    time_str = datetime.fromtimestamp(ts).strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    )
+                    time_str = datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
 
                     # Skips over things like reacts and other non-message
                     # events
@@ -139,9 +135,7 @@ class CommandHandler(ABC):
                         # If we've reached the token limit, stop adding
                         # messages and return
                         if num_tokens < config.max_chat_history_tokens:
-                            messages.append(
-                                gpt.create_chat_message("user", msg_out)
-                            )
+                            messages.append(gpt.create_chat_message("user", msg_out))
                         else:
                             logger.info(
                                 f"Reached token limit at: {num_tokens} tokens"
@@ -154,9 +148,7 @@ class CommandHandler(ABC):
 
                             if len(messages):
                                 logger.info(f"Oldest message: {messages[0]}")
-                                logger.info(
-                                    f"Most recent message: {messages[-1]}"
-                                )
+                                logger.info(f"Most recent message: {messages[-1]}")
                             else:
                                 logger.info("No messages in history")
 
@@ -164,9 +156,7 @@ class CommandHandler(ABC):
 
                 case OutgoingMessage():
                     msg_out = f"Razzler: {msg.message}"
-                    messages.append(
-                        gpt.create_chat_message("assistant", msg_out)
-                    )
+                    messages.append(gpt.create_chat_message("assistant", msg_out))
 
                 case _:
                     continue
@@ -230,9 +220,7 @@ class CommandHandler(ABC):
                 if message.envelope.dataMessage.message in m["content"]:
                     logger.info(f"Found the corresponding message: {m}")
                     # update the content of the message with the image(s)
-                    image_message = gpt.create_image_message(
-                        images, m["content"]
-                    )
+                    image_message = gpt.create_image_message(images, m["content"])
 
                     # Process the old message content
                     message_body = m["content"]
@@ -255,8 +243,7 @@ class CommandHandler(ABC):
         messages.append(
             gpt.create_chat_message(
                 "system",
-                'You must respond in the exact format: "The Razzler:'
-                ' <message>"',
+                'You must respond in the exact format: "The Razzler:' ' <message>"',
             )
         )
 
@@ -330,7 +317,6 @@ class CommandHandler(ABC):
         mongo_collection = initialize_user_state_collection(db)
         return get_user_state(mongo_collection, user_id)
 
-
     def count_user_recent_messages(
         self,
         user_id: str,
@@ -339,8 +325,6 @@ class CommandHandler(ABC):
         that cost money. It also stores the number of responses allowed, and
         the time window to count them in. This function counts the number of
         responses in the time window and returns the count."""
-
-
 
     @abstractmethod
     def can_handle(
@@ -358,8 +342,6 @@ class CommandHandler(ABC):
         message: IncomingMessage,
         redis_connection: redis.Redis,
         config: RazzlerBrainConfig,
-    ) -> Iterator[
-        Optional[Union[OutgoingMessage, OutgoingReaction, IncomingMessage]]
-    ]:
+    ) -> Iterator[Optional[Union[OutgoingMessage, OutgoingReaction, IncomingMessage]]]:
         """Handle the incoming message and perform actions."""
         pass

@@ -72,9 +72,7 @@ class SignalProducer:
 
         async with self.connection:
             channel = await self.connection.channel()
-            queue = await channel.declare_queue(
-                "outgoing_messages", durable=True
-            )
+            queue = await channel.declare_queue("outgoing_messages", durable=True)
             await queue.consume(self._process_message)
             logger.info("Consuming messages...")
             await asyncio.Future()
@@ -95,9 +93,7 @@ class SignalProducer:
     async def _process_outgoing_message(self, message: OutgoingMessage):
         """Process and send outgoing messages using the Signal API.
         Also push the outgoing message to the message history redis cache"""
-        logger.info(
-            f"Sending message to {message.recipient}: {message.message}"
-        )
+        logger.info(f"Sending message to {message.recipient}: {message.message}")
         await self.api_client.send(
             message.recipient, message.message, message.base64_attachments
         )
@@ -107,15 +103,11 @@ class SignalProducer:
         cache_key = f"message_history:{message.recipient}"
         self.redis_client.lpush(cache_key, message.model_dump_json())
         # Ensure the message history cache doesn't grow too large
-        self.redis_client.ltrim(
-            cache_key, 0, self.signal_info.message_history_length
-        )
+        self.redis_client.ltrim(cache_key, 0, self.signal_info.message_history_length)
 
     async def _process_outgoing_reaction(self, reaction: OutgoingReaction):
         """Process and send outgoing reactions using the Signal API."""
-        logger.info(
-            f"Sending reaction to {reaction.recipient}: {reaction.reaction}"
-        )
+        logger.info(f"Sending reaction to {reaction.recipient}: {reaction.reaction}")
         await self.api_client.react(
             reaction.recipient,
             reaction.reaction,
