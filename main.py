@@ -104,6 +104,7 @@ def shutdown_handler(signum, frame):
     # Optionally, send a stop or close signal to your asyncio coroutines
     sys.exit(0)
 
+
 signal.signal(signal.SIGTERM, shutdown_handler)
 signal.signal(signal.SIGINT, shutdown_handler)
 
@@ -111,5 +112,10 @@ if __name__ == "__main__":
     # Check that the OPENAI_API_KEY environment variable is set
     if "OPENAI_API_KEY" not in os.environ:
         raise ValueError("OPENAI_API_KEY environment variable not set")
+
+    if "DATA_DIR" not in os.environ:
+        logger.warn(
+            "DATA_DIR environment variable not set. Using default value."
+        )
 
     main(config)

@@ -12,7 +12,7 @@ install:
 
 dev:
 	@echo "Starting development environment..."
-	@source .envrc && source venv/bin/activate && /usr/bin/supervisord -c supervisord_dev.conf
+	@source .envrc && source venv/bin/activate && /usr/bin/supervisord -c ./supervisord_dev.conf
 
 build:
 	@echo "Building Docker image..."

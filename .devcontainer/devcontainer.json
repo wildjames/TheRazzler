@@ -29,7 +29,6 @@
 	"forwardPorts": [8573],
 
 	"mounts": [
-		"source=${localWorkspaceFolder},target=/app,type=bind",
 		"source=${env:HOME}/.ssh,target=/home/vscode/.ssh,type=bind"
 	],
 
