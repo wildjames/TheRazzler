@@ -11,6 +11,7 @@ install:
 	@echo "source venv/bin/activate"
 
 dev:
+	@clear
 	@echo "Starting development environment..."
 	@source venv/bin/activate && export $$(xargs < .env) && /usr/bin/supervisord -c ./supervisord_dev.conf
 

@@ -67,24 +67,37 @@ def main(config: Config):
 
     # Create processes for producers
     producer_processes = [
-        multiprocessing.Process(target=run_asyncio_coroutine, args=(producer.start,))
-        for producer in producers
+        multiprocessing.Process(
+            name=f"Producer {i}",
+            target=run_asyncio_coroutine,
+            args=(producer.start,),
+        )
+        for i, producer in enumerate(producers)
     ]
 
     # Create processes for consumers
     consumer_processes = [
-        multiprocessing.Process(target=run_asyncio_coroutine, args=(consumer.start,))
-        for consumer in consumers
+        multiprocessing.Process(
+            name=f"Consumer {i}",
+            target=run_asyncio_coroutine,
+            args=(consumer.start,),
+        )
+        for i, consumer in enumerate(consumers)
     ]
 
     # Create processes for brains
     brain_processes = [
-        multiprocessing.Process(target=run_asyncio_coroutine, args=(brain.start,))
-        for brain in brains
+        multiprocessing.Process(
+            name=f"Brain {i}",
+            target=run_asyncio_coroutine,
+            args=(brain.start,),
+        )
+        for i, brain in enumerate(brains)
     ]
 
     # Start all processes
     for process in producer_processes + consumer_processes + brain_processes:
+        logger.info(f"Starting process {process.name}")
         process.start()
 
     # Wait for all processes to complete
