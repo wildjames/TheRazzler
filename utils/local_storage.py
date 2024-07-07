@@ -33,9 +33,6 @@ def load_file(fname: str, mode="r") -> Optional[str]:
         with open(fname, mode) as f:
             return f.read()
 
-    if not os.path.isdir(fname):
-        return None
-
     raise FileNotFoundError(f"File {fname} not found.")
 
 
