@@ -85,7 +85,9 @@ class RazzlerBrain:
         # Open a channel and consume incoming messages
         async with self.connection:
             self.channel = await self.connection.channel()
-            queue = await self.channel.declare_queue("incoming_messages", durable=True)
+            queue = await self.channel.declare_queue(
+                "incoming_messages", durable=True
+            )
             await queue.consume(self._process_incoming_message)
             logger.info("Consuming messages...")
             await asyncio.Future()
@@ -161,14 +163,20 @@ class RazzlerBrain:
                 )
                 logger.info(f"Original message: {message}")
                 # Remove the original message from the message history
-                self.redis_client.lset(msg_cache, i, new_message.model_dump_json())
+                self.redis_client.lset(
+                    msg_cache, i, new_message.model_dump_json()
+                )
                 return
         else:
             # Default to the front of the list
             logger.error("Original message not found in the message history")
-            raise ValueError("Original message not found in the message history")
+            raise ValueError(
+                "Original message not found in the message history"
+            )
 
-    async def acknowledge_message(self, message: IncomingMessage, emoji: str = "👍"):
+    async def acknowledge_message(
+        self, message: IncomingMessage, emoji: str = "👍"
+    ):
         """Just acknowledge the message by reacting to it"""
         # Publish a reaction to the message to acknowledge the whitelist
         reaction = OutgoingReaction(
@@ -187,7 +195,9 @@ class RazzlerBrain:
             routing_key="outgoing_messages",
         )
 
-    async def is_group_whitelisted(self, message: IncomingMessage) -> bool:
+    async def is_group_whitelisted(
+        self, message_id: uuid.UUID, message: IncomingMessage
+    ) -> bool:
         """Check if a group is whitelisted for processing. If a message is not
         from a group, it is whitelisted by default.
 
@@ -198,23 +208,31 @@ class RazzlerBrain:
         """
         wl_key = "whitelisted_groups"
 
-        logger.info("Checking if this group needs to be whitelisted...")
+        logger.info(
+            f"[{message_id}] Checking if this group needs to be whitelisted..."
+        )
         # Check that the message is a group message
         try:
             gid = message.envelope.dataMessage.groupInfo.groupId
         except AttributeError:
-            logger.info("Cannot whitelist group; message is not from a group")
+            logger.info(
+                f"[{message_id}] Cannot whitelist group; message is not from a"
+                " group"
+            )
             # All direct messages are whitelisted
             return True
 
         # Check that this message is from an admin
         if message.envelope.sourceNumber not in self.brain_config.admins:
-            logger.info("Cannot whitelist group; message is not from an admin")
+            logger.info(
+                f"[{message_id}] Cannot whitelist group; message is not from"
+                " an admin"
+            )
             return self.redis_client.sismember(wl_key, gid)
 
         # Check if the message content is the whitelist command
         if not message.envelope.dataMessage.message:
-            logger.info("Message has no text content.")
+            logger.info(f"[{message_id}] Message has no text content.")
             return self.redis_client.sismember(wl_key, gid)
 
         msg = message.envelope.dataMessage.message
@@ -225,7 +243,7 @@ class RazzlerBrain:
         match msg:
             case "!whitelist":
                 # Whitelist the group
-                logger.info(f"Whitelisting group {gid}")
+                logger.info(f"[{message_id}] Whitelisting group {gid}")
                 self.redis_client.sadd(wl_key, gid)
                 with file_lock(self.whitelist_file) as f:
                     whitelisted_groups: List[str] = json.load(f)
@@ -236,7 +254,7 @@ class RazzlerBrain:
 
             case "!blacklist":
                 # Blacklist the group
-                logger.info(f"Blacklisting group {gid}")
+                logger.info(f"[{message_id}] Blacklisting group {gid}")
                 self.redis_client.srem(wl_key, gid)
                 with file_lock(self.whitelist_file) as f:
                     whitelisted_groups: List[str] = json.load(f)
@@ -274,9 +292,11 @@ class RazzlerBrain:
             logger.info(f"[{message_id}] Received message: {msg}")
 
             # If the message is from a group, check that it's whitelisted
-            if not await self.is_group_whitelisted(msg):
+            if not await self.is_group_whitelisted(message_id, msg):
                 gid = msg.envelope.dataMessage.groupInfo.groupId
-                logger.info(f"[{message_id}] Skipping message from group {gid}")
+                logger.info(
+                    f"[{message_id}] Skipping message from group {gid}"
+                )
                 return
 
             # Loop over commands. If a command can handle the message, run it.
@@ -299,7 +319,8 @@ class RazzlerBrain:
                         continue
 
                     logger.info(
-                        f"[{message_id}] Command {command} produced message: {response}"
+                        f"[{message_id}] Command {command} produced message:"
+                        f" {response}"
                     )
 
                     # In the specific case of the command yielding an incoming
@@ -317,7 +338,8 @@ class RazzlerBrain:
 
                     # Publish the outgoing message to the queue
                     logger.info(
-                        f"[{message_id}] Publishing response from command {command}"
+                        f"[{message_id}] Publishing response from command"
+                        f" {command}"
                     )
                     await self.channel.default_exchange.publish(
                         aio_pika.Message(
