@@ -1,13 +1,23 @@
+# The Razzler
+
+This is my attempt at a signal bot, with a chat GPT backend. The aim is to have the robot act as human-like as possible, so it can slot itself into a group chat and take part in conversations.
+
+The bot is made up of a few components. A [signal API]() recieves messages from the signal service. Consumers process these and place them on the processing queue, in RabbitMQ. From there, the "Brain" picks them up, and checks them agains its list of registered commands. Commands may yield a response (or several), which are placed back on the processing queue. From the queue, outgoing messages are picked up by a Producer, which sends the message back to the signal API. This may be easier to understand graphically:
+
+<div style="text-align: center;">
+  <img src="Razzler.drawio.png" alt="Architecture of the Razzler" title="Architecture of the Razzler">
+</div>
+
+
+Commands are currently undocumented. Sorry!
+
+
 # TODO
 
 - Implement profiling for members of a chat
-- The websocket `receive` endpoint only streams incoming messages, and doesn't yield up things that were sent while the connection wasnt alive. When the razzler starts, it should call the HTTP version of the endpoint, which DOES return a list of un-acknowleged messages, so it can work down the backlog.
 - The web interface could have a list of razzler image descriptions, from group chats that people are part of. It might be interesting to see what the razzler sees in various images
 - The web interface needs some example conversation, so people can test their prompts in a private environment.
 - Use a proper file lock system
-- Implement per-user rate limiting
-- Set up a dev container environment
-
 
 
 # Developer setup
