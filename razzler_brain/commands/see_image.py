@@ -138,9 +138,7 @@ class SeeImageCommandHandler(CommandHandler):
         # Concatenate the image description with the original message
         # (At least one exists, possibly both)
         message_text = " ".join(
-            filter(
-                None, [message.envelope.dataMessage.message, img_description]
-            )
+            filter(None, [message.envelope.dataMessage.message, img_description])
         )
 
         # Return the updated message

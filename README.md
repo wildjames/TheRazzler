@@ -39,13 +39,7 @@ You will need two files in the root of the repo:
 
 ```
 OPENAI_API_KEY=<KEY>
-```
-
-## `.envrc`
-
-```
-export DATA_DIR=/app/data
-export OPENAI_API_KEY=<KEY>
+DATA_DIR=<Where is data located>
 ```
 
 These will be used to run the code.

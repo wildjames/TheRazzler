@@ -11,8 +11,9 @@ install:
 	@echo "source venv/bin/activate"
 
 dev:
+	@clear
 	@echo "Starting development environment..."
-	@source .envrc && source venv/bin/activate && /usr/bin/supervisord -c ./supervisord_dev.conf
+	@source venv/bin/activate && export $$(xargs < .env) && /usr/bin/supervisord -c ./supervisord_dev.conf
 
 build:
 	@echo "Building Docker image..."

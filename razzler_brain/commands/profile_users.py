@@ -44,8 +44,6 @@ class CharacterProfileCommandHandler(CommandHandler):
         )
         response_message = OutgoingMessage(
             recipient=self.get_recipient(message),
-            message=(
-                "Hold on, I need to take some notes on what you're saying..."
-            ),
+            message=("Hold on, I need to take some notes on what you're saying..."),
         )
         yield response_message

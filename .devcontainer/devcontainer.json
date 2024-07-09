@@ -10,7 +10,11 @@
 	"customizations": {
 		"settings": {
 			"python.pythonPath": "/usr/local/bin/python",
-			"terminal.integrated.shell.linux": "/bin/bash"
+			"terminal.integrated.shell.linux": "/bin/bash",
+			"python.formatting.provider": "black",
+			"python.formatting.blackArgs": ["--line-length", "88"],
+			"black-formatter.path": ["/usr/local/py-utils/bin/black"],
+			"editor.formatOnSave": true
 		},
 
 		"vscode": {
@@ -31,7 +35,5 @@
 
 	"mounts": [
 		"source=${env:HOME}/.ssh,target=/home/vscode/.ssh,type=bind"
-	],
-
-	"postCreateCommand": "direnv allow"
+	]
 }
