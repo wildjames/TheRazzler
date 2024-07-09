@@ -1,5 +1,6 @@
 from logging import getLogger
 from typing import Iterator, Optional
+import uuid
 
 import redis
 
@@ -13,6 +14,7 @@ class CharacterProfileCommandHandler(CommandHandler):
 
     def can_handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: Optional[redis.Redis] = None,
         config: Optional[RazzlerBrainConfig] = None,
@@ -30,16 +32,20 @@ class CharacterProfileCommandHandler(CommandHandler):
 
     def handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: redis.Redis,
         config: RazzlerBrainConfig,
     ) -> Iterator[None]:
 
         logger.info(
-            "Creating character profiles of chat members" f" {message.get_recipient()}"
+            f"[{message_id}] Creating character profiles of chat members"
+            f" {message.get_recipient()}"
         )
         response_message = OutgoingMessage(
             recipient=self.get_recipient(message),
-            message=("Hold on, I need to take some notes on what you're saying..."),
+            message=(
+                "Hold on, I need to take some notes on what you're saying..."
+            ),
         )
         yield response_message

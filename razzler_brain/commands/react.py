@@ -1,5 +1,6 @@
 from logging import getLogger
 from typing import Iterator, Optional
+import uuid
 
 import redis
 
@@ -10,8 +11,10 @@ logger = getLogger(__name__)
 
 
 class ReactCommandHandler(CommandHandler):
+
     def can_handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: Optional[redis.Redis] = None,
         config: Optional[RazzlerBrainConfig] = None,
@@ -29,11 +32,12 @@ class ReactCommandHandler(CommandHandler):
 
     def handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: redis.Redis,
         config: RazzlerBrainConfig,
     ) -> Iterator[OutgoingReaction]:
-        logger.info("Handling react command")
+        logger.info(f"[{message_id}] Handling react command")
         yield self.generate_reaction(
             message=message,
             emoji="👍",

@@ -1,5 +1,6 @@
 from logging import getLogger
 from typing import Optional
+import uuid
 
 import redis
 
@@ -15,6 +16,7 @@ class ReplyRazzleTargetCommandHandler(ReplyCommandHandler):
 
     def can_handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: Optional[redis.Redis] = None,
         config: Optional[RazzlerBrainConfig] = None,

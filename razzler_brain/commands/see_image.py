@@ -1,6 +1,7 @@
 import re
 from logging import getLogger
 from typing import Iterator, List, Optional, Tuple, Union
+import uuid
 
 import redis
 
@@ -27,6 +28,7 @@ class SeeImageCommandHandler(CommandHandler):
 
     def can_handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: Optional[redis.Redis] = None,
         config: Optional[RazzlerBrainConfig] = None,
@@ -48,11 +50,12 @@ class SeeImageCommandHandler(CommandHandler):
 
     def handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: redis.Redis,
         config: RazzlerBrainConfig,
     ) -> Iterator[Union[OutgoingReaction, OutgoingMessage, IncomingMessage]]:
-        logger.info("Digesting an image message")
+        logger.info(f"[{message_id}] Digesting an image message")
         yield self.generate_reaction("🕵️", message)
 
         # There are two cases, one where the image is attached to the message
@@ -63,18 +66,28 @@ class SeeImageCommandHandler(CommandHandler):
             images = self.extract_images(message.envelope.dataMessage)
 
             if images:
-                logger.info(f"Extracted {len(images)} images from message")
+                logger.info(
+                    f"[{message_id}] Extracted {len(images)} images from"
+                    " message"
+                )
                 response = self.generate_images_description(images, message)
                 yield self.update_message_with_description(message, response)
 
             # Handle the case where the image is quoted in the message
             if message.envelope.dataMessage.quote:
-                logger.info("This message contains a quote")
-                images = self.extract_images(message.envelope.dataMessage.quote)
+                logger.info(f"[{message_id}] This message contains a quote")
+                images = self.extract_images(
+                    message.envelope.dataMessage.quote
+                )
 
                 if images:
-                    logger.info(f"Extracted {len(images)} images from quote")
-                    response = self.generate_images_description(images, message)
+                    logger.info(
+                        f"[{message_id}] Extracted {len(images)} images from"
+                        " quote"
+                    )
+                    response = self.generate_images_description(
+                        images, message
+                    )
                     yield self.update_quote_with_description(message, response)
 
         except Exception as e:
@@ -119,7 +132,9 @@ class SeeImageCommandHandler(CommandHandler):
         # Concatenate the image description with the original message
         # (At least one exists, possibly both)
         message_text = " ".join(
-            filter(None, [message.envelope.dataMessage.message, img_description])
+            filter(
+                None, [message.envelope.dataMessage.message, img_description]
+            )
         )
 
         # Return the updated message

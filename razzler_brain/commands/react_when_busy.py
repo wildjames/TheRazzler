@@ -1,6 +1,7 @@
 import random
 from logging import getLogger
 from typing import Iterator, Optional
+import uuid
 
 import advertools as adv
 import redis
@@ -34,6 +35,7 @@ class ReactToChatCommandHandler(ReplyCommandHandler):
 
     def can_handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: Optional[redis.Redis] = None,
         config: Optional[RazzlerBrainConfig] = None,
@@ -57,6 +59,7 @@ class ReactToChatCommandHandler(ReplyCommandHandler):
 
     def handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: redis.Redis,
         config: RazzlerBrainConfig,
@@ -74,15 +77,20 @@ class ReactToChatCommandHandler(ReplyCommandHandler):
             model="fast",
         )
 
-        logger.info(f"Asked the Razzler for an emoji. Response: '{response}'")
+        logger.info(
+            f"[{message_id}] Asked the Razzler for an emoji. Response:"
+            f" '{response}'"
+        )
         emoji = adv.extract_emoji([response])
         if not emoji:
             logger.error("No emoji found in response")
             return
+
         reaction = emoji["emoji_flat"]
-        logger.info(f"Extracted emoji: '{reaction}'")
+        logger.info(f"[{message_id}] Extracted emoji: '{reaction}'")
+
         reaction = "".join(reaction)
-        logger.info(f"Concatenated emoji: '{reaction}'")
+        logger.info(f"[{message_id}] Concatenated emoji: '{reaction}'")
 
         yield self.generate_reaction(
             emoji=reaction,

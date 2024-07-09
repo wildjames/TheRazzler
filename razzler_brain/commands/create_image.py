@@ -1,5 +1,6 @@
 from logging import getLogger
 from typing import Iterator, Optional, Union
+import uuid
 
 import redis
 
@@ -20,6 +21,7 @@ class CreateImageCommandHandler(CommandHandler):
 
     def can_handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: Optional[redis.Redis] = None,
         config: Optional[RazzlerBrainConfig] = None,
@@ -37,11 +39,12 @@ class CreateImageCommandHandler(CommandHandler):
 
     def handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: redis.Redis,
         config: RazzlerBrainConfig,
     ) -> Iterator[Union[OutgoingMessage, OutgoingReaction]]:
-        logger.info("Handling create image command")
+        logger.info(f"[{message_id}] Handling create image command")
 
         yield self.generate_reaction("🎨", message)
 
@@ -59,7 +62,9 @@ class CreateImageCommandHandler(CommandHandler):
             prompt = prompt.strip()
             created_images = gpt.generate_image_response(prompt)
 
-            logger.info(f"Creating an image from prompt: {prompt}")
+            logger.info(
+                f"[{message_id}] Creating an image from prompt: {prompt}"
+            )
 
             reply_message = OutgoingMessage(
                 recipient=self.get_recipient(message),
@@ -70,6 +75,6 @@ class CreateImageCommandHandler(CommandHandler):
             yield reply_message
 
         except Exception as e:
-            logger.error(f"Error creating image: {e}")
+            logger.error(f"[{message_id}]Error creating image: {e}")
             self.generate_reaction("❌", message)
             raise e

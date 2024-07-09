@@ -1,6 +1,7 @@
 from datetime import datetime
 from logging import getLogger
 from typing import Iterator, Optional, Union
+import uuid
 
 import redis
 
@@ -42,8 +43,8 @@ class ReplyCommandHandler(CommandHandler):
                 count += 1
 
         logger.info(
-            f"Counted {count} messages in the last {time_window} seconds (max"
-            f" {self.max_replies})"
+            f"Counted {count} messages in the last"
+            f" {time_window} seconds (max {self.max_replies})"
         )
 
         # If we have too many messages in the window, return false
@@ -51,6 +52,7 @@ class ReplyCommandHandler(CommandHandler):
 
     def can_handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: Optional[redis.Redis] = None,
         config: Optional[RazzlerBrainConfig] = None,
@@ -75,11 +77,12 @@ class ReplyCommandHandler(CommandHandler):
 
     def handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: redis.Redis,
         config: RazzlerBrainConfig,
     ) -> Iterator[Union[OutgoingMessage, OutgoingReaction]]:
-        logger.info("Handling reply command")
+        logger.info(f"[{message_id}] Handling reply command")
 
         yield self.generate_reaction("🧠", message)
 
@@ -88,13 +91,13 @@ class ReplyCommandHandler(CommandHandler):
         )
         if recent_razzing >= self.max_replies:
             logger.info(
-                f"Too many razzles in the last {self.time_window} seconds."
+                f"[{message_id}] Too many razzles in the last {self.time_window} seconds."
                 f" I've already been summoned {recent_razzing} times."
             )
             yield OutgoingMessage(
                 recipient=self.get_recipient(message),
                 message=(
-                    "I've been summoned"
+                    f"[{message_id}] I've been summoned"
                     f" {recent_razzing} times in the last"
                     f" {self.time_window/60} minutes, wait a while and"
                     " try again."
@@ -114,7 +117,7 @@ class ReplyCommandHandler(CommandHandler):
         if quote:
             images += self.extract_images(quote)
 
-        logger.info(f"Extracted {len(images)} images from message")
+        logger.info(f"[{message_id}] Extracted {len(images)} images from message")
 
         # Then, get the response.
         try:
@@ -137,7 +140,7 @@ class ReplyCommandHandler(CommandHandler):
             response = response.strip()
 
         except Exception as e:
-            logger.error(f"Error creating message: {e}")
+            logger.error(f"[{message_id}] Error creating message: {e}")
             yield self.generate_reaction("❌", message)
             raise e
 

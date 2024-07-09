@@ -2,6 +2,7 @@ import json
 import random
 from logging import getLogger
 from typing import Optional
+import uuid
 
 import pydantic
 import redis
@@ -32,6 +33,7 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
 
     def can_handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: Optional[redis.Redis] = None,
         config: Optional[RazzlerBrainConfig] = None,
@@ -65,27 +67,27 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
                     break
 
                 count += 1
-                logger.debug(f"Counting message: {msg.envelope.dataMessage.message}")
+                logger.debug(f"[{message_id}] Counting message: {msg.envelope.dataMessage.message}")
             except pydantic.ValidationError:
                 # If the window contains a razzler message, stop counting
                 try:
                     OutgoingMessage(**json.loads(record))
 
-                    logger.debug("Found a razzler reply. Stopping counting messages")
+                    logger.debug(f"[{message_id}] Found a razzler reply. Stopping counting messages")
                     break
 
                 except pydantic.ValidationError:
                     # If we get here, it's an OutgoingReaction
                     continue
 
-        logger.info(f"Found {count} messages within {self.time_window} seconds")
+        logger.info(f"[{message_id}] Found {count} messages within {self.time_window} seconds")
 
         chance = (count - self.minumum_frequency) / (
             self.maximum_frequency - self.minumum_frequency
         )
         # constrain the chance to be between 0 and 1
         chance = max(0, min(1, chance))
-        logger.info(f"This gives the razzler a {chance:.3f} chance to reply")
+        logger.info(f"[{message_id}] This gives the razzler a {chance:.3f} chance to reply")
 
         r = random.random()
         return r < chance

@@ -1,5 +1,6 @@
 from logging import getLogger
 from typing import Iterator, Optional
+import uuid
 
 import redis
 
@@ -13,6 +14,7 @@ class PingCommandHandler(CommandHandler):
 
     def can_handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: Optional[redis.Redis] = None,
         config: Optional[RazzlerBrainConfig] = None,
@@ -30,11 +32,12 @@ class PingCommandHandler(CommandHandler):
 
     def handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: redis.Redis,
         config: RazzlerBrainConfig,
     ) -> Iterator[OutgoingMessage]:
-        logger.info("Handling ping command")
+        logger.info(f"[{message_id}] Handling ping command")
         response_message = OutgoingMessage(
             recipient=self.get_recipient(message), message="PONG"
         )
