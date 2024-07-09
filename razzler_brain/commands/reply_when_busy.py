@@ -65,26 +65,20 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
                     break
 
                 count += 1
-                logger.debug(
-                    f"Counting message: {msg.envelope.dataMessage.message}"
-                )
+                logger.debug(f"Counting message: {msg.envelope.dataMessage.message}")
             except pydantic.ValidationError:
                 # If the window contains a razzler message, stop counting
                 try:
                     OutgoingMessage(**json.loads(record))
 
-                    logger.debug(
-                        "Found a razzler reply. Stopping counting messages"
-                    )
+                    logger.debug("Found a razzler reply. Stopping counting messages")
                     break
 
                 except pydantic.ValidationError:
                     # If we get here, it's an OutgoingReaction
                     continue
 
-        logger.info(
-            f"Found {count} messages within {self.time_window} seconds"
-        )
+        logger.info(f"Found {count} messages within {self.time_window} seconds")
 
         chance = (count - self.minumum_frequency) / (
             self.maximum_frequency - self.minumum_frequency

@@ -15,9 +15,7 @@ def get_otp(user_phone_number: str, redis_config: RedisCredentials, expiry=60):
 
     contact = phonebook.get_contact(user_phone_number)
     if not contact:
-        raise ValueError(
-            f"Contact with phone number {user_phone_number} not found"
-        )
+        raise ValueError(f"Contact with phone number {user_phone_number} not found")
     logger.info(f"Generating OTP for {contact.uuid}")
 
     chars = "0123456789"

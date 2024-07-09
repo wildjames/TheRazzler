@@ -6,6 +6,7 @@ import asyncio
 import json
 from logging import getLogger
 from typing import List
+import uuid
 
 import aio_pika
 import redis
@@ -84,9 +85,7 @@ class RazzlerBrain:
         # Open a channel and consume incoming messages
         async with self.connection:
             self.channel = await self.connection.channel()
-            queue = await self.channel.declare_queue(
-                "incoming_messages", durable=True
-            )
+            queue = await self.channel.declare_queue("incoming_messages", durable=True)
             await queue.consume(self._process_incoming_message)
             logger.info("Consuming messages...")
             await asyncio.Future()
@@ -162,20 +161,14 @@ class RazzlerBrain:
                 )
                 logger.info(f"Original message: {message}")
                 # Remove the original message from the message history
-                self.redis_client.lset(
-                    msg_cache, i, new_message.model_dump_json()
-                )
+                self.redis_client.lset(msg_cache, i, new_message.model_dump_json())
                 return
         else:
             # Default to the front of the list
             logger.error("Original message not found in the message history")
-            raise ValueError(
-                "Original message not found in the message history"
-            )
+            raise ValueError("Original message not found in the message history")
 
-    async def acknowledge_message(
-        self, message: IncomingMessage, emoji: str = "👍"
-    ):
+    async def acknowledge_message(self, message: IncomingMessage, emoji: str = "👍"):
         """Just acknowledge the message by reacting to it"""
         # Publish a reaction to the message to acknowledge the whitelist
         reaction = OutgoingReaction(
@@ -270,42 +263,43 @@ class RazzlerBrain:
         so if a message *could* be handled by multiple commands, it will be.
         """
 
-        logger.info("Processing incoming message...")
+        message_id = uuid.uuid4()
+        logger.info("Processing incoming message [{message_id}]...")
         async with message.process():
 
             # RabbitMQ messages are bytes, so we need to decode them
             message_data = json.loads(message.body.decode())
             # And parse into the IncomingMessage model
             msg = IncomingMessage(**message_data)
-            logger.info(f"Received message: {msg}")
+            logger.info(f"[{message_id}] Received message: {msg}")
 
             # If the message is from a group, check that it's whitelisted
             if not await self.is_group_whitelisted(msg):
                 gid = msg.envelope.dataMessage.groupInfo.groupId
-                logger.info(f"Skipping message from group {gid}")
+                logger.info(f"[{message_id}] Skipping message from group {gid}")
                 return
 
             # Loop over commands. If a command can handle the message, run it.
             # Executes ALL commands able to handle a message, sequentially.
             for command in self.commands:
                 if not command.can_handle(
-                    msg, self.redis_client, self.brain_config
+                    message_id, msg, self.redis_client, self.brain_config
                 ):
-                    logger.debug(f"Skipping command {command}")
+                    logger.debug(f"[{message_id}] Skipping command {command}")
                     continue
 
-                logger.info(f"Handling message with {command}")
+                logger.info(f"[{message_id}] Handling message with {command}")
                 for response in command.handle(
-                    msg, self.redis_client, self.brain_config
+                    message_id, msg, self.redis_client, self.brain_config
                 ):
                     # If the command returns None, there's nothing to do.
                     # Go to the next response.
                     if response is None:
-                        logger.debug("Command yielded None")
+                        logger.debug("[{message_id}] Command yielded None")
                         continue
 
                     logger.info(
-                        f"Command {command} produced message: {response}"
+                        f"[{message_id}] Command {command} produced message: {response}"
                     )
 
                     # In the specific case of the command yielding an incoming
@@ -322,6 +316,9 @@ class RazzlerBrain:
                         continue
 
                     # Publish the outgoing message to the queue
+                    logger.info(
+                        f"[{message_id}] Publishing response from command {command}"
+                    )
                     await self.channel.default_exchange.publish(
                         aio_pika.Message(
                             body=response.model_dump_json().encode(),

@@ -67,25 +67,19 @@ def main(config: Config):
 
     # Create processes for producers
     producer_processes = [
-        multiprocessing.Process(
-            target=run_asyncio_coroutine, args=(producer.start,)
-        )
+        multiprocessing.Process(target=run_asyncio_coroutine, args=(producer.start,))
         for producer in producers
     ]
 
     # Create processes for consumers
     consumer_processes = [
-        multiprocessing.Process(
-            target=run_asyncio_coroutine, args=(consumer.start,)
-        )
+        multiprocessing.Process(target=run_asyncio_coroutine, args=(consumer.start,))
         for consumer in consumers
     ]
 
     # Create processes for brains
     brain_processes = [
-        multiprocessing.Process(
-            target=run_asyncio_coroutine, args=(brain.start,)
-        )
+        multiprocessing.Process(target=run_asyncio_coroutine, args=(brain.start,))
         for brain in brains
     ]
 
@@ -114,8 +108,6 @@ if __name__ == "__main__":
         raise ValueError("OPENAI_API_KEY environment variable not set")
 
     if "DATA_DIR" not in os.environ:
-        logger.warn(
-            "DATA_DIR environment variable not set. Using default value."
-        )
+        logger.warn("DATA_DIR environment variable not set. Using default value.")
 
     main(config)

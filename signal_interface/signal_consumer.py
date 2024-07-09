@@ -110,9 +110,7 @@ class SignalConsumer:
         logger.info("Connected to RabbitMQ and declared the queues.")
 
     async def start(self):
-        logger.info(
-            f"Starting SignalConsumer for {self.signal_info.phone_number}..."
-        )
+        logger.info(f"Starting SignalConsumer for {self.signal_info.phone_number}...")
         await self._init_mq()
         await self.update_groups()
         await self.listen()
@@ -186,9 +184,7 @@ class SignalConsumer:
             self.phonebook = phonebook
             logger.info(f"Updated phonebook contact: {msg.envelope.source}")
 
-    async def download_attachments(
-        self, data: Union[DataMessage, QuoteMessage]
-    ):
+    async def download_attachments(self, data: Union[DataMessage, QuoteMessage]):
         """Download attachments from the message, to local storage."""
 
         for attachment in data.attachments:
@@ -198,14 +194,10 @@ class SignalConsumer:
             elif isinstance(attachment, QuoteAttachment):
                 identifier = attachment.thumbnail.id
             else:
-                raise ValueError(
-                    f"Attachment type {type(attachment)} not valid."
-                )
+                raise ValueError(f"Attachment type {type(attachment)} not valid.")
 
             logger.info(f"Downloading attachment: {identifier}")
-            attachment_bytes = await self.api_client.download_attachment(
-                identifier
-            )
+            attachment_bytes = await self.api_client.download_attachment(identifier)
 
             local_filename = f"attachments/{identifier}"
             with file_lock(local_filename, "wb") as f:
@@ -226,9 +218,7 @@ class SignalConsumer:
         msg_cache = f"message_history:{msg.get_recipient()}"
         self.redis_client.lpush(msg_cache, msg.model_dump_json())
         # Ensure the message history cache doesn't grow too large
-        self.redis_client.ltrim(
-            msg_cache, 0, self.signal_info.message_history_length
-        )
+        self.redis_client.ltrim(msg_cache, 0, self.signal_info.message_history_length)
 
     def parse_mentions(self, message: str, mentions: List[Mention]):
 
@@ -257,9 +247,7 @@ class SignalConsumer:
         try:
             msg = IncomingMessage(**message)
         except Exception as e:
-            logger.error(
-                f"Error parsing incoming message: {e}. Message: {message}"
-            )
+            logger.error(f"Error parsing incoming message: {e}. Message: {message}")
             return
         logger.debug("Parsed incoming message payload")
 
@@ -310,9 +298,7 @@ class SignalConsumer:
                 # Quotes can have attachments too
                 if quote.attachments:
                     logger.info("Quote has attachments.")
-                    logger.info(
-                        f"Downloading attachments for quote: {message}"
-                    )
+                    logger.info(f"Downloading attachments for quote: {message}")
                     await self.download_attachments(quote)
 
             # Place the message in the message history list

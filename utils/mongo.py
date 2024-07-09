@@ -96,9 +96,7 @@ def initialize_preferences_collection(
     return collection
 
 
-def get_user_preferences(
-    collection: Collection, user_id: str
-) -> UserPreferences:
+def get_user_preferences(collection: Collection, user_id: str) -> UserPreferences:
     preferences = collection.find_one({"user_id": user_id})
     if preferences:
         return UserPreferences(**preferences)
@@ -109,9 +107,7 @@ def update_user_preferences(
     collection: Collection, user_id: str, update_data: UserPreferencesUpdate
 ):
     update_data = update_data.model_dump(exclude_none=True)
-    collection.update_one(
-        {"user_id": user_id}, {"$set": update_data}, upsert=True
-    )
+    collection.update_one({"user_id": user_id}, {"$set": update_data}, upsert=True)
 
 
 def clear_user_preferences(collection: Collection, user_id: str):
