@@ -69,6 +69,7 @@ class ReactToChatCommandHandler(ReplyCommandHandler):
         gpt = GPTInterface()
 
         response = self.generate_chat_message(
+            message_id=message_id,
             config=config,
             message=message,
             prompt_key=self.prompt_key,
@@ -83,7 +84,7 @@ class ReactToChatCommandHandler(ReplyCommandHandler):
         )
         emoji = adv.extract_emoji([response])
         if not emoji:
-            logger.error("No emoji found in response")
+            logger.error(f"[{message_id}] No emoji found in response")
             return
 
         reaction = emoji["emoji_flat"]

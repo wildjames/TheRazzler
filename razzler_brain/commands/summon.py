@@ -1,5 +1,6 @@
 from logging import getLogger
 from typing import Iterator, Optional
+import uuid
 
 import redis
 
@@ -18,6 +19,7 @@ logger = getLogger(__name__)
 class SummonCommandHandler(CommandHandler):
     def can_handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: Optional[redis.Redis] = None,
         config: Optional[RazzlerBrainConfig] = None,
@@ -32,11 +34,12 @@ class SummonCommandHandler(CommandHandler):
 
     def handle(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         redis_connection: redis.Redis,
         config: RazzlerBrainConfig,
     ) -> Iterator[OutgoingMessage]:
-        logger.info("Handling summon command")
+        logger.info(f"[{message_id}] Handling summon command")
 
         try:
             gpt = GPTInterface()
@@ -57,6 +60,6 @@ class SummonCommandHandler(CommandHandler):
             yield response_message
 
         except Exception as e:
-            logger.error(f"Error creating image: {e}")
+            logger.error(f"[{message_id}] Error creating image: {e}")
             yield self.generate_reaction("❌", message)
             raise e

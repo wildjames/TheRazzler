@@ -23,6 +23,7 @@ class ReplyCommandHandler(CommandHandler):
 
     def count_razzler_messages_in_window(
         self,
+        message_id: uuid.UUID,
         message: IncomingMessage,
         time_window: int,
         redis_connection: redis.Redis,
@@ -43,7 +44,7 @@ class ReplyCommandHandler(CommandHandler):
                 count += 1
 
         logger.info(
-            f"Counted {count} messages in the last"
+            f"[{message_id}] Counted {count} messages in the last"
             f" {time_window} seconds (max {self.max_replies})"
         )
 
@@ -87,12 +88,13 @@ class ReplyCommandHandler(CommandHandler):
         yield self.generate_reaction("🧠", message)
 
         recent_razzing = self.count_razzler_messages_in_window(
-            message, self.time_window, redis_connection
+            message_id, message, self.time_window, redis_connection
         )
         if recent_razzing >= self.max_replies:
             logger.info(
-                f"[{message_id}] Too many razzles in the last {self.time_window} seconds."
-                f" I've already been summoned {recent_razzing} times."
+                f"[{message_id}] Too many razzles in the last"
+                f" {self.time_window} seconds. I've already been summoned"
+                f" {recent_razzing} times."
             )
             yield OutgoingMessage(
                 recipient=self.get_recipient(message),
@@ -117,12 +119,15 @@ class ReplyCommandHandler(CommandHandler):
         if quote:
             images += self.extract_images(quote)
 
-        logger.info(f"[{message_id}] Extracted {len(images)} images from message")
+        logger.info(
+            f"[{message_id}] Extracted {len(images)} images from message"
+        )
 
         # Then, get the response.
         try:
             gpt = GPTInterface()
             response = self.generate_chat_message(
+                message_id,
                 config,
                 message,
                 self.prompt_key,

@@ -70,7 +70,9 @@ class SeeImageCommandHandler(CommandHandler):
                     f"[{message_id}] Extracted {len(images)} images from"
                     " message"
                 )
-                response = self.generate_images_description(images, message)
+                response = self.generate_images_description(
+                    message_id, images, message
+                )
                 yield self.update_message_with_description(message, response)
 
             # Handle the case where the image is quoted in the message
@@ -86,7 +88,7 @@ class SeeImageCommandHandler(CommandHandler):
                         " quote"
                     )
                     response = self.generate_images_description(
-                        images, message
+                        message_id, images, message
                     )
                     yield self.update_quote_with_description(message, response)
 
@@ -98,6 +100,7 @@ class SeeImageCommandHandler(CommandHandler):
 
     def generate_images_description(
         self,
+        message_id: uuid.UUID,
         images: List[Tuple[str, str]],
         message: IncomingMessage,
     ):
@@ -106,7 +109,10 @@ class SeeImageCommandHandler(CommandHandler):
         # Get the user preference for image descriptions
         user_prefs = self.get_user_prefs(message.get_sender_id())
         describe_image_prompt = user_prefs.describe_image
-        logger.info(f"Describing image using prompt: {describe_image_prompt}")
+        logger.info(
+            f"[{message_id}] Describing image using prompt:"
+            f" {describe_image_prompt}"
+        )
 
         gpt_messages = [
             gpt.create_chat_message("system", describe_image_prompt.strip())

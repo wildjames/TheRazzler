@@ -57,6 +57,7 @@ class CommandHandler(ABC):
 
     def get_chat_history_for_llm(
         self,
+        message_id: uuid.UUID,
         config: RazzlerBrainConfig,
         cache_key: str,
         redis_connection: redis.Redis,
@@ -80,7 +81,8 @@ class CommandHandler(ABC):
         # Get the message history list from redis
         history = redis_connection.lrange(cache_key, 0, -1)
         logger.info(
-            f"Fetched {len(history)} messages from cache under key {cache_key}"
+            f"[{message_id}] Fetched {len(history)} messages from cache under"
+            f" key {cache_key}"
         )
 
         messages = []
@@ -92,10 +94,10 @@ class CommandHandler(ABC):
             ai_model = gpt.openai_config.quality_model
         else:
             raise ValueError(f"Invalid model: {ai_model}")
-        logger.info(f"Using model: {ai_model}")
+        logger.info(f"[{message_id}] Using model: {ai_model}")
 
         enc = tiktoken.encoding_for_model(ai_model)
-        logger.info(f"Encoding for model: {enc}")
+        logger.info(f"[{message_id}] Encoding for model: {enc}")
 
         # Parse the messages into something the AI can understand
         for msg_str in history:
@@ -109,7 +111,9 @@ class CommandHandler(ABC):
                 except pydantic.ValidationError:
                     pass
             else:
-                logger.error(f"Could not parse message: {msg_str}")
+                logger.error(
+                    f"[{message_id}] Could not parse message: {msg_str}"
+                )
 
             msg_out = ""
             match msg:
@@ -142,8 +146,9 @@ class CommandHandler(ABC):
                             )
                         else:
                             logger.info(
-                                f"Reached token limit at: {num_tokens} tokens"
-                                f" over {len(messages)} messages"
+                                f"[{message_id}] Reached token limit at:"
+                                f" {num_tokens} tokens over"
+                                f" {len(messages)} messages"
                             )
                             # We built the messages history in reverse order,
                             # starting with the most recent, so we need to
@@ -151,12 +156,18 @@ class CommandHandler(ABC):
                             messages.reverse()
 
                             if len(messages):
-                                logger.info(f"Oldest message: {messages[0]}")
                                 logger.info(
-                                    f"Most recent message: {messages[-1]}"
+                                    f"[{message_id}] Oldest message:"
+                                    f" {messages[0]}"
+                                )
+                                logger.info(
+                                    f"[{message_id}] Most recent message:"
+                                    f" {messages[-1]}"
                                 )
                             else:
-                                logger.info("No messages in history")
+                                logger.info(
+                                    f"[{message_id}] No messages in history"
+                                )
 
                             return messages
 
@@ -172,10 +183,10 @@ class CommandHandler(ABC):
         messages.reverse()
 
         if len(messages):
-            logger.info(f"Oldest message: {messages[0]}")
-            logger.info(f"Most recent message: {messages[-1]}")
+            logger.info(f"[{message_id}] Oldest message: {messages[0]}")
+            logger.info(f"[{message_id}] Most recent message: {messages[-1]}")
         else:
-            logger.info("No messages in history")
+            logger.info(f"[{message_id}] No messages in history")
         return messages
 
     def razzle_history_key(self, recipient: str) -> str:
@@ -186,6 +197,7 @@ class CommandHandler(ABC):
 
     def generate_chat_message(
         self,
+        message_id: uuid.UUID,
         config: RazzlerBrainConfig,
         message: IncomingMessage,
         prompt_key: str,
@@ -202,31 +214,35 @@ class CommandHandler(ABC):
 
         # Fetch the reply prompt
         sid = message.get_sender_id()
-        logger.info(f"Fetching user preferences for {sid}")
+        logger.info(f"[{message_id}] Fetching user preferences for {sid}")
         user_prefs = self.get_user_prefs(sid)
         reply_prompt = getattr(user_prefs, prompt_key)
         personality_prompt = user_prefs.personality
 
-        logger.info(f"Reply prompt: {reply_prompt}")
-        logger.info(f"Personality prompt: {personality_prompt}")
+        logger.info(f"[{message_id}] Reply prompt: {reply_prompt}")
+        logger.info(f"[{message_id}] Personality prompt: {personality_prompt}")
 
         messages = []
 
         cache_key = self.message_history_key(message.get_recipient())
         history = self.get_chat_history_for_llm(
-            config, cache_key, redis_client, gpt, model
+            message_id, config, cache_key, redis_client, gpt, model
         )
 
         messages.extend(history)
 
         # If we have images, add them to the message content
         if images:
-            logger.info("Injecting image data into the chat history")
+            logger.info(
+                f"[{message_id}] Injecting image data into the chat history"
+            )
             # Loop backwards, since we want to inject the data into a recent
             # message
             for m in messages[::-1]:
                 if message.envelope.dataMessage.message in m["content"]:
-                    logger.info(f"Found the corresponding message: {m}")
+                    logger.info(
+                        f"[{message_id}] Found the corresponding message: {m}"
+                    )
                     # update the content of the message with the image(s)
                     image_message = gpt.create_image_message(
                         images, m["content"]
@@ -243,7 +259,9 @@ class CommandHandler(ABC):
                     message_body = re.sub(r"\[\[\[.*?\]\]\]", "", message_body)
 
                     # Push the old message content back into the caption
-                    logger.info(f"Old message content: {message_body}")
+                    logger.info(
+                        f"[{message_id}] Old message content: {message_body}"
+                    )
                     m["content"][0]["text"] = message_body
 
                     break
@@ -258,7 +276,10 @@ class CommandHandler(ABC):
             )
         )
 
-        logger.info(f"Creating chat completion with {len(messages)} messages")
+        logger.info(
+            f"[{message_id}] Creating chat completion with"
+            f" {len(messages)} messages"
+        )
 
         response = gpt.generate_chat_completion(model, messages)
         if response.lower().startswith("razzler:"):
