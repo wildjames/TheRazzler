@@ -57,6 +57,7 @@ class UserPreferencesUpdate(BaseModel):
     insult: Optional[str] = None
     dream_prompt: Optional[str] = None
     describe_image: Optional[str] = None
+    react_when_active_chat: Optional[str] = None
 
     class Config:
         extra = "forbid"
