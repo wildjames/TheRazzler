@@ -24,7 +24,7 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
     frequency is reached, the razzler will always say something.
     """
 
-    minumum_frequency = 5
+    minumum_frequency = 20
     maximum_frequency = 100
 
     # Maximum time to scan, in seconds.
