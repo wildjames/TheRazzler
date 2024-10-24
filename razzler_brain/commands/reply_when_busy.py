@@ -24,9 +24,6 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
     frequency is reached, the razzler will always say something.
     """
 
-    minumum_frequency = 20
-    maximum_frequency = 100
-
     # Maximum time to scan, in seconds.
     time_window = 60 * 60 * 3
 
@@ -86,8 +83,12 @@ class ReplyWhenActiveChatCommandHandler(ReplyCommandHandler):
             f"Found {count} messages within {self.time_window} seconds"
         )
 
-        chance = (count - self.minumum_frequency) / (
-            self.maximum_frequency - self.minumum_frequency
+        prefs = self.get_user_prefs(message.get_sender_id())
+        maximum_frequency = prefs.reply_when_active_chat_max_frequency
+        minimum_frequency = prefs.reply_when_active_chat_min_frequency
+
+        chance = (count - minimum_frequency) / (
+            maximum_frequency - minimum_frequency
         )
         # constrain the chance to be between 0 and 1
         chance = max(0, min(1, chance))

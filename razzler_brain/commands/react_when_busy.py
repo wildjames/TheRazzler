@@ -27,11 +27,6 @@ class ReactToChatCommandHandler(ReplyCommandHandler):
     frequency is reached, the razzler will always say something.
     """
 
-    prompt_key = "react_when_active_chat"
-
-    # TODO: This should be in the user prefs
-    frequency = 0.2
-
     def can_handle(
         self,
         message: IncomingMessage,
@@ -48,7 +43,10 @@ class ReactToChatCommandHandler(ReplyCommandHandler):
         if not message.envelope.dataMessage.message:
             return False
 
-        return random.random() < self.frequency
+        prefs = self.get_user_prefs(message.get_sender_id())
+        frequency = prefs.react_frequency
+
+        return random.random() < frequency
 
     def extract_first_emoji(self, string: str) -> Optional[str]:
         """Search the string for a valid emoji, left to right. Return the first
@@ -68,7 +66,7 @@ class ReactToChatCommandHandler(ReplyCommandHandler):
         response = self.generate_chat_message(
             config=config,
             message=message,
-            prompt_key=self.prompt_key,
+            prompt_key="react_when_active_chat",
             gpt=gpt,
             redis_client=redis_connection,
             model="fast",
