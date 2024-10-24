@@ -61,6 +61,7 @@ class UserPreferencesUpdate(BaseModel):
     dream_prompt: Optional[str] = None
     describe_image: Optional[str] = None
     react_when_active_chat: Optional[str] = None
+    react_frequency: float = 0.2
     reply_when_active_chat_min_frequency: int = 20
     reply_when_active_chat_max_frequency: int = 100
 
