@@ -263,6 +263,19 @@ class SignalConsumer:
             return
         logger.debug("Parsed incoming message payload")
 
+        # Deduplicate messages using the timestamp as a unique identifier.
+        # If we've already processed a message with this timestamp then skip it.
+        cache_key = f"processed_message:{msg.envelope.timestamp}"
+        if self.redis_client.get(cache_key):
+            logger.info(
+                "Skipping already processed message with timestamp "
+                f"{msg.envelope.timestamp}"
+            )
+            return
+        # Mark the message as processed. Expire after 1 day to avoid unbounded
+        # growth.
+        self.redis_client.set(cache_key, 1, ex=60 * 60 * 24)
+
         self.update_contact_info(msg)
 
         # Dont publish message reciepts to the queue
