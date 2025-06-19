@@ -10,6 +10,7 @@ server.
 
 import asyncio
 import json
+import re
 from logging import getLogger
 from typing import Any, Dict, List, Union
 
@@ -32,6 +33,11 @@ from .dataclasses import (
 from .signal_api import SignalAPI
 
 logger = getLogger(__name__)
+
+
+def _normalize_number(number: str) -> str:
+    """Normalize a phone number by stripping all non-digit characters."""
+    return re.sub(r"\D", "", number)
 
 
 class SignalConsumer:
@@ -282,7 +288,10 @@ class SignalConsumer:
         # back messages that we've just sent (sync messages), which can cause
         # the Razzler to respond to its own messages. This manifests as the bot
         # sending apparently unprompted direct messages.
-        if msg.envelope.sourceNumber == self.signal_info.phone_number:
+        if (
+            _normalize_number(msg.envelope.sourceNumber)
+            == _normalize_number(self.signal_info.phone_number)
+        ):
             logger.debug("Ignoring message sent by ourselves")
             return
 
