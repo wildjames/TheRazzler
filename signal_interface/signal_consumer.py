@@ -265,6 +265,14 @@ class SignalConsumer:
 
         self.update_contact_info(msg)
 
+        # Ignore messages sent by the bot itself. Sometimes Signal will echo
+        # back messages that we've just sent (sync messages), which can cause
+        # the Razzler to respond to its own messages. This manifests as the bot
+        # sending apparently unprompted direct messages.
+        if msg.envelope.sourceNumber == self.signal_info.phone_number:
+            logger.debug("Ignoring message sent by ourselves")
+            return
+
         # Dont publish message reciepts to the queue
         if msg.envelope.receiptMessage:
             logger.debug("Receipt message received")
