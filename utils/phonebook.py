@@ -155,7 +155,11 @@ class PhoneBook(BaseModel):
 
         parsed_group = Group(**group)
 
-        self.groups[parsed_group.internal_id] = parsed_group
+        # Store groups keyed by the public group ID. This lets us
+        # look up the corresponding internal_id when we need to send a
+        # message back to the group.
+        self.groups[parsed_group.id] = parsed_group
 
     def get_group_internal_id(self, group_id: str) -> str:
-        return self.groups[group_id].id
+        """Return the internal_id for a given group id."""
+        return self.groups[group_id].internal_id
